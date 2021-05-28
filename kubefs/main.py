@@ -14,14 +14,14 @@ class KubernetesFs(fuse.LoggingMixIn, fuse.Operations):
         name="",
         entries=[
             Directory(
-                "clusters",
+                name="clusters",
                 entries=[
-                    Directory("cluster-1"),
+                    Directory(name="cluster-1"),
                 ],
             ),
-            Directory("contexts", entries=[]),
-            Directory("users", entries=[]),
-            File("abc"),
+            Directory(name="contexts", entries=[]),
+            Directory(name="users", entries=[]),
+            File(name="notes.txt", contents=b"hi mom"),
         ],
     )
 
@@ -66,6 +66,13 @@ class KubernetesFs(fuse.LoggingMixIn, fuse.Operations):
             raise fuse.FuseOSError(errno.ENOENT)
 
         return entry.get_attributes()
+
+    def read(self, path, size, offset, fh):
+        entry = self.find_matching_entry(path)
+        if not entry:
+            raise fuse.FuseOSError(errno.EIO)
+
+        return entry.read(size, offset)
 
 
 if __name__ == "__main__":
