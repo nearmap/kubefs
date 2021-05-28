@@ -4,15 +4,6 @@ import logging
 import yaml
 
 
-class Cluster:
-    def __init__(self, cluster_dct) -> None:
-        self.cluster_dct = cluster_dct
-
-    @property
-    def name(self):
-        return self.cluster_dct.get("name")
-
-
 class Context:
     def __init__(self, context_dct, loader) -> None:
         self.context_dct = context_dct
@@ -21,6 +12,10 @@ class Context:
     @property
     def name(self):
         return self.context_dct.get("name")
+
+    @property
+    def cluster_name(self):
+        return self.context_dct["context"].get("cluster")
 
     def get_cluster(self):
         cluster_name = self.context_dct["context"].get("cluster")
@@ -31,6 +26,19 @@ class Context:
         user_name = self.context_dct["context"].get("user")
         if user_name:
             return self.loader.get_user(user_name)
+
+
+class Cluster:
+    def __init__(self, cluster_dct, loader) -> None:
+        self.cluster_dct = cluster_dct
+        self.loader = loader
+
+    @property
+    def name(self):
+        return self.cluster_dct.get("name")
+
+    def get_context(self) -> Context:
+        return self.loader.get_context_by_cluster(self.name)
 
 
 class User:
@@ -91,7 +99,7 @@ class KubeConfigLoader:
     def get_all_clusters(self) -> Iterator[Cluster]:
         for doc in self.get_all_documents():
             for cluster_dct in doc.get("clusters"):
-                yield Cluster(cluster_dct)
+                yield Cluster(cluster_dct, self)
 
     def get_all_contexts(self) -> Iterator[Context]:
         for doc in self.get_all_documents():
@@ -103,12 +111,17 @@ class KubeConfigLoader:
             for user_dct in doc.get("users"):
                 yield User(user_dct)
 
-    def get_cluster(self, cluster_name):
+    def get_cluster(self, cluster_name) -> Cluster:
         for cluster in self.get_all_clusters():
             if cluster.name == cluster_name:
                 return cluster
 
-    def get_user(self, user_name):
+    def get_context_by_cluster(self, cluster_name) -> Context:
+        for context in self.get_all_contexts():
+            if context.cluster_name == cluster_name:
+                return context
+
+    def get_user(self, user_name) -> User:
         for user in self.get_all_users():
             if user.name == user_name:
                 return user

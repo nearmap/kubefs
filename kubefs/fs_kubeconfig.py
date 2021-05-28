@@ -1,5 +1,34 @@
 from kubefs.fs_model import Directory, File
-from kubefs.kubeconfig import Context, User, KubeConfigLoader
+from kubefs.fs_kubecluster import KubeClusterPodsDir
+from kubefs.kubeconfig import Context, User, KubeConfigLoader, Cluster
+
+
+class KubeConfigClusterDir(Directory):
+    @classmethod
+    def create(cls, *, name: str, cluster: Cluster):
+        self = cls(name=name)
+        self.cluster = cluster
+        return self
+
+    def get_entries(self):
+        if not self._lazy_entries:
+            dirs = []
+
+            dirs.append(Directory(name="configmaps"))
+            dirs.append(Directory(name="deployments"))
+            dirs.append(Directory(name="endpoints"))
+            dirs.append(Directory(name="events"))
+            dirs.append(Directory(name="ingresses"))
+            dirs.append(Directory(name="namespaces"))
+            dirs.append(Directory(name="nodes"))
+            dirs.append(KubeClusterPodsDir.create(name="pods", cluster=self.cluster))
+            dirs.append(Directory(name="replicasets"))
+            dirs.append(Directory(name="secrets"))
+            dirs.append(Directory(name="services"))
+
+            self._lazy_entries = dirs
+
+        return self._lazy_entries
 
 
 class KubeConfigClustersDir(Directory):
@@ -15,7 +44,7 @@ class KubeConfigClustersDir(Directory):
 
             dirs = []
             for cluster in clusters:
-                dir = Directory(name=cluster.name)
+                dir = KubeConfigClusterDir.create(name=cluster.name, cluster=cluster)
                 dirs.append(dir)
 
             self._lazy_entries = dirs
