@@ -1,5 +1,73 @@
 from kubefs.fs_model import Directory, File
-from kubefs.kubeconfig import User
+from kubefs.kubeconfig import Context, User
+
+
+class KubeConfigClustersDir(Directory):
+    @classmethod
+    def create(cls, *, name, loader):
+        self = cls(name=name)
+        self.loader = loader
+        return self
+
+    def get_entries(self):
+        if not self._lazy_entries:
+            clusters = self.loader.get_all_clusters()
+
+            dirs = []
+            for cluster in clusters:
+                dir = Directory(name=cluster.name)
+                dirs.append(dir)
+
+            self._lazy_entries = dirs
+
+        return self._lazy_entries
+
+
+class KubeConfigContextDir(Directory):
+    @classmethod
+    def create(cls, *, name, context: Context):
+        self = cls(name=name)
+        self.context = context
+        return self
+
+    def get_entries(self):
+        if not self._lazy_entries:
+            dirs = []
+
+            cluster = self.context.get_cluster()
+            if cluster:
+                dir = Directory(name="cluster")
+                dirs.append(dir)
+
+            user = self.context.get_user()
+            if user:
+                dir = KubeConfigUserDir.create(name="user", user=user)
+                dirs.append(dir)
+
+            self._lazy_entries = dirs
+
+        return self._lazy_entries
+
+
+class KubeConfigContextsDir(Directory):
+    @classmethod
+    def create(cls, *, name, loader):
+        self = cls(name=name)
+        self.loader = loader
+        return self
+
+    def get_entries(self):
+        if not self._lazy_entries:
+            contexts = self.loader.get_all_contexts()
+
+            dirs = []
+            for context in contexts:
+                dir = KubeConfigContextDir.create(name=context.name, context=context)
+                dirs.append(dir)
+
+            self._lazy_entries = dirs
+
+        return self._lazy_entries
 
 
 class KubeConfigUserDir(Directory):

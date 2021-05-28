@@ -1,6 +1,10 @@
 #!/usr/bin/env python
-from kubefs.fs_model import Directory, File
-from kubefs.fs_kubeconfig import KubeConfigUsersDir
+from kubefs.fs_model import Directory
+from kubefs.fs_kubeconfig import (
+    KubeConfigUsersDir,
+    KubeConfigClustersDir,
+    KubeConfigContextsDir,
+)
 from kubefs.kubeconfig import KubeConfigLoader
 import logging
 import os
@@ -17,13 +21,8 @@ class KubernetesFs(fuse.LoggingMixIn, fuse.Operations):
     tree = Directory(
         name="",
         entries=[
-            Directory(
-                name="clusters",
-                entries=[
-                    Directory(name="cluster-1"),
-                ],
-            ),
-            Directory(name="contexts"),
+            KubeConfigClustersDir.create(name="clusters", loader=_loader),
+            KubeConfigContextsDir.create(name="contexts", loader=_loader),
             KubeConfigUsersDir.create(name="users", loader=_loader),
         ],
     )
