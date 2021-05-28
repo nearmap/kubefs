@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 from kubefs.fs_model import Directory, File
+from kubefs.fs_kubeconfig import KubeConfigUsersDir
+from kubefs.kubeconfig import KubeConfigLoader
 import logging
 import os
 import errno
@@ -10,6 +12,8 @@ from kubefs import kubeconfig
 
 
 class KubernetesFs(fuse.LoggingMixIn, fuse.Operations):
+    _loader = KubeConfigLoader.get_instance()
+
     tree = Directory(
         name="",
         entries=[
@@ -19,9 +23,8 @@ class KubernetesFs(fuse.LoggingMixIn, fuse.Operations):
                     Directory(name="cluster-1"),
                 ],
             ),
-            Directory(name="contexts", entries=[]),
-            Directory(name="users", entries=[]),
-            File(name="notes.txt", contents=b"hi mom"),
+            Directory(name="contexts"),
+            KubeConfigUsersDir.create(name="users", loader=_loader),
         ],
     )
 

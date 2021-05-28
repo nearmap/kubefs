@@ -12,7 +12,8 @@ class Entry:
 class Directory(Entry):
     def __init__(self, *, name: str, entries: Iterable[Entry] = None) -> None:
         self.name = name
-        self.entries = entries or []
+        self._entries = entries or []
+        self._lazy_entries = []  # lazy
 
         self.ts_opened = time.time()
         self.uid = os.getuid()
@@ -29,21 +30,24 @@ class Directory(Entry):
             st_gid=self.gid,
         )
 
+    def get_entries(self):
+        return self._entries
+
     def get_attributes(self):
         return self.atts
 
     def get_entry_names(self) -> List[str]:
-        names = [entry.name for entry in self.entries]
+        names = [entry.name for entry in self.get_entries()]
         return names
 
     def get_entry_by_name(self, entry_name) -> Entry:
-        for entry in self.entries:
+        for entry in self.get_entries():
             if entry.name == entry_name:
                 return entry
 
 
 class File(Entry):
-    def __init__(self, *, name, contents: bytes = None) -> None:
+    def __init__(self, *, name, contents: bytes = b"") -> None:
         self.name = name
         self.contents = contents
 

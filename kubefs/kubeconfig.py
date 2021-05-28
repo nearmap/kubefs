@@ -16,17 +16,24 @@ class User:
                 self.name,
                 self.username,
                 self.password,
-                self.client_cert_data and ("<%d bytes>" % len(self.client_cert_data)),
+                self.client_certificate_data
+                and ("<%d bytes>" % len(self.client_certificate_data)),
                 self.client_key_data and ("<%d bytes>" % len(self.client_key_data)),
             )
         )
+
+    def get_attribute_names(self):
+        return list(self.user_dct["user"].keys())
+
+    def get_attribute(self, name):
+        return self.user_dct["user"].get(name)
 
     @property
     def name(self):
         return self.user_dct.get("name")
 
     @property
-    def client_cert_data(self):
+    def client_certificate_data(self):
         return self.user_dct["user"].get("client-certificate-data")
 
     @property
@@ -68,11 +75,20 @@ class Cluster:
         return self.ctx_dct["context"].get("cluster")
 
 
-class KubeConfigExplorer:
+class KubeConfigLoader:
+    _instance = None
+
     def __init__(self, kubecfg_loc="~/.kube") -> None:
         self.kubecfg_loc = os.path.expanduser(kubecfg_loc)
 
-    def get_all_clusters(self) -> Iterator[Cluster]:
+    @classmethod
+    def get_instance(cls):
+        if not cls._instance:
+            cls._instance = cls()
+
+        return cls._instance
+
+    def get_all_users(self) -> Iterator[User]:
         path = self.kubecfg_loc
         files = os.listdir(path)
 
