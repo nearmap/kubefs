@@ -30,7 +30,7 @@ class Directory(Entry):
             st_gid=self.gid,
         )
 
-    def get_entries(self):
+    def get_entries(self) -> Iterable[Entry]:
         return self._entries
 
     def get_attributes(self):

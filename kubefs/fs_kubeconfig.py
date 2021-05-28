@@ -1,10 +1,10 @@
 from kubefs.fs_model import Directory, File
-from kubefs.kubeconfig import Context, User
+from kubefs.kubeconfig import Context, User, KubeConfigLoader
 
 
 class KubeConfigClustersDir(Directory):
     @classmethod
-    def create(cls, *, name, loader):
+    def create(cls, *, name: str, loader: KubeConfigLoader):
         self = cls(name=name)
         self.loader = loader
         return self
@@ -25,7 +25,7 @@ class KubeConfigClustersDir(Directory):
 
 class KubeConfigContextDir(Directory):
     @classmethod
-    def create(cls, *, name, context: Context):
+    def create(cls, *, name: str, context: Context):
         self = cls(name=name)
         self.context = context
         return self
@@ -51,7 +51,7 @@ class KubeConfigContextDir(Directory):
 
 class KubeConfigContextsDir(Directory):
     @classmethod
-    def create(cls, *, name, loader):
+    def create(cls, *, name: str, loader: KubeConfigLoader):
         self = cls(name=name)
         self.loader = loader
         return self
@@ -76,7 +76,7 @@ class KubeConfigUserDir(Directory):
     kube config."""
 
     @classmethod
-    def create(cls, *, name, user: User):
+    def create(cls, *, name: str, user: User):
         self = cls(name=name)
         self.user = user
         return self
@@ -101,7 +101,7 @@ class KubeConfigUsersDir(Directory):
     config. Each entry is itself a directory containing files."""
 
     @classmethod
-    def create(cls, *, name, loader):
+    def create(cls, *, name: str, loader: KubeConfigLoader):
         self = cls(name=name)
         self.loader = loader
         return self
