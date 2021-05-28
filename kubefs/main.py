@@ -87,5 +87,3 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     # fuse = FUSE(Memory(), args.mount, foreground=True, allow_other=True)
     fuse = fuse.FUSE(KubernetesFs(), args.mount, foreground=True)
-
-    # print(list(kubeconfig.KubeConfigExplorer().get_all_clusters()))

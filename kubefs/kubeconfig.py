@@ -81,7 +81,7 @@ class KubeConfigLoader:
 
             kind = doc.get("kind")
             if not kind:
-                self.logger.warn(
+                self.logger.debug(
                     "Candidate kube config does not have kind: Config: %s", fp
                 )
                 continue
