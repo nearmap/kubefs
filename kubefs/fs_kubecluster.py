@@ -1,6 +1,6 @@
 from kubefs.fs_model import Directory, File
 from kubefs.kubeconfig import Cluster
-from kubefs.kubeclient import KubeClient, KubeClientCache
+from kubefs.kubeclient import KubeClientCache
 from kubefs.text import to_json
 
 
