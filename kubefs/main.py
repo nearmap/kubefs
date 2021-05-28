@@ -10,18 +10,24 @@ from kubefs import kubeconfig
 
 
 class KubernetesFs(fuse.LoggingMixIn, fuse.Operations):
-    tree = Directory(name='', entries=[ 
-        Directory('clusters', entries=[
-            Directory('cluster-1'),
-        ]),
-        Directory('contexts', entries=[]),
-        Directory('users', entries=[]),
-        File('abc'),
-    ])
+    tree = Directory(
+        name="",
+        entries=[
+            Directory(
+                "clusters",
+                entries=[
+                    Directory("cluster-1"),
+                ],
+            ),
+            Directory("contexts", entries=[]),
+            Directory("users", entries=[]),
+            File("abc"),
+        ],
+    )
 
     constant_entries = [
-        '.',
-        '..',
+        ".",
+        "..",
     ]
 
     def __init__(self):
@@ -62,10 +68,11 @@ class KubernetesFs(fuse.LoggingMixIn, fuse.Operations):
         return entry.get_attributes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('mount')
+    parser.add_argument("mount")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG)

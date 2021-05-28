@@ -10,7 +10,7 @@ class Entry:
 
 
 class Directory(Entry):
-    def __init__(self, name: str, entries: Iterable[Entry]=None) -> None:
+    def __init__(self, name: str, entries: Iterable[Entry] = None) -> None:
         self.name = name
         self.entries = entries or []
 
