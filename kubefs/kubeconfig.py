@@ -1,4 +1,4 @@
-from typing import Iterator
+from typing import Iterable, Dict, Any
 import os
 import logging
 import yaml
@@ -60,8 +60,9 @@ class KubeConfigLoader:
     _instance = None
     logger = logging.getLogger("kube-config-loader")
 
-    def __init__(self, kubecfg_loc="~/.kube") -> None:
-        self.kubecfg_loc = os.path.expanduser(kubecfg_loc)
+    def __init__(self, kubecfg_var="KUBECONFIG", kubecfg_dir="~/.kube") -> None:
+        self.kubecfg_var = kubecfg_var
+        self.kubecfg_dir = os.path.expanduser(kubecfg_dir)
 
     @classmethod
     def get_instance(cls):
@@ -70,16 +71,26 @@ class KubeConfigLoader:
 
         return cls._instance
 
-    def get_all_documents(self) -> Iterator[User]:
-        path = self.kubecfg_loc
-        files = os.listdir(path)
+    def detect_kubeconfig_files(self) -> Iterable[str]:
+        config_var = os.getenv(self.kubecfg_var)
+        if config_var:
+            fps = config_var.split(":")
+            return fps
 
-        for file in files:
-            fp = os.path.join(path, file)
+        fns = os.listdir(self.kubecfg_dir)
+        fps = []
+        for fn in fns:
+            fp = os.path.join(self.kubecfg_dir, fn)
 
             if not os.path.isfile(fp):
                 continue
 
+            fps.append(fp)
+
+        return fps
+
+    def get_all_documents(self) -> Iterable[Dict[Any, Any]]:
+        for fp in self.detect_kubeconfig_files():
             with open(fp, "rb") as fl:
                 try:
                     doc = yaml.load(fl, Loader=yaml.SafeLoader)
@@ -96,17 +107,17 @@ class KubeConfigLoader:
 
             yield doc
 
-    def get_all_clusters(self) -> Iterator[Cluster]:
+    def get_all_clusters(self) -> Iterable[Cluster]:
         for doc in self.get_all_documents():
             for cluster_dct in doc.get("clusters"):
                 yield Cluster(cluster_dct, self)
 
-    def get_all_contexts(self) -> Iterator[Context]:
+    def get_all_contexts(self) -> Iterable[Context]:
         for doc in self.get_all_documents():
             for context_dct in doc.get("contexts"):
                 yield Context(context_dct, self)
 
-    def get_all_users(self) -> Iterator[User]:
+    def get_all_users(self) -> Iterable[User]:
         for doc in self.get_all_documents():
             for user_dct in doc.get("users"):
                 yield User(user_dct)

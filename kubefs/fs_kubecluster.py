@@ -157,8 +157,12 @@ class KubeClusterReplicaSetsDir(Directory):
 
             replicasets = self.client.list_replicasets_from_all_namespaces()
             for replicaset in replicasets:
-                block = serialize_kube_obj(api_version="apps/v1", kind="ReplicaSet", obj=replicaset)
-                files.append(File(name=replicaset.metadata.name, contents=block.encode()))
+                block = serialize_kube_obj(
+                    api_version="apps/v1", kind="ReplicaSet", obj=replicaset
+                )
+                files.append(
+                    File(name=replicaset.metadata.name, contents=block.encode())
+                )
 
             self._lazy_entries = files
 

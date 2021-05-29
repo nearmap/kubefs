@@ -26,12 +26,12 @@ class KubeConfigClusterDir(Directory):
 
             types = {
                 "configmaps": KubeClusterConfigMapsDir,
-                'deployments': KubeClusterDeploymentsDir,
+                "deployments": KubeClusterDeploymentsDir,
                 "endpoints": KubeClusterEndpointsDir,
                 "namespaces": KubeClusterNamespacesDir,
                 "nodes": KubeClusterNodesDir,
                 "pods": KubeClusterPodsDir,
-                'replicasets': KubeClusterReplicaSetsDir,
+                "replicasets": KubeClusterReplicaSetsDir,
                 "secrets": KubeClusterSecretsDir,
                 "services": KubeClusterServicesDir,
             }
