@@ -9,7 +9,9 @@ present a top level view for you to navigate:
 
 ```bash
 $ ls -p ~/kubeview
-clusters/  contexts/  users/
+clusters/
+contexts/
+users/
 ```
 
 You can use this to explore the cluster:
@@ -19,10 +21,24 @@ $ ls -p ~/kubeview/clusters
 minikube/
 
 $ ls -p ~/kubeview/clusters/minikube
-configmaps/  deployments/  endpoints/  namespaces/  nodes/  pods/  replicasets/  secrets/  services/
+configmaps/
+deployments/
+endpoints/
+namespaces/
+nodes/
+pods/
+replicasets/
+secrets/
+services/
 
 $ ls -p ~/kubeview/clusters/minikube/pods
-coredns-74ff55c5b-xd6nf  etcd-minikube  kube-apiserver-minikube  kube-controller-manager-minikube  kube-proxy-66s6j  kube-scheduler-minikube  storage-provisioner
+coredns-74ff55c5b-xd6nf
+etcd-minikube
+kube-apiserver-minikube
+kube-controller-manager-minikube
+kube-proxy-66s6j
+kube-scheduler-minikube
+storage-provisioner
 
 $ head ~/kubeview/clusters/minikube/pods/etcd-minikube
 {
@@ -36,20 +52,21 @@ $ head ~/kubeview/clusters/minikube/pods/etcd-minikube
 
 ## Quickstart
 
-Installing:
-
-```bash
-$ mkvirtualenv kubefs
-
-(kubefs) $ pip install -r requirements.txt
-```
+`kubefs` requires a few libraries to run. The script `kfs` sets all this up on
+the first run, so that's all you need. `kubefs` runs in the foreground, so once
+you launch it it mounts the filesystem and keeps running until you stop it.
+When you stop it, the filesystem is umounted.
 
 Mounting the filesystem:
 
 ```bash
 # create a mount point
-(kubefs) $ mkdir ~/kubeview
+$ mkdir ~/kubeview
 
 # mount the filesystem there
-(kubefs) $ python -m kubefs.main ~/kubeview
+$ ./kfs ~/kubeview
+Re-using existing virtualenv at: .ve/ and assuming it's up to date.
+If you see errors try 'rm -rf .ve/' and re-run this script.
+DEBUG:fuse.log-mixin:-> init / ()
+DEBUG:fuse.log-mixin:<- init None
 ```
