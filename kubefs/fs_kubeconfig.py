@@ -1,5 +1,15 @@
 from kubefs.fs_model import Directory, File
-from kubefs.fs_kubecluster import KubeClusterPodsDir
+from kubefs.fs_kubecluster import (
+    KubeClusterConfigMapsDir,
+    KubeClusterDeploymentsDir,
+    KubeClusterEndpointsDir,
+    KubeClusterNamespacesDir,
+    KubeClusterNodesDir,
+    KubeClusterPodsDir,
+    KubeClusterReplicaSetsDir,
+    KubeClusterSecretsDir,
+    KubeClusterServicesDir,
+)
 from kubefs.kubeconfig import Context, User, KubeConfigLoader, Cluster
 
 
@@ -14,17 +24,21 @@ class KubeConfigClusterDir(Directory):
         if not self._lazy_entries:
             dirs = []
 
-            dirs.append(Directory(name="configmaps"))
-            dirs.append(Directory(name="deployments"))
-            dirs.append(Directory(name="endpoints"))
-            dirs.append(Directory(name="events"))
-            dirs.append(Directory(name="ingresses"))
-            dirs.append(Directory(name="namespaces"))
-            dirs.append(Directory(name="nodes"))
-            dirs.append(KubeClusterPodsDir.create(name="pods", cluster=self.cluster))
-            dirs.append(Directory(name="replicasets"))
-            dirs.append(Directory(name="secrets"))
-            dirs.append(Directory(name="services"))
+            types = {
+                "configmaps": KubeClusterConfigMapsDir,
+                'deployments': KubeClusterDeploymentsDir,
+                "endpoints": KubeClusterEndpointsDir,
+                "namespaces": KubeClusterNamespacesDir,
+                "nodes": KubeClusterNodesDir,
+                "pods": KubeClusterPodsDir,
+                'replicasets': KubeClusterReplicaSetsDir,
+                "secrets": KubeClusterSecretsDir,
+                "services": KubeClusterServicesDir,
+            }
+
+            for name, cls in types.items():
+                dir = cls.create(name=name, context=self.cluster.get_context())
+                dirs.append(dir)
 
             self._lazy_entries = dirs
 
