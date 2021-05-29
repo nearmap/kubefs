@@ -1,7 +1,7 @@
 from kubefs.fs_model import Directory, File
 from kubefs.kubeconfig import Cluster
 from kubefs.kubeclient import KubeClientCache
-from kubefs.text import to_json
+from kubefs.text import serialize_kube_obj
 
 
 class KubeClusterPodsDir(Directory):
@@ -18,7 +18,7 @@ class KubeClusterPodsDir(Directory):
 
             pods = self.client.list_pods_from_all_namespaces()
             for pod in pods:
-                block = to_json(pod.to_dict())
+                block = serialize_kube_obj(api_version="v1", kind="Pod", obj=pod)
                 files.append(File(name=pod.metadata.name, contents=block.encode()))
 
             self._lazy_entries = files

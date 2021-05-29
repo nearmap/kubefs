@@ -85,5 +85,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG)
-    # fuse = FUSE(Memory(), args.mount, foreground=True, allow_other=True)
     fuse = fuse.FUSE(KubernetesFs(), args.mount, foreground=True)
