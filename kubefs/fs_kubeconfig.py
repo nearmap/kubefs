@@ -79,7 +79,7 @@ class KubeConfigContextDir(Directory):
 
             cluster = self.context.get_cluster()
             if cluster:
-                dir = Directory(name="cluster")
+                dir = KubeConfigClusterDir.create(name="cluster", cluster=cluster)
                 dirs.append(dir)
 
             user = self.context.get_user()
