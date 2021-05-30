@@ -23,40 +23,61 @@ class KubeClient:
 
         return self._appsv1_client
 
-    def list_configmaps_from_all_namespaces(self):
-        result = self.corev1_client.list_config_map_for_all_namespaces()
+    def get_configmaps(self, *, namespace: str = None):
+        if namespace:
+            result = self.corev1_client.list_namespaced_config_map(namespace)
+        else:
+            result = self.corev1_client.list_config_map_for_all_namespaces()
         return result.items
 
-    def list_deployments_from_all_namespaces(self):
-        result = self.appsv1_client.list_deployment_for_all_namespaces()
+    def get_deployments(self, *, namespace: str = None):
+        if namespace:
+            result = self.appsv1_client.list_namespaced_deployment(namespace)
+        else:
+            result = self.appsv1_client.list_deployment_for_all_namespaces()
         return result.items
 
-    def list_endpoints_from_all_namespaces(self):
-        result = self.corev1_client.list_endpoints_for_all_namespaces()
+    def get_endpoints(self, *, namespace: str = None):
+        if namespace:
+            result = self.corev1_client.list_namespaced_endpoints(namespace)
+        else:
+            result = self.corev1_client.list_endpoints_for_all_namespaces()
         return result.items
 
-    def list_namespaces(self):
+    def get_namespaces(self):
         result = self.corev1_client.list_namespace()
         return result.items
 
-    def list_nodes(self):
+    def get_nodes(self):
         result = self.corev1_client.list_node()
         return result.items
 
-    def list_pods_from_all_namespaces(self):
-        result = self.corev1_client.list_pod_for_all_namespaces()
+    def get_pods(self, *, namespace: str = None):
+        if namespace:
+            result = self.corev1_client.list_namespaced_pod(namespace)
+        else:
+            result = self.corev1_client.list_pod_for_all_namespaces()
         return result.items
 
-    def list_replicasets_from_all_namespaces(self):
-        result = self.appsv1_client.list_replica_set_for_all_namespaces()
+    def get_replicasets(self, *, namespace: str = None):
+        if namespace:
+            result = self.appsv1_client.list_namespaced_replica_set(namespace)
+        else:
+            result = self.appsv1_client.list_replica_set_for_all_namespaces()
         return result.items
 
-    def list_secrets_from_all_namespaces(self):
-        result = self.corev1_client.list_secret_for_all_namespaces()
+    def get_secrets(self, *, namespace: str = None):
+        if namespace:
+            result = self.corev1_client.list_namespaced_secret(namespace)
+        else:
+            result = self.corev1_client.list_secret_for_all_namespaces()
         return result.items
 
-    def list_services_from_all_namespaces(self):
-        result = self.corev1_client.list_service_for_all_namespaces()
+    def get_services(self, *, namespace: str = None):
+        if namespace:
+            result = self.corev1_client.list_namespaced_service(namespace)
+        else:
+            result = self.corev1_client.list_service_for_all_namespaces()
         return result.items
 
 

@@ -26,16 +26,17 @@ def mkpayload(*, api_version, kind, obj):
 
 class KubeClusterConfigMapsDir(Directory):
     @classmethod
-    def create(cls, *, payload: Payload, context: Context):
+    def create(cls, *, payload: Payload, context: Context, namespace: str = None):
         self = cls(payload=payload)
         self.client = KubeClientCache.get_client(context=context.name)
+        self.namespace = namespace
         return self
 
     def get_entries(self):
         if not self._lazy_entries:
             files = []
 
-            configmaps = self.client.list_configmaps_from_all_namespaces()
+            configmaps = self.client.get_configmaps(namespace=self.namespace)
             for configmap in configmaps:
                 payload = mkpayload(api_version="v1", kind="ConfigMap", obj=configmap)
                 files.append(File(payload=payload))
@@ -47,8 +48,9 @@ class KubeClusterConfigMapsDir(Directory):
 
 class KubeClusterDeploymentsDir(Directory):
     @classmethod
-    def create(cls, *, payload: Payload, context: Context):
+    def create(cls, *, payload: Payload, context: Context, namespace: str = None):
         self = cls(payload=payload)
+        self.namespace = namespace
         self.client = KubeClientCache.get_client(context=context.name)
         return self
 
@@ -56,7 +58,7 @@ class KubeClusterDeploymentsDir(Directory):
         if not self._lazy_entries:
             files = []
 
-            deployments = self.client.list_deployments_from_all_namespaces()
+            deployments = self.client.get_deployments(namespace=self.namespace)
             for deployment in deployments:
                 payload = mkpayload(
                     api_version="apps/v1", kind="Deployment", obj=deployment
@@ -70,8 +72,9 @@ class KubeClusterDeploymentsDir(Directory):
 
 class KubeClusterEndpointsDir(Directory):
     @classmethod
-    def create(cls, *, payload: Payload, context: Context):
+    def create(cls, *, payload: Payload, context: Context, namespace: str = None):
         self = cls(payload=payload)
+        self.namespace = namespace
         self.client = KubeClientCache.get_client(context=context.name)
         return self
 
@@ -79,7 +82,7 @@ class KubeClusterEndpointsDir(Directory):
         if not self._lazy_entries:
             files = []
 
-            endpoints = self.client.list_endpoints_from_all_namespaces()
+            endpoints = self.client.get_endpoints(namespace=self.namespace)
             for endpoint in endpoints:
                 payload = mkpayload(api_version="v1", kind="Endpoints", obj=endpoint)
                 files.append(File(payload=payload))
@@ -100,7 +103,7 @@ class KubeClusterNodesDir(Directory):
         if not self._lazy_entries:
             files = []
 
-            nodes = self.client.list_nodes()
+            nodes = self.client.get_nodes()
             for node in nodes:
                 payload = mkpayload(api_version="v1", kind="Node", obj=node)
                 files.append(File(payload=payload))
@@ -110,10 +113,46 @@ class KubeClusterNodesDir(Directory):
         return self._lazy_entries
 
 
+class KubeClusterNamespaceDir(Directory):
+    @classmethod
+    def create(cls, *, payload: Payload, context: Context, namespace: str = None):
+        self = cls(payload=payload)
+        self.context = context
+        self.namespace = namespace
+        self.client = KubeClientCache.get_client(context=context.name)
+        return self
+
+    def get_entries(self):
+        if not self._lazy_entries:
+            dirs = []
+
+            types = {
+                "configmaps": KubeClusterConfigMapsDir,
+                "deployments": KubeClusterDeploymentsDir,
+                "endpoints": KubeClusterEndpointsDir,
+                "pods": KubeClusterPodsDir,
+                "replicasets": KubeClusterReplicaSetsDir,
+                "secrets": KubeClusterSecretsDir,
+                "services": KubeClusterServicesDir,
+            }
+
+            for name, cls in types.items():
+                payload = Payload(name=name)
+                dir = cls.create(
+                    payload=payload, context=self.context, namespace=self.namespace
+                )
+                dirs.append(dir)
+
+            self._lazy_entries = dirs
+
+        return self._lazy_entries
+
+
 class KubeClusterNamespacesDir(Directory):
     @classmethod
     def create(cls, *, payload: Payload, context: Context):
         self = cls(payload=payload)
+        self.context = context
         self.client = KubeClientCache.get_client(context=context.name)
         return self
 
@@ -121,10 +160,15 @@ class KubeClusterNamespacesDir(Directory):
         if not self._lazy_entries:
             files = []
 
-            namespaces = self.client.list_namespaces()
+            namespaces = self.client.get_namespaces()
             for namespace in namespaces:
-                payload = mkpayload(api_version="v1", kind="Namespace", obj=namespace)
-                files.append(File(payload=payload))
+                name = namespace.metadata.name
+                payload = Payload(name=name)
+                files.append(
+                    KubeClusterNamespaceDir.create(
+                        payload=payload, context=self.context, namespace=name
+                    )
+                )
 
             self._lazy_entries = files
 
@@ -133,16 +177,17 @@ class KubeClusterNamespacesDir(Directory):
 
 class KubeClusterPodsDir(Directory):
     @classmethod
-    def create(cls, *, payload: Payload, context: Context):
+    def create(cls, *, payload: Payload, context: Context, namespace: str = None):
         self = cls(payload=payload)
         self.client = KubeClientCache.get_client(context=context.name)
+        self.namespace = namespace
         return self
 
     def get_entries(self):
         if not self._lazy_entries:
             files = []
 
-            pods = self.client.list_pods_from_all_namespaces()
+            pods = self.client.get_pods(namespace=self.namespace)
             for pod in pods:
                 payload = mkpayload(api_version="v1", kind="Pod", obj=pod)
                 files.append(File(payload=payload))
@@ -154,8 +199,9 @@ class KubeClusterPodsDir(Directory):
 
 class KubeClusterReplicaSetsDir(Directory):
     @classmethod
-    def create(cls, *, payload: Payload, context: Context):
+    def create(cls, *, payload: Payload, context: Context, namespace: str = None):
         self = cls(payload=payload)
+        self.namespace = namespace
         self.client = KubeClientCache.get_client(context=context.name)
         return self
 
@@ -163,7 +209,7 @@ class KubeClusterReplicaSetsDir(Directory):
         if not self._lazy_entries:
             files = []
 
-            replicasets = self.client.list_replicasets_from_all_namespaces()
+            replicasets = self.client.get_replicasets(namespace=self.namespace)
             for replicaset in replicasets:
                 payload = mkpayload(
                     api_version="apps/v1", kind="ReplicaSet", obj=replicaset
@@ -177,8 +223,9 @@ class KubeClusterReplicaSetsDir(Directory):
 
 class KubeClusterSecretsDir(Directory):
     @classmethod
-    def create(cls, *, payload: Payload, context: Context):
+    def create(cls, *, payload: Payload, context: Context, namespace: str = None):
         self = cls(payload=payload)
+        self.namespace = namespace
         self.client = KubeClientCache.get_client(context=context.name)
         return self
 
@@ -186,7 +233,7 @@ class KubeClusterSecretsDir(Directory):
         if not self._lazy_entries:
             files = []
 
-            secrets = self.client.list_secrets_from_all_namespaces()
+            secrets = self.client.get_secrets(namespace=self.namespace)
             for secret in secrets:
                 payload = mkpayload(api_version="v1", kind="Secret", obj=secret)
                 files.append(File(payload=payload))
@@ -198,8 +245,9 @@ class KubeClusterSecretsDir(Directory):
 
 class KubeClusterServicesDir(Directory):
     @classmethod
-    def create(cls, *, payload: Payload, context: Context):
+    def create(cls, *, payload: Payload, context: Context, namespace: str = None):
         self = cls(payload=payload)
+        self.namespace = namespace
         self.client = KubeClientCache.get_client(context=context.name)
         return self
 
@@ -207,7 +255,7 @@ class KubeClusterServicesDir(Directory):
         if not self._lazy_entries:
             files = []
 
-            services = self.client.list_services_from_all_namespaces()
+            services = self.client.get_services(namespace=self.namespace)
             for service in services:
                 payload = mkpayload(api_version="v1", kind="Service", obj=service)
                 files.append(File(payload=payload))
