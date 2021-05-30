@@ -49,6 +49,10 @@ $ head ~/kubeview/clusters/minikube/pods/etcd-minikube
 ...
 ```
 
+Behind the scenes, `kubefs` makes requests to the k8s API server to fetch all
+these objects and populate the filesystem. This can be slow, so directory
+entries are cached for 60 seconds.
+
 
 ## Quickstart
 
