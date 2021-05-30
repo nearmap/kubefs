@@ -1,4 +1,4 @@
-from kubefs.fs_model import Directory, File
+from kubefs.fs_model import Directory, File, Payload
 from kubefs.fs_kubecluster import (
     KubeClusterConfigMapsDir,
     KubeClusterDeploymentsDir,
@@ -15,8 +15,8 @@ from kubefs.kubeconfig import Context, User, KubeConfigLoader, Cluster
 
 class KubeConfigClusterDir(Directory):
     @classmethod
-    def create(cls, *, name: str, cluster: Cluster):
-        self = cls(name=name)
+    def create(cls, *, payload: Payload, cluster: Cluster):
+        self = cls(payload=payload)
         self.cluster = cluster
         return self
 
@@ -37,7 +37,8 @@ class KubeConfigClusterDir(Directory):
             }
 
             for name, cls in types.items():
-                dir = cls.create(name=name, context=self.cluster.get_context())
+                payload = Payload(name=name)
+                dir = cls.create(payload=payload, context=self.cluster.get_context())
                 dirs.append(dir)
 
             self._lazy_entries = dirs
@@ -47,8 +48,8 @@ class KubeConfigClusterDir(Directory):
 
 class KubeConfigClustersDir(Directory):
     @classmethod
-    def create(cls, *, name: str, loader: KubeConfigLoader):
-        self = cls(name=name)
+    def create(cls, *, payload: Payload, loader: KubeConfigLoader):
+        self = cls(payload=payload)
         self.loader = loader
         return self
 
@@ -58,7 +59,13 @@ class KubeConfigClustersDir(Directory):
 
             dirs = []
             for cluster in clusters:
-                dir = KubeConfigClusterDir.create(name=cluster.name, cluster=cluster)
+                payload = Payload(
+                    name=cluster.name,
+                    ctime=cluster.ctime,
+                    mtime=cluster.mtime,
+                    atime=cluster.atime,
+                )
+                dir = KubeConfigClusterDir.create(payload=payload, cluster=cluster)
                 dirs.append(dir)
 
             self._lazy_entries = dirs
@@ -68,8 +75,8 @@ class KubeConfigClustersDir(Directory):
 
 class KubeConfigContextDir(Directory):
     @classmethod
-    def create(cls, *, name: str, context: Context):
-        self = cls(name=name)
+    def create(cls, *, payload: Payload, context: Context):
+        self = cls(payload=payload)
         self.context = context
         return self
 
@@ -79,12 +86,14 @@ class KubeConfigContextDir(Directory):
 
             cluster = self.context.get_cluster()
             if cluster:
-                dir = KubeConfigClusterDir.create(name="cluster", cluster=cluster)
+                payload = Payload(name="cluster")
+                dir = KubeConfigClusterDir.create(payload=payload, cluster=cluster)
                 dirs.append(dir)
 
             user = self.context.get_user()
             if user:
-                dir = KubeConfigUserDir.create(name="user", user=user)
+                payload = Payload(name="user")
+                dir = KubeConfigUserDir.create(payload=payload, user=user)
                 dirs.append(dir)
 
             self._lazy_entries = dirs
@@ -94,8 +103,8 @@ class KubeConfigContextDir(Directory):
 
 class KubeConfigContextsDir(Directory):
     @classmethod
-    def create(cls, *, name: str, loader: KubeConfigLoader):
-        self = cls(name=name)
+    def create(cls, *, payload: Payload, loader: KubeConfigLoader):
+        self = cls(payload=payload)
         self.loader = loader
         return self
 
@@ -105,7 +114,13 @@ class KubeConfigContextsDir(Directory):
 
             dirs = []
             for context in contexts:
-                dir = KubeConfigContextDir.create(name=context.name, context=context)
+                payload = Payload(
+                    name=context.name,
+                    ctime=context.ctime,
+                    mtime=context.mtime,
+                    atime=context.atime,
+                )
+                dir = KubeConfigContextDir.create(payload=payload, context=context)
                 dirs.append(dir)
 
             self._lazy_entries = dirs
@@ -119,8 +134,8 @@ class KubeConfigUserDir(Directory):
     kube config."""
 
     @classmethod
-    def create(cls, *, name: str, user: User):
-        self = cls(name=name)
+    def create(cls, *, payload: Payload, user: User):
+        self = cls(payload=payload)
         self.user = user
         return self
 
@@ -131,7 +146,14 @@ class KubeConfigUserDir(Directory):
             for attname in self.user.get_attribute_names():
                 value = self.user.get_attribute(attname)
                 if value is not None:
-                    file = File(name=attname, contents=value.encode())
+                    payload = Payload(
+                        name=attname,
+                        data=value.encode(),
+                        ctime=self.user.ctime,
+                        mtime=self.user.mtime,
+                        atime=self.user.atime,
+                    )
+                    file = File(payload=payload)
                     files.append(file)
 
             self._lazy_entries = files
@@ -144,8 +166,8 @@ class KubeConfigUsersDir(Directory):
     config. Each entry is itself a directory containing files."""
 
     @classmethod
-    def create(cls, *, name: str, loader: KubeConfigLoader):
-        self = cls(name=name)
+    def create(cls, *, payload: Payload, loader: KubeConfigLoader):
+        self = cls(payload=payload)
         self.loader = loader
         return self
 
@@ -155,7 +177,13 @@ class KubeConfigUsersDir(Directory):
 
             dirs = []
             for user in users:
-                dir = KubeConfigUserDir.create(name=user.name, user=user)
+                payload = Payload(
+                    name=user.name,
+                    ctime=user.ctime,
+                    mtime=user.mtime,
+                    atime=user.atime,
+                )
+                dir = KubeConfigUserDir.create(payload=payload, user=user)
                 dirs.append(dir)
 
             self._lazy_entries = dirs

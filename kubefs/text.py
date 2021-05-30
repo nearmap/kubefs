@@ -1,8 +1,9 @@
+from typing import Any, Dict
 import datetime
 import json
 
 
-def to_json(obj) -> str:
+def to_json(obj: Any) -> str:
     def default(obj):
         if isinstance(obj, (datetime.date, datetime.date)):
             return obj.isoformat()
@@ -11,7 +12,7 @@ def to_json(obj) -> str:
     return block + "\n"
 
 
-def to_dict(obj):
+def to_dict(obj: Any) -> Dict[Any, Any]:
     """Patched version of v1_pod.V1Pod.to_dict() to avoid serializing fields
     whose value is None."""
 
@@ -44,13 +45,3 @@ def to_dict(obj):
             result[attr] = value
 
     return result
-
-
-def serialize_kube_obj(*, api_version, kind, obj):
-    # set these on the object because they may not be set when the kube REST api
-    # returns collections of objects
-    obj.api_version = api_version
-    obj.kind = kind
-
-    block = to_json(to_dict(obj))
-    return block

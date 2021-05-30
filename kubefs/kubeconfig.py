@@ -4,14 +4,42 @@ import logging
 import yaml
 
 
+class YamlDoc:
+    def __init__(
+        self,
+        *,
+        doc: Dict[Any, Any],
+        ctime: float = None,
+        mtime: float = None,
+        atime: float = None,
+    ) -> None:
+        self.doc = doc
+        self.ctime = ctime
+        self.mtime = mtime
+        self.atime = atime
+
+
 class Context:
-    def __init__(self, context_dct, loader) -> None:
+    def __init__(self, yaml_doc, context_dct, loader) -> None:
+        self.yaml_doc = yaml_doc
         self.context_dct = context_dct
         self.loader = loader
 
     @property
     def name(self):
         return self.context_dct.get("name")
+
+    @property
+    def ctime(self):
+        return self.yaml_doc.ctime
+
+    @property
+    def mtime(self):
+        return self.yaml_doc.mtime
+
+    @property
+    def atime(self):
+        return self.yaml_doc.atime
 
     @property
     def cluster_name(self):
@@ -29,7 +57,8 @@ class Context:
 
 
 class Cluster:
-    def __init__(self, cluster_dct, loader) -> None:
+    def __init__(self, yaml_doc, cluster_dct, loader) -> None:
+        self.yaml_doc = yaml_doc
         self.cluster_dct = cluster_dct
         self.loader = loader
 
@@ -37,17 +66,42 @@ class Cluster:
     def name(self):
         return self.cluster_dct.get("name")
 
+    @property
+    def ctime(self):
+        return self.yaml_doc.ctime
+
+    @property
+    def mtime(self):
+        return self.yaml_doc.mtime
+
+    @property
+    def atime(self):
+        return self.yaml_doc.atime
+
     def get_context(self) -> Context:
         return self.loader.get_context_by_cluster(self.name)
 
 
 class User:
-    def __init__(self, user_dct) -> None:
+    def __init__(self, yaml_doc, user_dct) -> None:
+        self.yaml_doc = yaml_doc
         self.user_dct = user_dct
 
     @property
     def name(self):
         return self.user_dct.get("name")
+
+    @property
+    def ctime(self):
+        return self.yaml_doc.ctime
+
+    @property
+    def mtime(self):
+        return self.yaml_doc.mtime
+
+    @property
+    def atime(self):
+        return self.yaml_doc.atime
 
     def get_attribute_names(self):
         return list(self.user_dct["user"].keys())
@@ -89,7 +143,7 @@ class KubeConfigLoader:
 
         return fps
 
-    def get_all_documents(self) -> Iterable[Dict[Any, Any]]:
+    def get_all_documents(self) -> Iterable[YamlDoc]:
         for fp in self.detect_kubeconfig_files():
             with open(fp, "rb") as fl:
                 try:
@@ -105,22 +159,25 @@ class KubeConfigLoader:
                 )
                 continue
 
-            yield doc
+            st = os.stat(fp)
+            yield YamlDoc(
+                doc=doc, ctime=st.st_ctime, mtime=st.st_mtime, atime=st.st_atime
+            )
 
     def get_all_clusters(self) -> Iterable[Cluster]:
-        for doc in self.get_all_documents():
-            for cluster_dct in doc.get("clusters"):
-                yield Cluster(cluster_dct, self)
+        for yaml_doc in self.get_all_documents():
+            for cluster_dct in yaml_doc.doc.get("clusters"):
+                yield Cluster(yaml_doc, cluster_dct, self)
 
     def get_all_contexts(self) -> Iterable[Context]:
-        for doc in self.get_all_documents():
-            for context_dct in doc.get("contexts"):
-                yield Context(context_dct, self)
+        for yaml_doc in self.get_all_documents():
+            for context_dct in yaml_doc.doc.get("contexts"):
+                yield Context(yaml_doc, context_dct, self)
 
     def get_all_users(self) -> Iterable[User]:
-        for doc in self.get_all_documents():
-            for user_dct in doc.get("users"):
-                yield User(user_dct)
+        for yaml_doc in self.get_all_documents():
+            for user_dct in yaml_doc.doc.get("users"):
+                yield User(yaml_doc, user_dct)
 
     def get_cluster(self, cluster_name) -> Cluster:
         for cluster in self.get_all_clusters():

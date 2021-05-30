@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-from kubefs.fs_model import Directory
+
+from kubefs.fs_model import Directory, Payload
 from kubefs.fs_kubeconfig import (
     KubeConfigUsersDir,
     KubeConfigClustersDir,
@@ -12,21 +13,8 @@ import errno
 
 import fuse
 
-from kubefs import kubeconfig
-
 
 class KubernetesFs(fuse.LoggingMixIn, fuse.Operations):
-    _loader = KubeConfigLoader.get_instance()
-
-    tree = Directory(
-        name="",
-        entries=[
-            KubeConfigClustersDir.create(name="clusters", loader=_loader),
-            KubeConfigContextsDir.create(name="contexts", loader=_loader),
-            KubeConfigUsersDir.create(name="users", loader=_loader),
-        ],
-    )
-
     constant_entries = [
         ".",
         "..",
@@ -34,6 +22,20 @@ class KubernetesFs(fuse.LoggingMixIn, fuse.Operations):
 
     def __init__(self):
         self.basepath = os.sep
+
+        loader = KubeConfigLoader.get_instance()
+        self.tree = Directory(
+            payload=Payload(name=""),
+            entries=[
+                KubeConfigClustersDir.create(
+                    payload=Payload(name="clusters"), loader=loader
+                ),
+                KubeConfigContextsDir.create(
+                    payload=Payload(name="contexts"), loader=loader
+                ),
+                KubeConfigUsersDir.create(payload=Payload(name="users"), loader=loader),
+            ],
+        )
 
     def find_matching_entry(self, path):
         if path == os.sep:

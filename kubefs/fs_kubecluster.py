@@ -1,13 +1,33 @@
-from kubefs.fs_model import Directory, File
+from kubefs.fs_model import Directory, File, Payload
 from kubefs.kubeconfig import Context
 from kubefs.kubeclient import KubeClientCache
-from kubefs.text import serialize_kube_obj
+from kubefs.text import to_dict, to_json
+
+
+def mkpayload(*, api_version, kind, obj):
+    # set these on the object because they may not be set when the kube REST api
+    # returns collections of objects
+    obj.api_version = api_version
+    obj.kind = kind
+
+    block = to_json(to_dict(obj))
+
+    timestamp = obj.metadata.creation_timestamp.timestamp()
+
+    payload = Payload(
+        name=obj.metadata.name,
+        data=block.encode(),
+        ctime=timestamp,
+        mtime=timestamp,
+    )
+
+    return payload
 
 
 class KubeClusterConfigMapsDir(Directory):
     @classmethod
-    def create(cls, *, name: str, context: Context):
-        self = cls(name=name)
+    def create(cls, *, payload: Payload, context: Context):
+        self = cls(payload=payload)
         self.client = KubeClientCache.get_client(context=context.name)
         return self
 
@@ -17,12 +37,8 @@ class KubeClusterConfigMapsDir(Directory):
 
             configmaps = self.client.list_configmaps_from_all_namespaces()
             for configmap in configmaps:
-                block = serialize_kube_obj(
-                    api_version="v1", kind="ConfigMap", obj=configmap
-                )
-                files.append(
-                    File(name=configmap.metadata.name, contents=block.encode())
-                )
+                payload = mkpayload(api_version="v1", kind="ConfigMap", obj=configmap)
+                files.append(File(payload=payload))
 
             self._lazy_entries = files
 
@@ -31,8 +47,8 @@ class KubeClusterConfigMapsDir(Directory):
 
 class KubeClusterDeploymentsDir(Directory):
     @classmethod
-    def create(cls, *, name: str, context: Context):
-        self = cls(name=name)
+    def create(cls, *, payload: Payload, context: Context):
+        self = cls(payload=payload)
         self.client = KubeClientCache.get_client(context=context.name)
         return self
 
@@ -42,12 +58,10 @@ class KubeClusterDeploymentsDir(Directory):
 
             deployments = self.client.list_deployments_from_all_namespaces()
             for deployment in deployments:
-                block = serialize_kube_obj(
+                payload = mkpayload(
                     api_version="apps/v1", kind="Deployment", obj=deployment
                 )
-                files.append(
-                    File(name=deployment.metadata.name, contents=block.encode())
-                )
+                files.append(File(payload=payload))
 
             self._lazy_entries = files
 
@@ -56,8 +70,8 @@ class KubeClusterDeploymentsDir(Directory):
 
 class KubeClusterEndpointsDir(Directory):
     @classmethod
-    def create(cls, *, name: str, context: Context):
-        self = cls(name=name)
+    def create(cls, *, payload: Payload, context: Context):
+        self = cls(payload=payload)
         self.client = KubeClientCache.get_client(context=context.name)
         return self
 
@@ -67,10 +81,8 @@ class KubeClusterEndpointsDir(Directory):
 
             endpoints = self.client.list_endpoints_from_all_namespaces()
             for endpoint in endpoints:
-                block = serialize_kube_obj(
-                    api_version="v1", kind="Endpoints", obj=endpoint
-                )
-                files.append(File(name=endpoint.metadata.name, contents=block.encode()))
+                payload = mkpayload(api_version="v1", kind="Endpoints", obj=endpoint)
+                files.append(File(payload=payload))
 
             self._lazy_entries = files
 
@@ -79,8 +91,8 @@ class KubeClusterEndpointsDir(Directory):
 
 class KubeClusterNodesDir(Directory):
     @classmethod
-    def create(cls, *, name: str, context: Context):
-        self = cls(name=name)
+    def create(cls, *, payload: Payload, context: Context):
+        self = cls(payload=payload)
         self.client = KubeClientCache.get_client(context=context.name)
         return self
 
@@ -90,8 +102,8 @@ class KubeClusterNodesDir(Directory):
 
             nodes = self.client.list_nodes()
             for node in nodes:
-                block = serialize_kube_obj(api_version="v1", kind="Node", obj=node)
-                files.append(File(name=node.metadata.name, contents=block.encode()))
+                payload = mkpayload(api_version="v1", kind="Node", obj=node)
+                files.append(File(payload=payload))
 
             self._lazy_entries = files
 
@@ -100,8 +112,8 @@ class KubeClusterNodesDir(Directory):
 
 class KubeClusterNamespacesDir(Directory):
     @classmethod
-    def create(cls, *, name: str, context: Context):
-        self = cls(name=name)
+    def create(cls, *, payload: Payload, context: Context):
+        self = cls(payload=payload)
         self.client = KubeClientCache.get_client(context=context.name)
         return self
 
@@ -111,12 +123,8 @@ class KubeClusterNamespacesDir(Directory):
 
             namespaces = self.client.list_namespaces()
             for namespace in namespaces:
-                block = serialize_kube_obj(
-                    api_version="v1", kind="Namespace", obj=namespace
-                )
-                files.append(
-                    File(name=namespace.metadata.name, contents=block.encode())
-                )
+                payload = mkpayload(api_version="v1", kind="Namespace", obj=namespace)
+                files.append(File(payload=payload))
 
             self._lazy_entries = files
 
@@ -125,8 +133,8 @@ class KubeClusterNamespacesDir(Directory):
 
 class KubeClusterPodsDir(Directory):
     @classmethod
-    def create(cls, *, name: str, context: Context):
-        self = cls(name=name)
+    def create(cls, *, payload: Payload, context: Context):
+        self = cls(payload=payload)
         self.client = KubeClientCache.get_client(context=context.name)
         return self
 
@@ -136,8 +144,8 @@ class KubeClusterPodsDir(Directory):
 
             pods = self.client.list_pods_from_all_namespaces()
             for pod in pods:
-                block = serialize_kube_obj(api_version="v1", kind="Pod", obj=pod)
-                files.append(File(name=pod.metadata.name, contents=block.encode()))
+                payload = mkpayload(api_version="v1", kind="Pod", obj=pod)
+                files.append(File(payload=payload))
 
             self._lazy_entries = files
 
@@ -146,8 +154,8 @@ class KubeClusterPodsDir(Directory):
 
 class KubeClusterReplicaSetsDir(Directory):
     @classmethod
-    def create(cls, *, name: str, context: Context):
-        self = cls(name=name)
+    def create(cls, *, payload: Payload, context: Context):
+        self = cls(payload=payload)
         self.client = KubeClientCache.get_client(context=context.name)
         return self
 
@@ -157,12 +165,10 @@ class KubeClusterReplicaSetsDir(Directory):
 
             replicasets = self.client.list_replicasets_from_all_namespaces()
             for replicaset in replicasets:
-                block = serialize_kube_obj(
+                payload = mkpayload(
                     api_version="apps/v1", kind="ReplicaSet", obj=replicaset
                 )
-                files.append(
-                    File(name=replicaset.metadata.name, contents=block.encode())
-                )
+                files.append(File(payload=payload))
 
             self._lazy_entries = files
 
@@ -171,8 +177,8 @@ class KubeClusterReplicaSetsDir(Directory):
 
 class KubeClusterSecretsDir(Directory):
     @classmethod
-    def create(cls, *, name: str, context: Context):
-        self = cls(name=name)
+    def create(cls, *, payload: Payload, context: Context):
+        self = cls(payload=payload)
         self.client = KubeClientCache.get_client(context=context.name)
         return self
 
@@ -182,8 +188,8 @@ class KubeClusterSecretsDir(Directory):
 
             secrets = self.client.list_secrets_from_all_namespaces()
             for secret in secrets:
-                block = serialize_kube_obj(api_version="v1", kind="Secret", obj=secret)
-                files.append(File(name=secret.metadata.name, contents=block.encode()))
+                payload = mkpayload(api_version="v1", kind="Secret", obj=secret)
+                files.append(File(payload=payload))
 
             self._lazy_entries = files
 
@@ -192,8 +198,8 @@ class KubeClusterSecretsDir(Directory):
 
 class KubeClusterServicesDir(Directory):
     @classmethod
-    def create(cls, *, name: str, context: Context):
-        self = cls(name=name)
+    def create(cls, *, payload: Payload, context: Context):
+        self = cls(payload=payload)
         self.client = KubeClientCache.get_client(context=context.name)
         return self
 
@@ -203,10 +209,8 @@ class KubeClusterServicesDir(Directory):
 
             services = self.client.list_services_from_all_namespaces()
             for service in services:
-                block = serialize_kube_obj(
-                    api_version="v1", kind="Service", obj=service
-                )
-                files.append(File(name=service.metadata.name, contents=block.encode()))
+                payload = mkpayload(api_version="v1", kind="Service", obj=service)
+                files.append(File(payload=payload))
 
             self._lazy_entries = files
 
