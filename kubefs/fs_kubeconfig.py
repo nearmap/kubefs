@@ -21,7 +21,7 @@ class KubeConfigClusterDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             dirs = []
 
             types = {
@@ -41,9 +41,9 @@ class KubeConfigClusterDir(Directory):
                 dir = cls.create(payload=payload, context=self.cluster.get_context())
                 dirs.append(dir)
 
-            self._lazy_entries = dirs
+            self.lazy_entries = dirs
 
-        return self._lazy_entries
+        return self.lazy_entries
 
 
 class KubeConfigClustersDir(Directory):
@@ -54,7 +54,7 @@ class KubeConfigClustersDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             clusters = self.loader.get_all_clusters()
 
             dirs = []
@@ -68,9 +68,9 @@ class KubeConfigClustersDir(Directory):
                 dir = KubeConfigClusterDir.create(payload=payload, cluster=cluster)
                 dirs.append(dir)
 
-            self._lazy_entries = dirs
+            self.lazy_entries = dirs
 
-        return self._lazy_entries
+        return self.lazy_entries
 
 
 class KubeConfigContextDir(Directory):
@@ -81,7 +81,7 @@ class KubeConfigContextDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             dirs = []
 
             cluster = self.context.get_cluster()
@@ -96,9 +96,9 @@ class KubeConfigContextDir(Directory):
                 dir = KubeConfigUserDir.create(payload=payload, user=user)
                 dirs.append(dir)
 
-            self._lazy_entries = dirs
+            self.lazy_entries = dirs
 
-        return self._lazy_entries
+        return self.lazy_entries
 
 
 class KubeConfigContextsDir(Directory):
@@ -109,7 +109,7 @@ class KubeConfigContextsDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             contexts = self.loader.get_all_contexts()
 
             dirs = []
@@ -123,9 +123,9 @@ class KubeConfigContextsDir(Directory):
                 dir = KubeConfigContextDir.create(payload=payload, context=context)
                 dirs.append(dir)
 
-            self._lazy_entries = dirs
+            self.lazy_entries = dirs
 
-        return self._lazy_entries
+        return self.lazy_entries
 
 
 class KubeConfigUserDir(Directory):
@@ -140,7 +140,7 @@ class KubeConfigUserDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             files = []
 
             for attname in self.user.get_attribute_names():
@@ -156,9 +156,9 @@ class KubeConfigUserDir(Directory):
                     file = File(payload=payload)
                     files.append(file)
 
-            self._lazy_entries = files
+            self.lazy_entries = files
 
-        return self._lazy_entries
+        return self.lazy_entries
 
 
 class KubeConfigUsersDir(Directory):
@@ -172,7 +172,7 @@ class KubeConfigUsersDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             users = self.loader.get_all_users()
 
             dirs = []
@@ -186,6 +186,6 @@ class KubeConfigUsersDir(Directory):
                 dir = KubeConfigUserDir.create(payload=payload, user=user)
                 dirs.append(dir)
 
-            self._lazy_entries = dirs
+            self.lazy_entries = dirs
 
-        return self._lazy_entries
+        return self.lazy_entries

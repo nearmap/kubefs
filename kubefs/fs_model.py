@@ -1,7 +1,11 @@
 from typing import Iterable, Dict, List, Union
+import logging
 import stat
 import time
 import os
+
+
+logger = logging.getLogger("fs_model")
 
 
 class Payload:
@@ -45,7 +49,10 @@ class Directory(AbstractEntry):
     ) -> None:
         self.name = payload.name
         self._entries = entries or []
-        self._lazy_entries = []  # lazy
+
+        self._lazy_entries = []
+        self._lazy_entries_loaded_time = 0
+        self._lazy_entries_lifetime = 60  # in seconds
 
         self.atts = dict(
             st_mode=(stat.S_IFDIR | 0o755),
@@ -57,6 +64,34 @@ class Directory(AbstractEntry):
             st_uid=payload.uid,
             st_gid=payload.gid,
         )
+
+    @property
+    def lazy_entries(self):
+        if not self._lazy_entries:
+            return []
+
+        elapsed = time.time() - self._lazy_entries_loaded_time
+        if elapsed > self._lazy_entries_lifetime:
+            logger.debug(
+                "dir %r cached entries expired (%ds elapsed > %ds lifetime)",
+                self.name,
+                elapsed,
+                self._lazy_entries_lifetime,
+            )
+            return []
+
+        logger.debug(
+            "dir %r returning cached entries (%ds since last load < %ds lifetime)",
+            self.name,
+            elapsed,
+            self._lazy_entries_lifetime,
+        )
+        return self._lazy_entries
+
+    @lazy_entries.setter
+    def lazy_entries(self, entries):
+        self._lazy_entries = entries
+        self._lazy_entries_loaded_time = time.time()
 
     def get_entries(self) -> Iterable[AbstractEntry]:
         return self._entries

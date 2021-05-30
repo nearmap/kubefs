@@ -33,7 +33,7 @@ class KubeClusterConfigMapsDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             files = []
 
             configmaps = self.client.get_configmaps(namespace=self.namespace)
@@ -41,9 +41,9 @@ class KubeClusterConfigMapsDir(Directory):
                 payload = mkpayload(api_version="v1", kind="ConfigMap", obj=configmap)
                 files.append(File(payload=payload))
 
-            self._lazy_entries = files
+            self.lazy_entries = files
 
-        return self._lazy_entries
+        return self.lazy_entries
 
 
 class KubeClusterDeploymentsDir(Directory):
@@ -55,7 +55,7 @@ class KubeClusterDeploymentsDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             files = []
 
             deployments = self.client.get_deployments(namespace=self.namespace)
@@ -65,9 +65,9 @@ class KubeClusterDeploymentsDir(Directory):
                 )
                 files.append(File(payload=payload))
 
-            self._lazy_entries = files
+            self.lazy_entries = files
 
-        return self._lazy_entries
+        return self.lazy_entries
 
 
 class KubeClusterEndpointsDir(Directory):
@@ -79,7 +79,7 @@ class KubeClusterEndpointsDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             files = []
 
             endpoints = self.client.get_endpoints(namespace=self.namespace)
@@ -87,9 +87,9 @@ class KubeClusterEndpointsDir(Directory):
                 payload = mkpayload(api_version="v1", kind="Endpoints", obj=endpoint)
                 files.append(File(payload=payload))
 
-            self._lazy_entries = files
+            self.lazy_entries = files
 
-        return self._lazy_entries
+        return self.lazy_entries
 
 
 class KubeClusterNodesDir(Directory):
@@ -100,7 +100,7 @@ class KubeClusterNodesDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             files = []
 
             nodes = self.client.get_nodes()
@@ -108,9 +108,9 @@ class KubeClusterNodesDir(Directory):
                 payload = mkpayload(api_version="v1", kind="Node", obj=node)
                 files.append(File(payload=payload))
 
-            self._lazy_entries = files
+            self.lazy_entries = files
 
-        return self._lazy_entries
+        return self.lazy_entries
 
 
 class KubeClusterNamespaceDir(Directory):
@@ -123,7 +123,7 @@ class KubeClusterNamespaceDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             dirs = []
 
             types = {
@@ -143,9 +143,9 @@ class KubeClusterNamespaceDir(Directory):
                 )
                 dirs.append(dir)
 
-            self._lazy_entries = dirs
+            self.lazy_entries = dirs
 
-        return self._lazy_entries
+        return self.lazy_entries
 
 
 class KubeClusterNamespacesDir(Directory):
@@ -157,7 +157,7 @@ class KubeClusterNamespacesDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             files = []
 
             namespaces = self.client.get_namespaces()
@@ -170,9 +170,9 @@ class KubeClusterNamespacesDir(Directory):
                     )
                 )
 
-            self._lazy_entries = files
+            self.lazy_entries = files
 
-        return self._lazy_entries
+        return self.lazy_entries
 
 
 class KubeClusterPodsDir(Directory):
@@ -184,7 +184,7 @@ class KubeClusterPodsDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             files = []
 
             pods = self.client.get_pods(namespace=self.namespace)
@@ -192,9 +192,9 @@ class KubeClusterPodsDir(Directory):
                 payload = mkpayload(api_version="v1", kind="Pod", obj=pod)
                 files.append(File(payload=payload))
 
-            self._lazy_entries = files
+            self.lazy_entries = files
 
-        return self._lazy_entries
+        return self.lazy_entries
 
 
 class KubeClusterReplicaSetsDir(Directory):
@@ -206,7 +206,7 @@ class KubeClusterReplicaSetsDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             files = []
 
             replicasets = self.client.get_replicasets(namespace=self.namespace)
@@ -216,9 +216,9 @@ class KubeClusterReplicaSetsDir(Directory):
                 )
                 files.append(File(payload=payload))
 
-            self._lazy_entries = files
+            self.lazy_entries = files
 
-        return self._lazy_entries
+        return self.lazy_entries
 
 
 class KubeClusterSecretsDir(Directory):
@@ -230,7 +230,7 @@ class KubeClusterSecretsDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             files = []
 
             secrets = self.client.get_secrets(namespace=self.namespace)
@@ -238,9 +238,9 @@ class KubeClusterSecretsDir(Directory):
                 payload = mkpayload(api_version="v1", kind="Secret", obj=secret)
                 files.append(File(payload=payload))
 
-            self._lazy_entries = files
+            self.lazy_entries = files
 
-        return self._lazy_entries
+        return self.lazy_entries
 
 
 class KubeClusterServicesDir(Directory):
@@ -252,7 +252,7 @@ class KubeClusterServicesDir(Directory):
         return self
 
     def get_entries(self):
-        if not self._lazy_entries:
+        if not self.lazy_entries:
             files = []
 
             services = self.client.get_services(namespace=self.namespace)
@@ -260,6 +260,6 @@ class KubeClusterServicesDir(Directory):
                 payload = mkpayload(api_version="v1", kind="Service", obj=service)
                 files.append(File(payload=payload))
 
-            self._lazy_entries = files
+            self.lazy_entries = files
 
-        return self._lazy_entries
+        return self.lazy_entries
