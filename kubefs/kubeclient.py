@@ -30,6 +30,13 @@ class KubeClient:
             result = self.corev1_client.list_config_map_for_all_namespaces()
         return result.items
 
+    def get_daemonsets(self, *, namespace: str = None):
+        if namespace:
+            result = self.appsv1_client.list_namespaced_daemon_set(namespace)
+        else:
+            result = self.appsv1_client.list_daemon_set_for_all_namespaces()
+        return result.items
+
     def get_deployments(self, *, namespace: str = None):
         if namespace:
             result = self.appsv1_client.list_namespaced_deployment(namespace)

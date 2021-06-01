@@ -46,6 +46,30 @@ class KubeClusterConfigMapsDir(Directory):
         return self.lazy_entries
 
 
+class KubeClusterDaemonSetsDir(Directory):
+    @classmethod
+    def create(cls, *, payload: Payload, context: Context, namespace: str = None):
+        self = cls(payload=payload)
+        self.namespace = namespace
+        self.client = KubeClientCache.get_client(context=context.name)
+        return self
+
+    def get_entries(self):
+        if not self.lazy_entries:
+            files = []
+
+            daemonsets = self.client.get_daemonsets(namespace=self.namespace)
+            for daemonset in daemonsets:
+                payload = mkpayload(
+                    api_version="apps/v1", kind="DaemonSet", obj=daemonset
+                )
+                files.append(File(payload=payload))
+
+            self.lazy_entries = files
+
+        return self.lazy_entries
+
+
 class KubeClusterDeploymentsDir(Directory):
     @classmethod
     def create(cls, *, payload: Payload, context: Context, namespace: str = None):
@@ -128,6 +152,7 @@ class KubeClusterNamespaceDir(Directory):
 
             types = {
                 "configmaps": KubeClusterConfigMapsDir,
+                "daemonsets": KubeClusterDaemonSetsDir,
                 "deployments": KubeClusterDeploymentsDir,
                 "endpoints": KubeClusterEndpointsDir,
                 "pods": KubeClusterPodsDir,

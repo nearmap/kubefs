@@ -1,6 +1,7 @@
 from kubefs.fs_model import Directory, File, Payload
 from kubefs.fs_kubecluster import (
     KubeClusterConfigMapsDir,
+    KubeClusterDaemonSetsDir,
     KubeClusterDeploymentsDir,
     KubeClusterEndpointsDir,
     KubeClusterNamespacesDir,
@@ -26,6 +27,7 @@ class KubeConfigClusterDir(Directory):
 
             types = {
                 "configmaps": KubeClusterConfigMapsDir,
+                "daemonsets": KubeClusterDaemonSetsDir,
                 "deployments": KubeClusterDeploymentsDir,
                 "endpoints": KubeClusterEndpointsDir,
                 "namespaces": KubeClusterNamespacesDir,
