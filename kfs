@@ -2,7 +2,8 @@
 
 set -eu
 
-VENV_PATH=.ve/
+PROJ_PATH=$(cd $(dirname $0); pwd)
+VENV_PATH=${PROJ_PATH}/.ve/
 VENV_PYTHON=${VENV_PATH}bin/python
 VENV_PIP=${VENV_PATH}bin/pip
 
@@ -15,4 +16,5 @@ else
     ${VENV_PIP} install -r requirements.txt
 fi
 
+export PYTHONPATH=${PROJ_PATH}
 ${VENV_PYTHON} -m kubefs.main $@
