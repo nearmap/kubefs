@@ -28,7 +28,7 @@ class KubeClusterConfigMapsDir(Directory):
     @classmethod
     def create(cls, *, payload: Payload, context: Context, namespace: str = None):
         self = cls(payload=payload)
-        self.client = KubeClientCache.get_client(context=context.name)
+        self.client = KubeClientCache.get_client(context=context)
         self.namespace = namespace
         return self
 
@@ -51,7 +51,7 @@ class KubeClusterDaemonSetsDir(Directory):
     def create(cls, *, payload: Payload, context: Context, namespace: str = None):
         self = cls(payload=payload)
         self.namespace = namespace
-        self.client = KubeClientCache.get_client(context=context.name)
+        self.client = KubeClientCache.get_client(context=context)
         return self
 
     def get_entries(self):
@@ -75,7 +75,7 @@ class KubeClusterDeploymentsDir(Directory):
     def create(cls, *, payload: Payload, context: Context, namespace: str = None):
         self = cls(payload=payload)
         self.namespace = namespace
-        self.client = KubeClientCache.get_client(context=context.name)
+        self.client = KubeClientCache.get_client(context=context)
         return self
 
     def get_entries(self):
@@ -99,7 +99,7 @@ class KubeClusterEndpointsDir(Directory):
     def create(cls, *, payload: Payload, context: Context, namespace: str = None):
         self = cls(payload=payload)
         self.namespace = namespace
-        self.client = KubeClientCache.get_client(context=context.name)
+        self.client = KubeClientCache.get_client(context=context)
         return self
 
     def get_entries(self):
@@ -120,7 +120,7 @@ class KubeClusterNodesDir(Directory):
     @classmethod
     def create(cls, *, payload: Payload, context: Context):
         self = cls(payload=payload)
-        self.client = KubeClientCache.get_client(context=context.name)
+        self.client = KubeClientCache.get_client(context=context)
         return self
 
     def get_entries(self):
@@ -143,7 +143,7 @@ class KubeClusterNamespaceDir(Directory):
         self = cls(payload=payload)
         self.context = context
         self.namespace = namespace
-        self.client = KubeClientCache.get_client(context=context.name)
+        self.client = KubeClientCache.get_client(context=context)
         return self
 
     def get_entries(self):
@@ -178,7 +178,7 @@ class KubeClusterNamespacesDir(Directory):
     def create(cls, *, payload: Payload, context: Context):
         self = cls(payload=payload)
         self.context = context
-        self.client = KubeClientCache.get_client(context=context.name)
+        self.client = KubeClientCache.get_client(context=context)
         return self
 
     def get_entries(self):
@@ -204,7 +204,7 @@ class KubeClusterPodsDir(Directory):
     @classmethod
     def create(cls, *, payload: Payload, context: Context, namespace: str = None):
         self = cls(payload=payload)
-        self.client = KubeClientCache.get_client(context=context.name)
+        self.client = KubeClientCache.get_client(context=context)
         self.namespace = namespace
         return self
 
@@ -227,7 +227,7 @@ class KubeClusterReplicaSetsDir(Directory):
     def create(cls, *, payload: Payload, context: Context, namespace: str = None):
         self = cls(payload=payload)
         self.namespace = namespace
-        self.client = KubeClientCache.get_client(context=context.name)
+        self.client = KubeClientCache.get_client(context=context)
         return self
 
     def get_entries(self):
@@ -251,7 +251,7 @@ class KubeClusterSecretsDir(Directory):
     def create(cls, *, payload: Payload, context: Context, namespace: str = None):
         self = cls(payload=payload)
         self.namespace = namespace
-        self.client = KubeClientCache.get_client(context=context.name)
+        self.client = KubeClientCache.get_client(context=context)
         return self
 
     def get_entries(self):
@@ -273,7 +273,7 @@ class KubeClusterServicesDir(Directory):
     def create(cls, *, payload: Payload, context: Context, namespace: str = None):
         self = cls(payload=payload)
         self.namespace = namespace
-        self.client = KubeClientCache.get_client(context=context.name)
+        self.client = KubeClientCache.get_client(context=context)
         return self
 
     def get_entries(self):

@@ -8,11 +8,13 @@ class YamlDoc:
     def __init__(
         self,
         *,
+        filepath: str,
         doc: Dict[Any, Any],
         ctime: float = None,
         mtime: float = None,
         atime: float = None,
     ) -> None:
+        self.filepath = filepath
         self.doc = doc
         self.ctime = ctime
         self.mtime = mtime
@@ -20,10 +22,14 @@ class YamlDoc:
 
 
 class Context:
-    def __init__(self, yaml_doc, context_dct, loader) -> None:
+    def __init__(self, yaml_doc: YamlDoc, context_dct, loader) -> None:
         self.yaml_doc = yaml_doc
         self.context_dct = context_dct
         self.loader = loader
+
+    @property
+    def filepath(self):
+        return self.yaml_doc.filepath
 
     @property
     def name(self):
@@ -161,7 +167,11 @@ class KubeConfigLoader:
 
             st = os.stat(fp)
             yield YamlDoc(
-                doc=doc, ctime=st.st_ctime, mtime=st.st_mtime, atime=st.st_atime
+                filepath=fp,
+                doc=doc,
+                ctime=st.st_ctime,
+                mtime=st.st_mtime,
+                atime=st.st_atime,
             )
 
     def get_all_clusters(self) -> Iterable[Cluster]:
