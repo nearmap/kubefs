@@ -1,6 +1,6 @@
-from typing import Any, Dict
 import datetime
 import json
+from typing import Any, Dict
 
 
 def to_json(obj: Any) -> str:

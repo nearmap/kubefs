@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 
-from kubefs.fs_model import Directory, Payload
-from kubefs.fs_kubeconfig import (
-    KubeConfigUsersDir,
-    KubeConfigClustersDir,
-    KubeConfigContextsDir,
-)
-from kubefs.kubeconfig import KubeConfigLoader
+import errno
 import logging
 import os
-import errno
 
 import fuse
+
+from kubefs.fs_kubeconfig import (
+    KubeConfigClustersDir,
+    KubeConfigContextsDir,
+    KubeConfigUsersDir,
+)
+from kubefs.fs_model import Directory, Payload
+from kubefs.kubeconfig import KubeConfigLoader
 
 
 class KubernetesFs(fuse.LoggingMixIn, fuse.Operations):

@@ -1,9 +1,8 @@
-from typing import Iterable, Dict, List, Union
 import logging
+import os
 import stat
 import time
-import os
-
+from typing import Dict, Iterable, List, Union
 
 logger = logging.getLogger("fs_model")
 

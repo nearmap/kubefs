@@ -1,5 +1,8 @@
-from kubefs.kubeconfig import Context
 from kubernetes import client, config
+from kubernetes.client.api_client import ApiClient
+from kubernetes.client.configuration import Configuration
+
+from kubefs.kubeconfig import Context
 
 
 class KubeClient:
@@ -9,9 +12,18 @@ class KubeClient:
         self._appsv1_client = None  # lazy
 
         self.std_kwargs = dict(
-            # connect: 3s, read: 15s
-            _request_timeout=(3, 15),
+            # connect: 2s, read: 15s
+            _request_timeout=(2, 15),
         )
+
+    def create_api_client(self) -> ApiClient:
+        # disable retries because we would rather have a more responsive fs than
+        # make the user wait while we retry in the background
+        configuration = Configuration.get_default_copy()
+        configuration.retries = 0
+
+        api_client = ApiClient(configuration=configuration)
+        return api_client
 
     @property
     def corev1_client(self):
@@ -19,7 +31,8 @@ class KubeClient:
             config.load_kube_config(
                 config_file=self.context.filepath, context=self.context.name
             )
-            self._corev1_client = client.CoreV1Api()
+            api_client = self.create_api_client()
+            self._corev1_client = client.CoreV1Api(api_client=api_client)
 
         return self._corev1_client
 
@@ -29,7 +42,8 @@ class KubeClient:
             config.load_kube_config(
                 config_file=self.context.filepath, context=self.context.name
             )
-            self._appsv1_client = client.AppsV1Api()
+            api_client = self.create_api_client()
+            self._appsv1_client = client.AppsV1Api(api_client=api_client)
 
         return self._appsv1_client
 
