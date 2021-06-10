@@ -11,7 +11,7 @@ if [[ -f ${VENV_PYTHON} ]]; then
     echo "Re-using existing virtualenv at: ${VENV_PATH} and assuming it's up to date."
     echo "If you see errors try 'rm -rf ${VENV_PATH}' and re-run this script."
 else
-    echo "Creating virtual env at: ${VENV_PATH}..."
+    echo "Virtualenv at: ${VENV_PATH} not found, creating..."
     python3 -m venv ${VENV_PATH}
     ${VENV_PIP} install -r requirements.txt
 fi
