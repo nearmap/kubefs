@@ -48,15 +48,15 @@ def main(args: argparse.Namespace) -> None:
 
     while True:
         event = notify_queue.get()
-        kind  = event.object['kind']
-        name = event.object['metadata']['name']
-        ver = event.object['metadata']['resourceVersion']
+        kind = event.object["kind"]
+        name = event.object["metadata"]["name"]
+        ver = event.object["metadata"]["resourceVersion"]
         print(event.action, kind, name, ver)
 
 
 if __name__ == "__main__":
-    default_config_file = 'minikube'
-    default_context = 'minikube'
+    default_config_file = "minikube"
+    default_context = "minikube"
 
     parser = argparse.ArgumentParser()
     parser.add_argument(

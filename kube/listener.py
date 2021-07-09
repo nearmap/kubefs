@@ -69,7 +69,7 @@ class ObjectListener:
         action = Action.LISTED
 
         if watched:
-            dct = item['raw_object']
+            dct = item["raw_object"]
             action = self.parse_action(item)
 
         resource_version = int(dct["metadata"]["resourceVersion"])
