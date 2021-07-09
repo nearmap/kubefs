@@ -1,7 +1,9 @@
 import logging
+import random
 import time
 from datetime import timedelta
 from queue import Empty, Queue
+from typing import Tuple
 from urllib.parse import urljoin
 
 import humanize
@@ -21,6 +23,7 @@ class Event:
         self, server: Server, time_last_reachable: float, time_last_unreachable: float
     ) -> None:
         self.server = server
+        self.time_created = time.time()
         self.time_last_reachable = time_last_reachable
         self.time_last_unreachable = time_last_unreachable
 
@@ -93,7 +96,7 @@ class ConnectivityDetector:
         path="/livez",
         timeout_conn_s=3,
         timeout_read_s=1,
-        poll_interval_s=60,
+        poll_intervals_s: Tuple[float, float],
         logger=None,
     ):
         self.apiserver = apiserver
@@ -101,7 +104,7 @@ class ConnectivityDetector:
         self.path = path
         self.timeout_conn_s = timeout_conn_s
         self.timeout_read_s = timeout_read_s
-        self.poll_interval_s = poll_interval_s
+        self.poll_intervals_s = poll_intervals_s or (45, 60)
         self.logger = logger or logging.getLogger(f"{__name__}.detector")
 
         self.state = ConnectivityState(server=apiserver, notify_queue=notify_queue)
@@ -141,6 +144,10 @@ class ConnectivityDetector:
 
         return is_reachable
 
+    def get_jittered_poll_interval(self):
+        lower, upper = self.poll_intervals_s
+        return random.uniform(lower, upper)
+
     def should_shutdown(self, timeout_s: float) -> bool:
         try:
             if self.shutdown_queue.get(timeout=timeout_s) is not None:
@@ -166,7 +173,8 @@ class ConnectivityDetector:
             )
 
             # sleep until the end of the interval, but at least 1s
-            wait_until_next_s = max(self.poll_interval_s - elapsed_s, 1)
+            poll_interval_s = self.get_jittered_poll_interval()
+            wait_until_next_s = max(poll_interval_s - elapsed_s, 1)
             self.logger.debug(
                 "Waiting %.1fs until next connectivity test", wait_until_next_s
             )
@@ -188,13 +196,20 @@ class DemoLoggingReporter:
         self.logger = logger or logging.getLogger(f"{__name__}.demo_reporter")
 
     def report(self, event: Event) -> None:
+        """
+        Example log lines:
+
+        Established connectivity to the API server 'apiserver' at http://127.0.0.1:8001
+        Lost connectivity to the API server 'apiserver' at http://127.0.0.1:8001, was reachable for 10 minutes
+        """
+
         verb = None
-        state = None
+        prev_state = None
         phrase_since = ""
         elapsed_s = None
 
         if isinstance(event, BecameReachable):
-            state = "reachable"
+            prev_state = "unreachable"
             if event.time_last_reachable is not None:
                 verb = "Re-established"
                 elapsed_s = time.time() - event.time_last_reachable
@@ -202,7 +217,7 @@ class DemoLoggingReporter:
                 verb = "Established"
 
         elif isinstance(event, BecameUnreachable):
-            state = "unreachable"
+            prev_state = "reachable"
             verb = "Lost"
             if event.time_last_unreachable is not None:
                 elapsed_s = time.time() - event.time_last_unreachable
@@ -212,7 +227,7 @@ class DemoLoggingReporter:
 
         if elapsed_s:
             elapsed_pretty = humanize.naturaldelta(timedelta(seconds=elapsed_s))
-            phrase_since = f", was last {state} {elapsed_pretty} ago"
+            phrase_since = f", was {prev_state} for {elapsed_pretty}"
 
         sentence = (
             f"{verb} connectivity to the API server "

@@ -29,7 +29,7 @@ def main(args: argparse.Namespace) -> None:
 
     detector = ConnectivityDetector(
         apiserver=apiserver,
-        poll_interval_s=5,
+        poll_intervals_s=(4, 6),
         notify_queue=notify_queue,
         shutdown_queue=shutdown_queue,
         logger=detector_logger,
