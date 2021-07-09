@@ -1,7 +1,7 @@
 import logging
 import time
 from datetime import timedelta
-from queue import Queue
+from queue import Empty, Queue
 from urllib.parse import urljoin
 
 import humanize
@@ -27,8 +27,8 @@ class BecameUnreachable(Event):
 
 
 class ConnectivityState:
-    def __init__(self, queue: Queue) -> None:
-        self.queue = queue
+    def __init__(self, notify_queue: Queue) -> None:
+        self.notify_queue = notify_queue
 
         self.is_reachable = False
 
@@ -41,7 +41,7 @@ class ConnectivityState:
                 time_last_reachable=self.time_last_reachable,
                 time_last_unreachable=self.time_last_unreachable,
             )
-            self.queue.put(event)
+            self.notify_queue.put(event)
 
         self.is_reachable = True
         self.time_last_reachable = time.time()
@@ -52,7 +52,7 @@ class ConnectivityState:
                 time_last_reachable=self.time_last_reachable,
                 time_last_unreachable=self.time_last_unreachable,
             )
-            self.queue.put(event)
+            self.notify_queue.put(event)
 
         self.is_reachable = False
         self.time_last_unreachable = time.time()
@@ -63,7 +63,8 @@ class ConnectivityDetector:
         self,
         *,
         apiserver_baseurl: str,
-        queue: Queue,
+        notify_queue: Queue,
+        shutdown_queue: Queue,
         path="/livez",
         timeout_conn_s=3,
         timeout_read_s=1,
@@ -71,13 +72,14 @@ class ConnectivityDetector:
         logger=None,
     ):
         self.apiserver_baseurl = apiserver_baseurl
+        self.shutdown_queue = shutdown_queue
         self.path = path
         self.timeout_conn_s = timeout_conn_s
         self.timeout_read_s = timeout_read_s
         self.poll_interval_s = poll_interval_s
         self.logger = logger or logging.getLogger(f"{__name__}.detector")
 
-        self.state = ConnectivityState(queue=queue)
+        self.state = ConnectivityState(notify_queue=notify_queue)
 
     def create_client(self) -> requests.Session:
         """Create a client and make sure it does not retry because we want it to
@@ -114,13 +116,22 @@ class ConnectivityDetector:
 
         return is_reachable
 
+    def should_shutdown(self, timeout_s: float) -> bool:
+        try:
+            if self.shutdown_queue.get(timeout=timeout_s) is not None:
+                return True
+        except Empty:
+            pass
+
+        return False
+
     def run(self) -> None:
         while True:
             self.logger.info("Starting connectivity test")
 
-            before = time.time()
+            loop_start = time.time()
             is_reachable = self.test_connectivity()
-            elapsed_s = time.time() - before
+            elapsed_s = time.time() - loop_start
 
             outcome = "reachable" if is_reachable else "unreachable"
             self.logger.info(
@@ -131,11 +142,14 @@ class ConnectivityDetector:
 
             # sleep until the end of the interval, but at least 1s
             wait_until_next_s = max(self.poll_interval_s - elapsed_s, 1)
-
             self.logger.debug(
                 "Waiting %.1fs until next connectivity test", wait_until_next_s
             )
-            time.sleep(wait_until_next_s)
+
+            # While we sleep poll the shutdown queue to see if we need to terminate
+            if self.should_shutdown(timeout_s=wait_until_next_s):
+                self.logger.info("Shutting down")
+                break
 
 
 class DemoLoggingReporter:

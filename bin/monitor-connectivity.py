@@ -20,19 +20,25 @@ def main(args: argparse.Namespace) -> None:
     if args.noisy_detector:
         detector_logger = None
 
-    queue = Queue()
+    notify_queue = Queue()
+    shutdown_queue = Queue()
+
     detector = ConnectivityDetector(
         apiserver_baseurl=args.server_url,
         poll_interval_s=5,
-        queue=queue,
+        notify_queue=notify_queue,
+        shutdown_queue=shutdown_queue,
         logger=detector_logger,
     )
-    reporter = DemoLoggingReporter(queue)
+    reporter = DemoLoggingReporter(notify_queue)
 
     conn_thread = Thread(target=detector.run)
     conn_thread.start()
 
-    reporter.run_forever()
+    try:
+        reporter.run_forever()
+    except KeyboardInterrupt:
+        shutdown_queue.put(True)
 
 
 if __name__ == "__main__":
