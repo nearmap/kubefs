@@ -3,3 +3,5 @@ fusepy==3.0.1
 humanize==3.6.0
 kubernetes==17.17.0
 requests==2.25.1
+types-requests==2.25.0
+types-PyYAML==5.4.3

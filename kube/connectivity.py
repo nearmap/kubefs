@@ -10,10 +10,17 @@ from requests.adapters import HTTPAdapter
 from requests.exceptions import ConnectionError, Timeout
 
 
+class Server:
+    def __init__(self, name: str, baseurl: str) -> None:
+        self.name = name
+        self.baseurl = baseurl
+
+
 class Event:
     def __init__(
-        self, time_last_reachable: float, time_last_unreachable: float
+        self, server: Server, time_last_reachable: float, time_last_unreachable: float
     ) -> None:
+        self.server = server
         self.time_last_reachable = time_last_reachable
         self.time_last_unreachable = time_last_unreachable
 
@@ -27,17 +34,25 @@ class BecameUnreachable(Event):
 
 
 class ConnectivityState:
-    def __init__(self, notify_queue: Queue) -> None:
+    """
+    Stores the state of connectivity to a given server.
+    Notifies reporters listening on the queue whenever the state changes.
+    """
+
+    def __init__(self, server: Server, notify_queue: Queue) -> None:
+        self.server = server
         self.notify_queue = notify_queue
 
+        # the server starts out unreachable until we are told otherwise
         self.is_reachable = False
 
         self.time_last_reachable = None
-        self.time_last_unreachable = time.time()
+        self.time_last_unreachable = None
 
     def report_reachable(self):
         if self.is_reachable is False:
             event = BecameReachable(
+                server=self.server,
                 time_last_reachable=self.time_last_reachable,
                 time_last_unreachable=self.time_last_unreachable,
             )
@@ -49,6 +64,7 @@ class ConnectivityState:
     def report_unreachable(self):
         if self.is_reachable is True:
             event = BecameUnreachable(
+                server=self.server,
                 time_last_reachable=self.time_last_reachable,
                 time_last_unreachable=self.time_last_unreachable,
             )
@@ -59,10 +75,19 @@ class ConnectivityState:
 
 
 class ConnectivityDetector:
+    """
+    Runs a loop where it tries to perform a trivial HTTP request against the API
+    server every poll interval to detect whether we have connectivity to the
+    server.
+
+    The main purpose is to detect network disconnects and re-connects due to
+    wifi network, mobile network and VPN network connections coming and going.
+    """
+
     def __init__(
         self,
         *,
-        apiserver_baseurl: str,
+        apiserver: Server,
         notify_queue: Queue,
         shutdown_queue: Queue,
         path="/livez",
@@ -71,7 +96,7 @@ class ConnectivityDetector:
         poll_interval_s=60,
         logger=None,
     ):
-        self.apiserver_baseurl = apiserver_baseurl
+        self.apiserver = apiserver
         self.shutdown_queue = shutdown_queue
         self.path = path
         self.timeout_conn_s = timeout_conn_s
@@ -79,27 +104,27 @@ class ConnectivityDetector:
         self.poll_interval_s = poll_interval_s
         self.logger = logger or logging.getLogger(f"{__name__}.detector")
 
-        self.state = ConnectivityState(notify_queue=notify_queue)
+        self.state = ConnectivityState(server=apiserver, notify_queue=notify_queue)
 
     def create_client(self) -> requests.Session:
         """Create a client and make sure it does not retry because we want it to
         be highly responsive."""
 
         session = requests.Session()
-        session.mount(prefix=self.apiserver_baseurl, adapter=HTTPAdapter(max_retries=0))
+        session.mount(prefix=self.apiserver.baseurl, adapter=HTTPAdapter(max_retries=0))
         return session
 
     def test_connectivity(self) -> bool:
         session = self.create_client()
 
-        url = urljoin(self.apiserver_baseurl, self.path)
+        url = urljoin(self.apiserver.baseurl, self.path)
         timeouts = (self.timeout_conn_s, self.timeout_read_s)
         is_reachable = False
 
         try:
             # We expect to get a 401 if the server is reachable but any status
             # code is fine because it proves we have a network path to the
-            # server and that there is an HTTP server at the other end.
+            # server and that there is an HTTP server on the other end.
             session.get(url=url, timeout=timeouts)
             is_reachable = True
 
@@ -153,6 +178,11 @@ class ConnectivityDetector:
 
 
 class DemoLoggingReporter:
+    """
+    A demo consumer of BecameReachable / BecameUnreachable which logs whenever
+    the connectivity state changes.
+    """
+
     def __init__(self, queue: Queue, logger=None) -> None:
         self.queue = queue
         self.logger = logger or logging.getLogger(f"{__name__}.demo_reporter")
@@ -165,16 +195,17 @@ class DemoLoggingReporter:
 
         if isinstance(event, BecameReachable):
             state = "reachable"
-            if event.time_last_reachable is None:
-                verb = "Established"
-            else:
+            if event.time_last_reachable is not None:
                 verb = "Re-established"
                 elapsed_s = time.time() - event.time_last_reachable
+            else:
+                verb = "Established"
 
         elif isinstance(event, BecameUnreachable):
             state = "unreachable"
             verb = "Lost"
-            elapsed_s = time.time() - event.time_last_unreachable
+            if event.time_last_unreachable is not None:
+                elapsed_s = time.time() - event.time_last_unreachable
 
         else:
             raise NotImplementedError
@@ -183,7 +214,10 @@ class DemoLoggingReporter:
             elapsed_pretty = humanize.naturaldelta(timedelta(seconds=elapsed_s))
             phrase_since = f", was last {state} {elapsed_pretty} ago"
 
-        sentence = f"{verb} connectivity to the API server{phrase_since}"
+        sentence = (
+            f"{verb} connectivity to the API server "
+            f"'{event.server.name}' at {event.server.baseurl}{phrase_since}"
+        )
 
         self.logger.info(sentence)
 

@@ -6,25 +6,29 @@ sys.path.append(".")
 
 # isort: split
 import argparse
+import logging
 from queue import Queue
 from threading import Thread
+from typing import Optional
 
-from kube.connectivity import ConnectivityDetector, DemoLoggingReporter
+from kube.connectivity import ConnectivityDetector, DemoLoggingReporter, Server
 from kube.tools.logs import configure_logging, get_silent_logger
 
 
 def main(args: argparse.Namespace) -> None:
     configure_logging()
 
-    detector_logger = get_silent_logger()
+    detector_logger: Optional[logging.Logger] = get_silent_logger()
     if args.noisy_detector:
         detector_logger = None
 
-    notify_queue = Queue()
-    shutdown_queue = Queue()
+    notify_queue: Queue = Queue()
+    shutdown_queue: Queue = Queue()
+
+    apiserver = Server(name="apiserver", baseurl=args.server_url)
 
     detector = ConnectivityDetector(
-        apiserver_baseurl=args.server_url,
+        apiserver=apiserver,
         poll_interval_s=5,
         notify_queue=notify_queue,
         shutdown_queue=shutdown_queue,
