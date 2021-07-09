@@ -77,7 +77,7 @@ class ConnectivityState:
         self.time_last_unreachable = time.time()
 
 
-class ConnectivityDetector:
+class PollingConnectivityDetector:
     """
     Runs a loop where it tries to perform a trivial HTTP request against the API
     server every poll interval to detect whether we have connectivity to the

@@ -11,7 +11,7 @@ from queue import Queue
 from threading import Thread
 from typing import Optional
 
-from kube.connectivity import ConnectivityDetector, DemoLoggingReporter, Server
+from kube.connectivity import DemoLoggingReporter, PollingConnectivityDetector, Server
 from kube.tools.logs import configure_logging, get_silent_logger
 
 
@@ -27,7 +27,7 @@ def main(args: argparse.Namespace) -> None:
 
     apiserver = Server(name="apiserver", baseurl=args.server_url)
 
-    detector = ConnectivityDetector(
+    detector = PollingConnectivityDetector(
         apiserver=apiserver,
         poll_intervals_s=(4, 6),
         notify_queue=notify_queue,
