@@ -52,7 +52,7 @@ class ConnectivityState:
         self.time_last_reachable = None
         self.time_last_unreachable = None
 
-    def report_reachable(self):
+    def update_reachable(self):
         if self.is_reachable is False:
             event = BecameReachable(
                 server=self.server,
@@ -64,7 +64,7 @@ class ConnectivityState:
         self.is_reachable = True
         self.time_last_reachable = time.time()
 
-    def report_unreachable(self):
+    def update_unreachable(self):
         if self.is_reachable is True:
             event = BecameUnreachable(
                 server=self.server,
@@ -138,9 +138,9 @@ class PollingConnectivityDetector:
             raise  # unhandled for now
 
         if is_reachable:
-            self.state.report_reachable()
+            self.state.update_reachable()
         else:
-            self.state.report_unreachable()
+            self.state.update_unreachable()
 
         return is_reachable
 
