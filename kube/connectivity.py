@@ -18,7 +18,7 @@ class Server:
         self.baseurl = baseurl
 
 
-class Event:
+class ConnectivityEvent:
     def __init__(
         self, server: Server, time_last_reachable: float, time_last_unreachable: float
     ) -> None:
@@ -28,11 +28,11 @@ class Event:
         self.time_last_unreachable = time_last_unreachable
 
 
-class BecameReachable(Event):
+class BecameReachable(ConnectivityEvent):
     pass
 
 
-class BecameUnreachable(Event):
+class BecameUnreachable(ConnectivityEvent):
     pass
 
 
@@ -195,7 +195,7 @@ class DemoLoggingReporter:
         self.queue = queue
         self.logger = logger or logging.getLogger(f"{__name__}.demo_reporter")
 
-    def report(self, event: Event) -> None:
+    def report(self, event: ConnectivityEvent) -> None:
         """
         Example log lines:
 
