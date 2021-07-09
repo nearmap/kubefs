@@ -1,4 +1,6 @@
 #!/bin/sh
 
-isort kubefs
-black kubefs
+for dir in bin kube kubefs; do
+	isort $dir
+	black $dir
+done
