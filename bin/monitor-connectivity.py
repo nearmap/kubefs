@@ -6,47 +6,33 @@ sys.path.append(".")
 
 # isort: split
 import argparse
-import logging
-from queue import Queue
-from threading import Thread
-from typing import Optional
 
-from kube.connectivity import DemoLoggingReporter, PollingConnectivityDetector, Server
-from kube.tools.logs import configure_logging, get_silent_logger
+from kube.config import get_selector
+from kube.connectivity import DemoLoggingReporter, launch_detector
+from kube.tools.logs import configure_logging
 
 
 def main(args: argparse.Namespace) -> None:
     configure_logging()
 
-    detector_logger: Optional[logging.Logger] = get_silent_logger()
-    if args.noisy_detector:
-        detector_logger = None
+    selector = get_selector()
+    contexts = selector.fnmatch_context(args.context)
 
-    notify_queue: Queue = Queue()
-    shutdown_queue: Queue = Queue()
+    queues = [launch_detector(ctx, want_logger=False) for ctx in contexts]
+    notify_queues = [notif for notif, _ in queues]
+    shutdown_queues = [shut for _, shut in queues]
 
-    apiserver = Server(name="apiserver", baseurl=args.server_url)
-
-    detector = PollingConnectivityDetector(
-        apiserver=apiserver,
-        poll_intervals_s=(4, 6),
-        notify_queue=notify_queue,
-        shutdown_queue=shutdown_queue,
-        logger=detector_logger,
-    )
-    reporter = DemoLoggingReporter(notify_queue)
-
-    conn_thread = Thread(target=detector.run)
-    conn_thread.start()
+    reporter = DemoLoggingReporter(notify_queues)
 
     try:
         reporter.run_forever()
     except KeyboardInterrupt:
-        shutdown_queue.put(True)
+        for shutdown_queue in shutdown_queues:
+            shutdown_queue.put(True)
 
 
 if __name__ == "__main__":
-    defautl_server_url = "http://127.0.0.1:8001"
+    default_context = "*"
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -56,11 +42,14 @@ if __name__ == "__main__":
         help="Display logs from detector (default: False)",
     )
     parser.add_argument(
-        "--server-url",
-        dest="server_url",
+        "--context",
+        dest="context",
         action="store",
-        default=defautl_server_url,
-        help=f"API server to test against, default: {defautl_server_url}",
+        default=default_context,
+        help=(
+            f"Kube contexts to select - "
+            f"matched like a filesystem wildcard, default: {default_context}"
+        ),
     )
     args = parser.parse_args()
 

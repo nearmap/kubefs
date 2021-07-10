@@ -1,3 +1,4 @@
+import fnmatch
 import logging
 import os
 from typing import Dict, Optional, Sequence
@@ -68,10 +69,14 @@ class Context:
         self.cluster = cluster
         self.namespace = namespace
 
+        # host.company.com -> host
+        self.short_name = name.split(".")[0]
+
     def __repr__(self) -> str:
-        return "<%s name=%r, user=%r, cluster=%r, namespace=%r>" % (
+        return "<%s name=%r, short_name=%r, user=%r, cluster=%r, namespace=%r>" % (
             self.__class__.__name__,
             self.name,
+            self.short_name,
             self.user,
             self.cluster,
             self.namespace,
@@ -106,6 +111,8 @@ class KubeConfigCollection:
         self.users: Dict[str, User] = {}
 
     def add_file(self, config_file: KubeConfigFile) -> None:
+        # NOTE: does not enforce uniqueness of context/user/cluster names
+
         for cluster in config_file.clusters:
             self.clusters[cluster.name] = cluster
 
@@ -115,11 +122,25 @@ class KubeConfigCollection:
         for user in config_file.users:
             self.users[user.name] = user
 
-    def get_contexts(self) -> Sequence[Context]:
+    def get_context_names(self) -> Sequence[str]:
         names = list(self.contexts.keys())
         names.sort()
-        objs = [self.contexts[name] for name in names]
-        return objs
+        return names
+
+    def get_context(self, name) -> Optional[Context]:
+        return self.contexts.get(name)
+
+
+class KubeConfigSelector:
+    def __init__(self, *, collection: KubeConfigCollection) -> None:
+        self.collection = collection
+
+    def fnmatch_context(self, pattern: str) -> Sequence[Context]:
+        names = self.collection.get_context_names()
+        names = fnmatch.filter(names, pattern)
+        objs = [self.collection.get_context(name) for name in names]
+        contexts = [ctx for ctx in objs if ctx]
+        return contexts
 
 
 class KubeConfigLoader:
@@ -241,13 +262,16 @@ class KubeConfigLoader:
             self.logger.warn("Kube config does not have kind: Config: %s", filepath)
             return None
 
-        clust_list = [self.parse_cluster(cluster) for cluster in dct["clusters"]]
+        clust_list = [self.parse_cluster(clus) for clus in dct.get("clusters") or []]
         clusters = [cluster for cluster in clust_list if cluster]
 
-        user_list = [self.parse_user(user) for user in dct["users"]]
+        user_list = [self.parse_user(user) for user in dct.get("users") or []]
         users = [user for user in user_list if user]
 
-        ctx_list = [self.parse_context(clusters, users, ctx) for ctx in dct["contexts"]]
+        ctx_list = [
+            self.parse_context(clusters, users, ctx)
+            for ctx in dct.get("contexts") or []
+        ]
         contexts = [ctx for ctx in ctx_list if ctx]
 
         # The context is the organizing principle of a kube config so if we
@@ -268,7 +292,8 @@ class KubeConfigLoader:
         return collection
 
 
-ld = KubeConfigLoader()
-coll = ld.create_collection()
-for c in coll.get_contexts():
-    print(c)
+def get_selector() -> KubeConfigSelector:
+    loader = KubeConfigLoader()
+    collection = loader.create_collection()
+    selector = KubeConfigSelector(collection=collection)
+    return selector

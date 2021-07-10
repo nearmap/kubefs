@@ -3,7 +3,8 @@ import random
 import time
 from datetime import timedelta
 from queue import Empty, Queue
-from typing import Tuple
+from threading import Thread
+from typing import Optional, Sequence, Tuple
 from urllib.parse import urljoin
 
 import humanize
@@ -11,18 +12,15 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.exceptions import ConnectionError, Timeout
 
-
-class Server:
-    def __init__(self, name: str, baseurl: str) -> None:
-        self.name = name
-        self.baseurl = baseurl
+from kube.config import Context
+from kube.tools.logs import get_silent_logger
 
 
 class ConnectivityEvent:
     def __init__(
-        self, server: Server, time_last_reachable: float, time_last_unreachable: float
+        self, context: Context, time_last_reachable: float, time_last_unreachable: float
     ) -> None:
-        self.server = server
+        self.context = context
         self.time_created = time.time()
         self.time_last_reachable = time_last_reachable
         self.time_last_unreachable = time_last_unreachable
@@ -42,8 +40,8 @@ class ConnectivityState:
     Notifies reporters listening on the queue whenever the state changes.
     """
 
-    def __init__(self, server: Server, notify_queue: Queue) -> None:
-        self.server = server
+    def __init__(self, context: Context, notify_queue: Queue) -> None:
+        self.context = context
         self.notify_queue = notify_queue
 
         # the server starts out unreachable until we are told otherwise
@@ -55,7 +53,7 @@ class ConnectivityState:
     def update_reachable(self):
         if self.is_reachable is False:
             event = BecameReachable(
-                server=self.server,
+                context=self.context,
                 time_last_reachable=self.time_last_reachable,
                 time_last_unreachable=self.time_last_unreachable,
             )
@@ -67,7 +65,7 @@ class ConnectivityState:
     def update_unreachable(self):
         if self.is_reachable is True:
             event = BecameUnreachable(
-                server=self.server,
+                context=self.context,
                 time_last_reachable=self.time_last_reachable,
                 time_last_unreachable=self.time_last_unreachable,
             )
@@ -90,7 +88,7 @@ class PollingConnectivityDetector:
     def __init__(
         self,
         *,
-        apiserver: Server,
+        context: Context,
         notify_queue: Queue,
         shutdown_queue: Queue,
         path="/livez",
@@ -99,7 +97,7 @@ class PollingConnectivityDetector:
         poll_intervals_s: Tuple[float, float],
         logger=None,
     ):
-        self.apiserver = apiserver
+        self.context = context
         self.shutdown_queue = shutdown_queue
         self.path = path
         self.timeout_conn_s = timeout_conn_s
@@ -107,20 +105,22 @@ class PollingConnectivityDetector:
         self.poll_intervals_s = poll_intervals_s or (45, 60)
         self.logger = logger or logging.getLogger(f"{__name__}.detector")
 
-        self.state = ConnectivityState(server=apiserver, notify_queue=notify_queue)
+        self.state = ConnectivityState(context=context, notify_queue=notify_queue)
 
     def create_client(self) -> requests.Session:
         """Create a client and make sure it does not retry because we want it to
         be highly responsive."""
 
         session = requests.Session()
-        session.mount(prefix=self.apiserver.baseurl, adapter=HTTPAdapter(max_retries=0))
+        session.mount(
+            prefix=self.context.cluster.server, adapter=HTTPAdapter(max_retries=0)
+        )
         return session
 
     def test_connectivity(self) -> bool:
         session = self.create_client()
 
-        url = urljoin(self.apiserver.baseurl, self.path)
+        url = urljoin(self.context.cluster.server, self.path)
         timeouts = (self.timeout_conn_s, self.timeout_read_s)
         is_reachable = False
 
@@ -159,7 +159,9 @@ class PollingConnectivityDetector:
 
     def run(self) -> None:
         while True:
-            self.logger.info("Starting connectivity test")
+            self.logger.info(
+                "Starting connectivity test for %r", self.context.short_name
+            )
 
             loop_start = time.time()
             is_reachable = self.test_connectivity()
@@ -167,7 +169,8 @@ class PollingConnectivityDetector:
 
             outcome = "reachable" if is_reachable else "unreachable"
             self.logger.info(
-                "Completed connectivity test in %.3fs with outcome: %s",
+                "Completed connectivity test for %r in %.3fs with outcome: %s",
+                self.context.short_name,
                 elapsed_s,
                 outcome.upper(),
             )
@@ -176,12 +179,16 @@ class PollingConnectivityDetector:
             poll_interval_s = self.get_jittered_poll_interval()
             wait_until_next_s = max(poll_interval_s - elapsed_s, 1)
             self.logger.debug(
-                "Waiting %.1fs until next connectivity test", wait_until_next_s
+                "Waiting %.1fs until next connectivity test for %r",
+                wait_until_next_s,
+                self.context.short_name,
             )
 
             # While we sleep poll the shutdown queue to see if we need to terminate
             if self.should_shutdown(timeout_s=wait_until_next_s):
-                self.logger.info("Shutting down")
+                self.logger.info(
+                    "Shutting down detector for %r", self.context.short_name
+                )
                 break
 
 
@@ -191,16 +198,16 @@ class DemoLoggingReporter:
     the connectivity state changes.
     """
 
-    def __init__(self, queue: Queue, logger=None) -> None:
-        self.queue = queue
+    def __init__(self, queues: Sequence[Queue], logger=None) -> None:
+        self.queues = queues
         self.logger = logger or logging.getLogger(f"{__name__}.demo_reporter")
 
     def report(self, event: ConnectivityEvent) -> None:
         """
         Example log lines:
 
-        Established connectivity to the API server 'apiserver' at http://127.0.0.1:8001
-        Lost connectivity to the API server 'apiserver' at http://127.0.0.1:8001, was reachable for 10 minutes
+        Established connectivity to API server 'apiserver' at http://127.0.0.1:8001
+        Lost connectivity to API server 'apiserver' at http://127.0.0.1:8001, was reachable for 10 minutes
         """
 
         verb = None
@@ -230,13 +237,49 @@ class DemoLoggingReporter:
             phrase_since = f", was {prev_state} for {elapsed_pretty}"
 
         sentence = (
-            f"{verb} connectivity to the API server "
-            f"'{event.server.name}' at {event.server.baseurl}{phrase_since}"
+            f"{verb} connectivity to API server "
+            f"'{event.context.short_name}' at {event.context.cluster.server}{phrase_since}"
         )
 
         self.logger.info(sentence)
 
+    def poll_queue(self, queue: Queue) -> Optional[ConnectivityEvent]:
+        try:
+            return queue.get_nowait()
+        except Empty:
+            return None
+
     def run_forever(self):
         while True:
-            event = self.queue.get()
-            self.report(event)
+            for queue in self.queues:
+                event = self.poll_queue(queue)
+                if event:
+                    self.report(event)
+
+            time.sleep(0.01)
+
+
+def launch_detector(context: Context, want_logger=True) -> Tuple[Queue, Queue]:
+    """
+    Launches the detector in a background thread.
+    """
+
+    detector_logger: Optional[logging.Logger] = get_silent_logger()
+    if want_logger:
+        detector_logger = None
+
+    notify_queue: Queue = Queue()
+    shutdown_queue: Queue = Queue()
+
+    detector = PollingConnectivityDetector(
+        context=context,
+        poll_intervals_s=(4, 6),
+        notify_queue=notify_queue,
+        shutdown_queue=shutdown_queue,
+        logger=detector_logger,
+    )
+
+    conn_thread = Thread(target=detector.run)
+    conn_thread.start()
+
+    return notify_queue, shutdown_queue
