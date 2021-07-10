@@ -86,7 +86,7 @@ class PollingConnectivityDetector:
 
     We could use a fully fledged kube client here and eg. list the namespaces.
     But we really want to make these requests as cheap as possible for the
-    server.
+    server. The server should have no need to even touch etcd.
     """
 
     def __init__(
