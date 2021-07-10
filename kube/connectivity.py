@@ -83,6 +83,10 @@ class PollingConnectivityDetector:
 
     The main purpose is to detect network disconnects and re-connects due to
     wifi network, mobile network and VPN network connections coming and going.
+
+    We could use a fully fledged kube client here and eg. list the namespaces.
+    But we really want to make these requests as cheap as possible for the
+    server.
     """
 
     def __init__(
