@@ -6,7 +6,6 @@ sys.path.append(".")
 
 # isort: split
 import argparse
-import os
 from queue import Queue
 from threading import Thread
 
@@ -14,6 +13,7 @@ from kubernetes import config
 from kubernetes.client.api_client import ApiClient
 from kubernetes.client.configuration import Configuration
 
+from kube.config import get_selector
 from kube.listener import ObjectClass, ObjectListener
 from kube.tools.logs import configure_logging
 
@@ -21,9 +21,13 @@ from kube.tools.logs import configure_logging
 def main(args: argparse.Namespace) -> None:
     configure_logging()
 
-    config_fp = os.path.join(os.path.expandvars("$HOME/.kube"), args.config_file)
-    context_name = args.context
-    config.load_kube_config(config_file=config_fp, context=context_name)
+    selector = get_selector()
+    contexts = selector.fnmatch_context(args.context)
+
+    assert len(contexts) == 1
+    context = contexts[0]
+
+    config.load_kube_config(config_file=context.file.filepath, context=context.name)
 
     configuration = Configuration.get_default_copy()
     api_client = ApiClient(configuration=configuration)
@@ -55,23 +59,13 @@ def main(args: argparse.Namespace) -> None:
 
 
 if __name__ == "__main__":
-    default_config_file = "minikube"
-    default_context = "minikube"
-
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config-file",
-        dest="config_file",
-        action="store",
-        default=default_config_file,
-        help="Display logs from detector (default: %s)" % default_config_file,
-    )
     parser.add_argument(
         "--context",
         dest="context",
         action="store",
-        default=default_context,
-        help="Display logs from detector (default: %s)" % default_context,
+        required=True,
+        help=(f"Kube contexts to select" f"matched like a filesystem wildcard"),
     )
     args = parser.parse_args()
 

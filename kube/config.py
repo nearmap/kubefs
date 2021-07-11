@@ -62,12 +62,18 @@ class Cluster:
 
 class Context:
     def __init__(
-        self, *, name: str, user: User, cluster: Cluster, namespace: Optional[str]
+        self,
+        *,
+        name: str,
+        user: User,
+        cluster: Cluster,
+        namespace: Optional[str],
     ) -> None:
         self.name = name
         self.user = user
         self.cluster = cluster
         self.namespace = namespace
+        self.file: "KubeConfigFile" = None  # type: ignore
 
         # host.company.com -> host
         self.short_name = name.split(".")[0]
@@ -82,22 +88,28 @@ class Context:
             self.namespace,
         )
 
+    def set_file(self, file: "KubeConfigFile") -> None:
+        self.file = file
+
 
 class KubeConfigFile:
     def __init__(
         self,
         *,
+        filepath: str,
         contexts: Sequence[Context],
         users: Sequence[User],
         clusters: Sequence[Cluster],
     ) -> None:
+        self.filepath = filepath
         self.contexts = contexts or []
         self.users = users or []
         self.clusters = clusters or []
 
     def __repr__(self) -> str:
-        return "<%s contexts=%r, users=%r, clusters=%r>" % (
+        return "<%s filepath=%r, contexts=%r, users=%r, clusters=%r>" % (
             self.__class__.__name__,
+            self.filepath,
             self.contexts,
             self.users,
             self.clusters,
@@ -277,7 +289,14 @@ class KubeConfigLoader:
         # The context is the organizing principle of a kube config so if we
         # didn't find any we failed to parse the file
         if contexts:
-            return KubeConfigFile(contexts=contexts, users=users, clusters=clusters)
+            config_file = KubeConfigFile(
+                filepath=filepath, contexts=contexts, users=users, clusters=clusters
+            )
+
+            for context in contexts:
+                context.set_file(config_file)
+
+            return config_file
 
         return None
 
