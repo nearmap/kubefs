@@ -2,35 +2,22 @@ import enum
 import logging
 import re
 import time
-from queue import Queue
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from kubernetes.client.api_client import ApiClient
 from kubernetes.client.exceptions import ApiException
 from kubernetes.dynamic.client import DynamicClient
 
+from kube.channels.connectivity import CEvReceiver
 from kube.channels.exit import ExitReceiver
+from kube.channels.objects import OEvSender
+from kube.events.objects import Action, ObjectEvent
 
 
 class ObjectClass:
     def __init__(self, *, api_version: str, kind: str) -> None:
         self.api_version = api_version
         self.kind = kind
-
-
-class Action(enum.Enum):
-    ADDED = "ADDED"
-    MODIFIED = "MODIFIED"
-    DELETED = "DELETED"
-    LISTED = "LISTED"
-
-
-class ObjectEvent:
-    def __init__(self, *, action: Action, object: Dict[Any, Any]) -> None:
-        self.action = action
-        self.object = object
-
-        self.time_created = time.time()
 
 
 class State(enum.Enum):
@@ -48,17 +35,17 @@ class ObjectListener:
         *,
         api_client: ApiClient,
         object_class: ObjectClass,
-        conn_listen_queue: Queue,
-        notify_queue: Queue,
+        cev_receiver: CEvReceiver,
         exit_receiver: ExitReceiver,
+        oev_sender: OEvSender,
         watch_timeout_s=60,
         logger=None,
     ) -> None:
         self.api_client = api_client
         self.object_class = object_class
-        self.conn_listen_queue = conn_listen_queue
-        self.notify_queue = notify_queue
+        self.cev_receiver = cev_receiver
         self.exit_receiver = exit_receiver
+        self.oev_sender = oev_sender
         self.watch_timeout_s = watch_timeout_s
         self.logger = logger or logging.getLogger(__name__)
 
@@ -66,7 +53,7 @@ class ObjectListener:
         self.time_last_watch = None
         self.highest_resource_version = 0
 
-    def notify(self, item: Dict[Any, Any], watched=False) -> None:
+    def notify(self, item: Any, watched=False) -> None:
         dct = item
         action = Action.LISTED
 
@@ -79,7 +66,7 @@ class ObjectListener:
             self.highest_resource_version = resource_version
 
         event = ObjectEvent(action=action, object=dct)
-        self.notify_queue.put(event)
+        self.oev_sender.send(event)
 
     def list_objects(self):
         client = DynamicClient(self.api_client)
