@@ -2,6 +2,8 @@ import enum
 import time
 from typing import Any
 
+from kube.config import Context
+
 
 class Action(enum.Enum):
     ADDED = "ADDED"
@@ -11,7 +13,8 @@ class Action(enum.Enum):
 
 
 class ObjectEvent:
-    def __init__(self, *, action: Action, object: Any) -> None:
+    def __init__(self, *, context: Context, action: Action, object: Any) -> None:
+        self.context = context
         self.action = action
         self.object = object
 

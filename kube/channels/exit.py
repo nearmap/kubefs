@@ -1,5 +1,5 @@
 """
-Channel used be one thread (usually the spawning thread) to signal the other
+Channel used by one thread (usually the spawning thread) to signal the other
 thread to exit.
 """
 

@@ -1,4 +1,5 @@
 PyYAML==5.4.1
+colored==1.4.2
 fusepy==3.0.1
 humanize==3.6.0
 kubernetes==17.17.0

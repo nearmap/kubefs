@@ -1,7 +1,7 @@
 import fnmatch
 import logging
 import os
-from typing import Dict, Optional, Sequence
+from typing import Dict, List, Optional, Sequence
 
 import yaml
 
@@ -147,7 +147,7 @@ class KubeConfigSelector:
     def __init__(self, *, collection: KubeConfigCollection) -> None:
         self.collection = collection
 
-    def fnmatch_context(self, pattern: str) -> Sequence[Context]:
+    def fnmatch_context(self, pattern: str) -> List[Context]:
         names = self.collection.get_context_names()
         names = fnmatch.filter(names, pattern)
         objs = [self.collection.get_context(name) for name in names]

@@ -11,6 +11,7 @@ from kubernetes.dynamic.client import DynamicClient
 from kube.channels.connectivity import CEvReceiver
 from kube.channels.exit import ExitReceiver
 from kube.channels.objects import OEvSender
+from kube.config import Context
 from kube.events.objects import Action, ObjectEvent
 
 
@@ -33,14 +34,16 @@ class ObjectListener:
     def __init__(
         self,
         *,
+        context: Context,
         api_client: ApiClient,
         object_class: ObjectClass,
         cev_receiver: CEvReceiver,
         exit_receiver: ExitReceiver,
         oev_sender: OEvSender,
-        watch_timeout_s=60,
+        watch_timeout_s=10,
         logger=None,
     ) -> None:
+        self.context = context
         self.api_client = api_client
         self.object_class = object_class
         self.cev_receiver = cev_receiver
@@ -65,7 +68,7 @@ class ObjectListener:
         if resource_version > self.highest_resource_version:
             self.highest_resource_version = resource_version
 
-        event = ObjectEvent(action=action, object=dct)
+        event = ObjectEvent(context=self.context, action=action, object=dct)
         self.oev_sender.send(event)
 
     def list_objects(self):
@@ -144,7 +147,9 @@ class ObjectListener:
 
         while True:
             if self.exit_receiver.should_exit():
-                self.logger.info("Shutting down")
+                self.logger.info(
+                    "Shutting down listener for %s", self.context.short_name
+                )
                 break
 
             # if state is not States.CONNECTING and not poll conn queue:
@@ -160,16 +165,24 @@ class ObjectListener:
             #     continue
 
             elif state is State.LISTING:
-                self.logger.info("Starting to list objects")
+                self.logger.info(
+                    "Starting to list objects in %s", self.context.short_name
+                )
                 self.list_objects()
-                self.logger.info("Completed listing objects")
+                self.logger.info(
+                    "Completed listing objects in %s", self.context.short_name
+                )
 
                 state = State.WATCHING
                 continue
 
             elif state is State.WATCHING:
-                self.logger.info("Starting to watch objects")
+                self.logger.info(
+                    "Starting to watch objects in %s", self.context.short_name
+                )
                 self.watch_objects()
-                self.logger.info("Completed watching objects")
+                self.logger.info(
+                    "Completed watching objects in %s", self.context.short_name
+                )
 
                 continue
