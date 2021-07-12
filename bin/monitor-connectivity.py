@@ -19,10 +19,10 @@ def main(args: argparse.Namespace) -> None:
     contexts = selector.fnmatch_context(args.context)
 
     chans = [launch_detector(ctx, want_logger=args.noisy_detector) for ctx in contexts]
-    notif_receivers = [notif for notif, _ in chans]
+    cev_receivers = [notif for notif, _ in chans]
     exit_senders = [exit for _, exit in chans]
 
-    reporter = DemoLoggingReporter(notif_receivers)
+    reporter = DemoLoggingReporter(cev_receivers)
 
     try:
         reporter.run_forever()

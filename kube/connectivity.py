@@ -11,28 +11,15 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.exceptions import ConnectionError, Timeout
 
+from kube.channels.connectivity import CEvReceiver, CEvSender, create_cev_chan
 from kube.channels.exit import ExitReceiver, ExitSender, create_exit_chan
-from kube.channels.std import StdReceiver, StdSender, create_std_chan
 from kube.config import Context
+from kube.events.connectivity import (
+    BecameReachable,
+    BecameUnreachable,
+    ConnectivityEvent,
+)
 from kube.tools.logs import get_silent_logger
-
-
-class ConnectivityEvent:
-    def __init__(
-        self, context: Context, time_last_reachable: float, time_last_unreachable: float
-    ) -> None:
-        self.context = context
-        self.time_created = time.time()
-        self.time_last_reachable = time_last_reachable
-        self.time_last_unreachable = time_last_unreachable
-
-
-class BecameReachable(ConnectivityEvent):
-    pass
-
-
-class BecameUnreachable(ConnectivityEvent):
-    pass
 
 
 class ConnectivityState:
@@ -41,9 +28,9 @@ class ConnectivityState:
     Notifies reporters listening on the queue whenever the state changes.
     """
 
-    def __init__(self, context: Context, notif_sender: StdSender) -> None:
+    def __init__(self, context: Context, cev_sender: CEvSender) -> None:
         self.context = context
-        self.notify_sender = notif_sender
+        self.cev_sender = cev_sender
 
         # the server starts out unreachable until we are told otherwise
         self.is_reachable = False
@@ -58,7 +45,7 @@ class ConnectivityState:
                 time_last_reachable=self.time_last_reachable,
                 time_last_unreachable=self.time_last_unreachable,
             )
-            self.notify_sender.send(event)
+            self.cev_sender.send(event)
 
         self.is_reachable = True
         self.time_last_reachable = time.time()
@@ -70,7 +57,7 @@ class ConnectivityState:
                 time_last_reachable=self.time_last_reachable,
                 time_last_unreachable=self.time_last_unreachable,
             )
-            self.notify_sender.send(event)
+            self.cev_sender.send(event)
 
         self.is_reachable = False
         self.time_last_unreachable = time.time()
@@ -94,7 +81,7 @@ class PollingConnectivityDetector:
         self,
         *,
         context: Context,
-        notif_sender: StdSender,
+        cev_sender: CEvSender,
         exit_receiver: ExitReceiver,
         path="/livez",
         timeout_conn_s=3,
@@ -110,7 +97,7 @@ class PollingConnectivityDetector:
         self.poll_intervals_s = poll_intervals_s or (45, 60)
         self.logger = logger or logging.getLogger(f"{__name__}.detector")
 
-        self.state = ConnectivityState(context=context, notif_sender=notif_sender)
+        self.state = ConnectivityState(context=context, cev_sender=cev_sender)
 
     def create_client(self) -> requests.Session:
         """Create a client and make sure it does not retry because we want it to
@@ -194,8 +181,8 @@ class DemoLoggingReporter:
     the connectivity state changes.
     """
 
-    def __init__(self, notif_receivers: Sequence[StdReceiver], logger=None) -> None:
-        self.notif_receivers = notif_receivers
+    def __init__(self, cev_receivers: Sequence[CEvReceiver], logger=None) -> None:
+        self.cev_receivers = cev_receivers
         self.logger = logger or logging.getLogger(f"{__name__}.demo_reporter")
 
     def report(self, event: ConnectivityEvent) -> None:
@@ -241,8 +228,8 @@ class DemoLoggingReporter:
 
     def run_forever(self):
         while True:
-            for receiver in self.notif_receivers:
-                event = receiver.recv_nowait()
+            for cev_receiver in self.cev_receivers:
+                event = cev_receiver.recv_nowait()
                 if event:
                     self.report(event)
 
@@ -251,7 +238,7 @@ class DemoLoggingReporter:
 
 def launch_detector(
     context: Context, want_logger=True
-) -> Tuple[StdReceiver, ExitSender]:
+) -> Tuple[CEvReceiver, ExitSender]:
     """
     Launches the detector in a background thread.
     """
@@ -260,13 +247,13 @@ def launch_detector(
     if want_logger:
         detector_logger = None
 
-    notif_sender, notif_receiver = create_std_chan()
+    cev_sender, cev_receiver = create_cev_chan()
     exit_sender, exit_receiver = create_exit_chan()
 
     detector = PollingConnectivityDetector(
         context=context,
         poll_intervals_s=(4, 6),
-        notif_sender=notif_sender,
+        cev_sender=cev_sender,
         exit_receiver=exit_receiver,
         logger=detector_logger,
     )
@@ -274,4 +261,4 @@ def launch_detector(
     conn_thread = Thread(target=detector.run)
     conn_thread.start()
 
-    return notif_receiver, exit_sender
+    return cev_receiver, exit_sender

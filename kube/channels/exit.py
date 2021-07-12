@@ -1,3 +1,8 @@
+"""
+Channel used be one thread (usually the spawning thread) to signal the other
+thread to exit.
+"""
+
 from queue import Empty, Full, Queue
 from typing import Tuple
 
