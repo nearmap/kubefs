@@ -2,12 +2,14 @@ import enum
 import logging
 import re
 import time
-from queue import Empty, Queue
+from queue import Queue
 from typing import Any, Dict, Optional
 
 from kubernetes.client.api_client import ApiClient
 from kubernetes.client.exceptions import ApiException
 from kubernetes.dynamic.client import DynamicClient
+
+from kube.channels.exit import ExitReceiver
 
 
 class ObjectClass:
@@ -48,7 +50,7 @@ class ObjectListener:
         object_class: ObjectClass,
         conn_listen_queue: Queue,
         notify_queue: Queue,
-        shutdown_queue: Queue,
+        exit_receiver: ExitReceiver,
         watch_timeout_s=60,
         logger=None,
     ) -> None:
@@ -56,7 +58,7 @@ class ObjectListener:
         self.object_class = object_class
         self.conn_listen_queue = conn_listen_queue
         self.notify_queue = notify_queue
-        self.shutdown_queue = shutdown_queue
+        self.exit_receiver = exit_receiver
         self.watch_timeout_s = watch_timeout_s
         self.logger = logger or logging.getLogger(__name__)
 
@@ -150,20 +152,11 @@ class ObjectListener:
 
         self.time_last_watch = time.time()
 
-    def should_shutdown(self) -> bool:
-        try:
-            if self.shutdown_queue.get_nowait() is not None:
-                return True
-        except Empty:
-            pass
-
-        return False
-
     def run(self) -> None:
         state = State.LISTING
 
         while True:
-            if self.should_shutdown():
+            if self.exit_receiver.should_exit():
                 self.logger.info("Shutting down")
                 break
 

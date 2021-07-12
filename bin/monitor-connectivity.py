@@ -18,17 +18,17 @@ def main(args: argparse.Namespace) -> None:
     selector = get_selector()
     contexts = selector.fnmatch_context(args.context)
 
-    queues = [launch_detector(ctx, want_logger=False) for ctx in contexts]
-    notify_queues = [notif for notif, _ in queues]
-    shutdown_queues = [shut for _, shut in queues]
+    chans = [launch_detector(ctx, want_logger=args.noisy_detector) for ctx in contexts]
+    notif_receivers = [notif for notif, _ in chans]
+    exit_senders = [exit for _, exit in chans]
 
-    reporter = DemoLoggingReporter(notify_queues)
+    reporter = DemoLoggingReporter(notif_receivers)
 
     try:
         reporter.run_forever()
     except KeyboardInterrupt:
-        for shutdown_queue in shutdown_queues:
-            shutdown_queue.put(True)
+        for exit_sender in exit_senders:
+            exit_sender.send_exit()
 
 
 if __name__ == "__main__":

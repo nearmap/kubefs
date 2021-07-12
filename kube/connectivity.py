@@ -2,7 +2,6 @@ import logging
 import random
 import time
 from datetime import timedelta
-from queue import Empty, Queue
 from threading import Thread
 from typing import Optional, Sequence, Tuple
 from urllib.parse import urljoin
@@ -12,6 +11,8 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.exceptions import ConnectionError, Timeout
 
+from kube.channels.exit import ExitReceiver, ExitSender, create_exit_chan
+from kube.channels.std import StdReceiver, StdSender, create_std_chan
 from kube.config import Context
 from kube.tools.logs import get_silent_logger
 
@@ -40,9 +41,9 @@ class ConnectivityState:
     Notifies reporters listening on the queue whenever the state changes.
     """
 
-    def __init__(self, context: Context, notify_queue: Queue) -> None:
+    def __init__(self, context: Context, notif_sender: StdSender) -> None:
         self.context = context
-        self.notify_queue = notify_queue
+        self.notify_sender = notif_sender
 
         # the server starts out unreachable until we are told otherwise
         self.is_reachable = False
@@ -57,7 +58,7 @@ class ConnectivityState:
                 time_last_reachable=self.time_last_reachable,
                 time_last_unreachable=self.time_last_unreachable,
             )
-            self.notify_queue.put(event)
+            self.notify_sender.send(event)
 
         self.is_reachable = True
         self.time_last_reachable = time.time()
@@ -69,7 +70,7 @@ class ConnectivityState:
                 time_last_reachable=self.time_last_reachable,
                 time_last_unreachable=self.time_last_unreachable,
             )
-            self.notify_queue.put(event)
+            self.notify_sender.send(event)
 
         self.is_reachable = False
         self.time_last_unreachable = time.time()
@@ -93,8 +94,8 @@ class PollingConnectivityDetector:
         self,
         *,
         context: Context,
-        notify_queue: Queue,
-        shutdown_queue: Queue,
+        notif_sender: StdSender,
+        exit_receiver: ExitReceiver,
         path="/livez",
         timeout_conn_s=3,
         timeout_read_s=1,
@@ -102,14 +103,14 @@ class PollingConnectivityDetector:
         logger=None,
     ):
         self.context = context
-        self.shutdown_queue = shutdown_queue
+        self.exit_receiver = exit_receiver
         self.path = path
         self.timeout_conn_s = timeout_conn_s
         self.timeout_read_s = timeout_read_s
         self.poll_intervals_s = poll_intervals_s or (45, 60)
         self.logger = logger or logging.getLogger(f"{__name__}.detector")
 
-        self.state = ConnectivityState(context=context, notify_queue=notify_queue)
+        self.state = ConnectivityState(context=context, notif_sender=notif_sender)
 
     def create_client(self) -> requests.Session:
         """Create a client and make sure it does not retry because we want it to
@@ -152,15 +153,6 @@ class PollingConnectivityDetector:
         lower, upper = self.poll_intervals_s
         return random.uniform(lower, upper)
 
-    def should_shutdown(self, timeout_s: float) -> bool:
-        try:
-            if self.shutdown_queue.get(timeout=timeout_s) is not None:
-                return True
-        except Empty:
-            pass
-
-        return False
-
     def run(self) -> None:
         while True:
             self.logger.info(
@@ -188,8 +180,8 @@ class PollingConnectivityDetector:
                 self.context.short_name,
             )
 
-            # While we sleep poll the shutdown queue to see if we need to terminate
-            if self.should_shutdown(timeout_s=wait_until_next_s):
+            # While we sleep poll the exit chan to see if we need to terminate
+            if self.exit_receiver.should_exit(timeout=wait_until_next_s):
                 self.logger.info(
                     "Shutting down detector for %r", self.context.short_name
                 )
@@ -202,8 +194,8 @@ class DemoLoggingReporter:
     the connectivity state changes.
     """
 
-    def __init__(self, queues: Sequence[Queue], logger=None) -> None:
-        self.queues = queues
+    def __init__(self, notif_receivers: Sequence[StdReceiver], logger=None) -> None:
+        self.notif_receivers = notif_receivers
         self.logger = logger or logging.getLogger(f"{__name__}.demo_reporter")
 
     def report(self, event: ConnectivityEvent) -> None:
@@ -247,23 +239,19 @@ class DemoLoggingReporter:
 
         self.logger.info(sentence)
 
-    def poll_queue(self, queue: Queue) -> Optional[ConnectivityEvent]:
-        try:
-            return queue.get_nowait()
-        except Empty:
-            return None
-
     def run_forever(self):
         while True:
-            for queue in self.queues:
-                event = self.poll_queue(queue)
+            for receiver in self.notif_receivers:
+                event = receiver.recv_nowait()
                 if event:
                     self.report(event)
 
             time.sleep(0.01)
 
 
-def launch_detector(context: Context, want_logger=True) -> Tuple[Queue, Queue]:
+def launch_detector(
+    context: Context, want_logger=True
+) -> Tuple[StdReceiver, ExitSender]:
     """
     Launches the detector in a background thread.
     """
@@ -272,18 +260,18 @@ def launch_detector(context: Context, want_logger=True) -> Tuple[Queue, Queue]:
     if want_logger:
         detector_logger = None
 
-    notify_queue: Queue = Queue()
-    shutdown_queue: Queue = Queue()
+    notif_sender, notif_receiver = create_std_chan()
+    exit_sender, exit_receiver = create_exit_chan()
 
     detector = PollingConnectivityDetector(
         context=context,
         poll_intervals_s=(4, 6),
-        notify_queue=notify_queue,
-        shutdown_queue=shutdown_queue,
+        notif_sender=notif_sender,
+        exit_receiver=exit_receiver,
         logger=detector_logger,
     )
 
     conn_thread = Thread(target=detector.run)
     conn_thread.start()
 
-    return notify_queue, shutdown_queue
+    return notif_receiver, exit_sender

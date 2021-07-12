@@ -13,6 +13,7 @@ from kubernetes import config
 from kubernetes.client.api_client import ApiClient
 from kubernetes.client.configuration import Configuration
 
+from kube.channels.exit import create_exit_chan
 from kube.config import get_selector
 from kube.listener import ObjectClass, ObjectListener
 from kube.tools.logs import configure_logging
@@ -37,14 +38,14 @@ def main(args: argparse.Namespace) -> None:
     # object_class = ObjectClass(api_version="v1", kind="Event")
     conn_listen_queue: Queue = Queue()
     notify_queue: Queue = Queue()
-    shutdown_queue: Queue = Queue()
+    exit_sender, exit_receiver = create_exit_chan()
 
     listener = ObjectListener(
         api_client=api_client,
         object_class=object_class,
         conn_listen_queue=conn_listen_queue,
         notify_queue=notify_queue,
-        shutdown_queue=shutdown_queue,
+        exit_receiver=exit_receiver,
     )
 
     list_thread = Thread(target=listener.run)
@@ -65,7 +66,7 @@ if __name__ == "__main__":
         dest="context",
         action="store",
         required=True,
-        help=(f"Kube contexts to select" f"matched like a filesystem wildcard"),
+        help=(f"Kube contexts to select - matched like a filesystem wildcard"),
     )
     args = parser.parse_args()
 
