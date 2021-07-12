@@ -1,31 +1,11 @@
-from queue import Empty, Queue
-from typing import Optional, Tuple
+from queue import Queue
+from typing import Tuple
 
+from kube.channels.generic import ChanReceiver, ChanSender
 from kube.events.objects import ObjectEvent
 
-
-class OEvSender:
-    def __init__(self, queue: Queue) -> None:
-        self.queue = queue
-
-    def send(self, obj: ObjectEvent) -> None:
-        self.queue.put_nowait(obj)
-
-
-class OEvReceiver:
-    def __init__(self, queue: Queue) -> None:
-        self.queue = queue
-
-    def recv(self) -> ObjectEvent:
-        return self.queue.get()
-
-    def recv_nowait(self) -> Optional[ObjectEvent]:
-        try:
-            return self.queue.get_nowait()
-        except Empty:
-            pass
-
-        return None
+OEvSender = ChanSender[ObjectEvent]
+OEvReceiver = ChanReceiver[ObjectEvent]
 
 
 def create_oev_chan() -> Tuple[OEvSender, OEvReceiver]:

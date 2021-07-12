@@ -6,7 +6,6 @@ sys.path.append(".")
 
 # isort: split
 import argparse
-from queue import Queue
 from threading import Thread
 
 from kubernetes import config

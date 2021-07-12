@@ -1,31 +1,11 @@
-from queue import Empty, Queue
-from typing import Optional, Tuple
+from queue import Queue
+from typing import Tuple
 
+from kube.channels.generic import ChanReceiver, ChanSender
 from kube.events.connectivity import ConnectivityEvent
 
-
-class CEvSender:
-    def __init__(self, queue: Queue) -> None:
-        self.queue = queue
-
-    def send(self, obj: ConnectivityEvent) -> None:
-        self.queue.put_nowait(obj)
-
-
-class CEvReceiver:
-    def __init__(self, queue: Queue) -> None:
-        self.queue = queue
-
-    def recv(self) -> ConnectivityEvent:
-        return self.queue.get()
-
-    def recv_nowait(self) -> Optional[ConnectivityEvent]:
-        try:
-            return self.queue.get_nowait()
-        except Empty:
-            pass
-
-        return None
+CEvSender = ChanSender[ConnectivityEvent]
+CEvReceiver = ChanReceiver[ConnectivityEvent]
 
 
 def create_cev_chan() -> Tuple[CEvSender, CEvReceiver]:
