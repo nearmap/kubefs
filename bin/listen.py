@@ -27,9 +27,9 @@ from kube.tools.terminal import TerminalPrinter
 
 CONTEXT_COLORS = [
     [bg("dodger_blue_1"), fg("white")],
-    [bg("royal_blue_1"), fg("white")],
-    [bg("chartreuse_3a"), fg("white")],
     [bg("indian_red_1a"), fg("white")],
+    [bg("chartreuse_3a"), fg("white")],
+    [bg("royal_blue_1"), fg("white")],
     [bg("light_pink_3"), fg("white")],
     [bg("green_3b"), fg("white")],
 ]
@@ -109,7 +109,7 @@ def main(args: argparse.Namespace) -> None:
     try:
         run_forever(contexts, oev_receivers)
     except KeyboardInterrupt:
-        printer.loudln("\nSending exit msg to all threads - stand by for exit")
+        printer.loudln("\nSending exit msg to all threads - allow a few seconds to exit")
         for exit_sender in exit_senders:
             exit_sender.send_exit()
 

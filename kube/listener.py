@@ -25,6 +25,7 @@ class State(enum.Enum):
     CONNECTING = 1
     LISTING = 2
     WATCHING = 3
+    EXITING = 4
 
 
 class ObjectListener:
@@ -40,7 +41,7 @@ class ObjectListener:
         cev_receiver: CEvReceiver,
         exit_receiver: ExitReceiver,
         oev_sender: OEvSender,
-        watch_timeout_s=10,
+        watch_timeout_s=60,
         logger=None,
     ) -> None:
         self.context = context
@@ -55,6 +56,19 @@ class ObjectListener:
         self.time_last_listing = None
         self.time_last_watch = None
         self.highest_resource_version = 0
+
+        self.state = State.LISTING
+
+    def should_exit(self) -> bool:
+        if self.state is State.EXITING:
+            return True
+
+        should_exit = self.exit_receiver.should_exit()
+
+        if should_exit:
+            self.state = State.EXITING
+
+        return should_exit
 
     def notify(self, item: Any, watched=False) -> None:
         dct = item
@@ -124,6 +138,11 @@ class ObjectListener:
                 for item in watch:
                     self.notify(item, watched=True)
 
+                    # detect exit condition in between items without completing
+                    # the watch timeout period
+                    if self.should_exit():
+                        return
+
                 break
 
             except ApiException as exc:
@@ -143,10 +162,8 @@ class ObjectListener:
         self.time_last_watch = time.time()
 
     def run(self) -> None:
-        state = State.LISTING
-
         while True:
-            if self.exit_receiver.should_exit():
+            if self.should_exit():
                 self.logger.info(
                     "Shutting down listener for %s", self.context.short_name
                 )
@@ -164,7 +181,7 @@ class ObjectListener:
             #         state = watching
             #     continue
 
-            elif state is State.LISTING:
+            elif self.state is State.LISTING:
                 self.logger.info(
                     "Starting to list objects in %s", self.context.short_name
                 )
@@ -173,10 +190,10 @@ class ObjectListener:
                     "Completed listing objects in %s", self.context.short_name
                 )
 
-                state = State.WATCHING
+                self.state = State.WATCHING
                 continue
 
-            elif state is State.WATCHING:
+            elif self.state is State.WATCHING:
                 self.logger.info(
                     "Starting to watch objects in %s", self.context.short_name
                 )
