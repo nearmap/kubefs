@@ -6,6 +6,7 @@ sys.path.append(".")
 
 # isort: split
 import argparse
+import logging
 import time
 from threading import Thread
 from typing import List, Sequence, Tuple
@@ -53,6 +54,9 @@ def launch(
     exit_sender, exit_receiver = create_exit_chan()
     oev_sender, oev_receiver = create_oev_chan()
 
+    logger = logging.getLogger('listener')
+    logger.level = logging.INFO
+
     listener = ObjectListener(
         context=context,
         api_client=api_client,
@@ -60,6 +64,7 @@ def launch(
         cev_receiver=cev_receiver,
         exit_receiver=exit_receiver,
         oev_sender=oev_sender,
+        logger=logger,
     )
 
     list_thread = Thread(target=listener.run)

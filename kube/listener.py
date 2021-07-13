@@ -182,11 +182,11 @@ class ObjectListener:
             #     continue
 
             elif self.state is State.LISTING:
-                self.logger.info(
+                self.logger.debug(
                     "Starting to list objects in %s", self.context.short_name
                 )
                 self.list_objects()
-                self.logger.info(
+                self.logger.debug(
                     "Completed listing objects in %s", self.context.short_name
                 )
 
@@ -194,11 +194,11 @@ class ObjectListener:
                 continue
 
             elif self.state is State.WATCHING:
-                self.logger.info(
+                self.logger.debug(
                     "Starting to watch objects in %s", self.context.short_name
                 )
                 self.watch_objects()
-                self.logger.info(
+                self.logger.debug(
                     "Completed watching objects in %s", self.context.short_name
                 )
 
