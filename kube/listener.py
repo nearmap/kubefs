@@ -2,16 +2,20 @@ import enum
 import logging
 import re
 import time
-from typing import Any, Optional
+from threading import Thread
+from typing import Any, Optional, Tuple
 
+from kubernetes import config
 from kubernetes.client.api_client import ApiClient
+from kubernetes.client.configuration import Configuration
 from kubernetes.client.exceptions import ApiException
 from kubernetes.dynamic.client import DynamicClient
 
 from kube.channels.connectivity import CEvReceiver
-from kube.channels.exit import ExitReceiver
-from kube.channels.objects import OEvSender
+from kube.channels.exit import ExitReceiver, ExitSender, create_exit_chan
+from kube.channels.objects import OEvReceiver, OEvSender, create_oev_chan
 from kube.config import Context
+from kube.events.connectivity import BecameReachable, BecameUnreachable
 from kube.events.objects import Action, ObjectEvent
 
 
@@ -57,7 +61,8 @@ class ObjectListener:
         self.time_last_watch = None
         self.highest_resource_version = 0
 
-        self.state = State.LISTING
+        # self.state = State.LISTING
+        self.state = State.WATCHING
 
     def should_exit(self) -> bool:
         if self.state is State.EXITING:
@@ -163,23 +168,30 @@ class ObjectListener:
 
     def run(self) -> None:
         while True:
+            print("loop", self.state)
             if self.should_exit():
                 self.logger.info(
                     "Shutting down listener for %s", self.context.short_name
                 )
                 break
 
-            # if state is not States.CONNECTING and not poll conn queue:
-            #     state = connecting  # lost conn
-            #     continue
+            if self.state is not State.CONNECTING:
+                event = self.cev_receiver.recv_nowait()
+                if event and isinstance(event, BecameUnreachable):
+                    self.state = State.CONNECTING
+                    self.logger.info("Lost connectivity to %s", self.context.short_name)
+                    continue
 
-            # if state is States.CONNECTING:
-            #     if poll conn queue:  # non-blocking
-            #         # disconnected long enough to have to list again?
-            #         state = listing
-            #         # else
-            #         state = watching
-            #     continue
+            if self.state is State.CONNECTING:
+                event = self.cev_receiver.recv()
+                if isinstance(event, BecameReachable):
+                    # # disconnected long enough to have to list again?
+                    # state = listing
+                    self.state = State.WATCHING
+                    self.logger.info(
+                        "Re-established connectivity to %s", self.context.short_name
+                    )
+                    continue
 
             elif self.state is State.LISTING:
                 self.logger.debug(
@@ -201,5 +213,40 @@ class ObjectListener:
                 self.logger.debug(
                     "Completed watching objects in %s", self.context.short_name
                 )
-
                 continue
+
+
+def launch_listener(
+    context: Context,
+    cev_receiver: CEvReceiver,
+    object_class: ObjectClass,
+) -> Tuple[OEvReceiver, ExitSender]:
+    """
+    Launches the listener in a background thread.
+    """
+
+    config.load_kube_config(config_file=context.file.filepath, context=context.name)
+    configuration = Configuration.get_default_copy()
+    api_client = ApiClient(configuration=configuration)
+
+    exit_sender, exit_receiver = create_exit_chan()
+    oev_sender, oev_receiver = create_oev_chan()
+
+    logger = logging.getLogger("listener")
+    # logger.level = logging.INFO
+    logger.level = logging.DEBUG
+
+    listener = ObjectListener(
+        context=context,
+        api_client=api_client,
+        object_class=object_class,
+        cev_receiver=cev_receiver,
+        exit_receiver=exit_receiver,
+        oev_sender=oev_sender,
+        logger=logger,
+    )
+
+    list_thread = Thread(target=listener.run)
+    list_thread.start()
+
+    return oev_receiver, exit_sender
