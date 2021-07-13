@@ -168,7 +168,6 @@ class ObjectListener:
 
     def run(self) -> None:
         while True:
-            print("loop", self.state)
             if self.should_exit():
                 self.logger.info(
                     "Shutting down listener for %s", self.context.short_name
@@ -233,8 +232,8 @@ def launch_listener(
     oev_sender, oev_receiver = create_oev_chan()
 
     logger = logging.getLogger("listener")
-    # logger.level = logging.INFO
-    logger.level = logging.DEBUG
+    logger.level = logging.INFO
+    # logger.level = logging.DEBUG
 
     listener = ObjectListener(
         context=context,

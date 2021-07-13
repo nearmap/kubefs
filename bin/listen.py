@@ -6,9 +6,12 @@ sys.path.append(".")
 
 # isort: split
 import argparse
+import pprint
+import re
 import time
-from typing import List, Sequence, Tuple
+from typing import Any, List, Sequence, Tuple
 
+import deepdiff
 from colored import bg, fg
 from colored.colored import stylize
 
@@ -37,6 +40,8 @@ ACTION_COLORS = {
     Action.LISTED: [fg("cyan")],
 }
 
+STORE = {}
+
 
 def launch(
     args: argparse.Namespace, context: Context, object_class: ObjectClass
@@ -48,11 +53,54 @@ def launch(
     return oev_receiver, [det_exit_sender, lis_exit_sender]
 
 
+def show_change(prev, cur) -> Tuple[str, Any]:
+    rx_list_item = re.compile('\[(\d+)\]')
+    ddiff = deepdiff.DeepDiff(prev, cur)
+    values_changed = ddiff.get("values_changed")
+    if values_changed:
+        for key in values_changed.keys():
+            if "status" in key:
+                lookup_key = key.replace("root", "")
+                older = eval("prev%s" % lookup_key)
+                newer = eval("cur%s" % lookup_key)
+
+                key_name = lookup_key
+                key_name = re.sub('\]\[', '.', key_name)
+                key_name = re.sub("[\[\]']", '', key_name)
+
+                chunks = rx_list_item.split(lookup_key)
+                if len(chunks) == 3:
+                    # import ipdb as pdb; pdb.set_trace() # BREAKPOINT
+                    prefix = chunks[0]
+                    index = int(chunks[1])
+                    lst = eval("prev%s" % prefix)
+
+                    prefix = re.sub('\]\[', '.', prefix)
+                    prefix = re.sub("[\[\]']", '', prefix)
+
+                    try:
+                        last = eval("lst[%s]['type']" % index)
+                        key_name = "%s.%s" % (prefix, last)
+                    except KeyError:
+                        pass
+
+                key_name = stylize(key_name, styles=[fg('magenta')])
+                return "%s: %s -> %s" % (key_name, older, newer), None
+    return "", ddiff
+
+
 def run_forever(contexts: List[Context], oev_receivers: Sequence[OEvReceiver]) -> None:
     while True:
         for oev_receiver in oev_receivers:
             event = oev_receiver.recv_nowait()
             if event:
+                uid = event.object["metadata"]["uid"]
+
+                prev = STORE.get(uid)
+                change, ddiff = "", None
+                if prev and event.action is Action.MODIFIED:
+                    change, ddiff = show_change(prev, event.object)
+
                 kind = event.object["kind"]
                 name = event.object["metadata"]["name"]
                 ver = event.object["metadata"]["resourceVersion"]
@@ -65,7 +113,12 @@ def run_forever(contexts: List[Context], oev_receivers: Sequence[OEvReceiver]) -
                 ctx = stylize(event.context.short_name, styles=ctx_cols)
                 act = stylize(event.action.value, styles=act_cols)
 
-                print(ctx, act, kind, name, ver)
+                print(ctx, act, kind, name, change)
+                if ddiff:
+                    pprint.pprint(ddiff)
+
+                # cache in store
+                STORE[uid] = event.object
 
         time.sleep(0.01)
 
