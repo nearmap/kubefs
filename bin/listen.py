@@ -9,7 +9,7 @@ import argparse
 import pprint
 import re
 import time
-from typing import Any, List, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import deepdiff
 from colored import bg, fg
@@ -20,6 +20,7 @@ from kube.channels.objects import OEvReceiver
 from kube.config import Context, get_selector
 from kube.connectivity import launch_detector
 from kube.events.objects import Action
+from kube.finder import Finder
 from kube.listener import ObjectClass, launch_listener
 from kube.tools.logs import configure_logging
 from kube.tools.terminal import TerminalPrinter
@@ -40,7 +41,23 @@ ACTION_COLORS = {
     Action.LISTED: [fg("cyan")],
 }
 
-STORE = {}
+STORE: Dict[str, Any] = {}
+
+
+def find_matching_namespace(
+    args: argparse.Namespace, context: Context
+) -> Optional[str]:
+    if not args.namespace:
+        return None
+
+    finder = Finder(context)
+    object_class = ObjectClass(api_version="v1", kind="Namespace")
+
+    namespaces = finder.list_all(object_class)
+    namespaces = finder.fnmatch_objects(args.namespace, namespaces)
+    assert len(namespaces) == 1
+
+    return namespaces[0]["metadata"]["name"]
 
 
 def launch(
@@ -49,12 +66,15 @@ def launch(
     cev_receiver, det_exit_sender = launch_detector(
         context, want_logger=args.noisy_detector
     )
-    oev_receiver, lis_exit_sender = launch_listener(context, cev_receiver, object_class)
+    namespace = find_matching_namespace(args, context)
+    oev_receiver, lis_exit_sender = launch_listener(
+        context, cev_receiver, object_class, namespace
+    )
     return oev_receiver, [det_exit_sender, lis_exit_sender]
 
 
 def show_change(prev, cur) -> Tuple[str, Any]:
-    rx_list_item = re.compile('\[(\d+)\]')
+    rx_list_item = re.compile("\[(\d+)\]")
     ddiff = deepdiff.DeepDiff(prev, cur)
     values_changed = ddiff.get("values_changed")
     if values_changed:
@@ -65,8 +85,8 @@ def show_change(prev, cur) -> Tuple[str, Any]:
                 newer = eval("cur%s" % lookup_key)
 
                 key_name = lookup_key
-                key_name = re.sub('\]\[', '.', key_name)
-                key_name = re.sub("[\[\]']", '', key_name)
+                key_name = re.sub("\]\[", ".", key_name)
+                key_name = re.sub("[\[\]']", "", key_name)
 
                 chunks = rx_list_item.split(lookup_key)
                 if len(chunks) == 3:
@@ -75,8 +95,8 @@ def show_change(prev, cur) -> Tuple[str, Any]:
                     index = int(chunks[1])
                     lst = eval("prev%s" % prefix)
 
-                    prefix = re.sub('\]\[', '.', prefix)
-                    prefix = re.sub("[\[\]']", '', prefix)
+                    prefix = re.sub("\]\[", ".", prefix)
+                    prefix = re.sub("[\[\]']", "", prefix)
 
                     try:
                         last = eval("lst[%s]['type']" % index)
@@ -84,7 +104,7 @@ def show_change(prev, cur) -> Tuple[str, Any]:
                     except KeyError:
                         pass
 
-                key_name = stylize(key_name, styles=[fg('magenta')])
+                key_name = stylize(key_name, styles=[fg("magenta")])
                 return "%s: %s -> %s" % (key_name, older, newer), None
     return "", ddiff
 
@@ -164,6 +184,12 @@ if __name__ == "__main__":
         action="store",
         required=True,
         help=(f"Kube contexts to select - matched like a filesystem wildcard"),
+    )
+    parser.add_argument(
+        "--namespace",
+        dest="namespace",
+        action="store",
+        help=(f"Kube namespace to select - matched like a filesystem wildcard"),
     )
     args = parser.parse_args()
 

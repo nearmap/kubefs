@@ -2,6 +2,7 @@ import enum
 import logging
 import re
 import time
+from os import name
 from threading import Thread
 from typing import Any, Optional, Tuple
 
@@ -45,6 +46,7 @@ class ObjectListener:
         cev_receiver: CEvReceiver,
         exit_receiver: ExitReceiver,
         oev_sender: OEvSender,
+        namespace: Optional[str],
         watch_timeout_s=60,
         logger=None,
     ) -> None:
@@ -54,6 +56,7 @@ class ObjectListener:
         self.cev_receiver = cev_receiver
         self.exit_receiver = exit_receiver
         self.oev_sender = oev_sender
+        self.namespace = namespace
         self.watch_timeout_s = watch_timeout_s
         self.logger = logger or logging.getLogger(__name__)
 
@@ -96,6 +99,7 @@ class ObjectListener:
         collection = client.resources.get(
             api_version=self.object_class.api_version,
             kind=self.object_class.kind,
+            namespace=self.namespace,
         )
 
         result = collection.get()
@@ -137,6 +141,7 @@ class ObjectListener:
             watch = collection.watch(
                 resource_version=self.highest_resource_version,
                 timeout=self.watch_timeout_s,
+                namespace=self.namespace,
             )
 
             try:
@@ -219,6 +224,7 @@ def launch_listener(
     context: Context,
     cev_receiver: CEvReceiver,
     object_class: ObjectClass,
+    namespace: Optional[str],
 ) -> Tuple[OEvReceiver, ExitSender]:
     """
     Launches the listener in a background thread.
@@ -242,6 +248,7 @@ def launch_listener(
         cev_receiver=cev_receiver,
         exit_receiver=exit_receiver,
         oev_sender=oev_sender,
+        namespace=namespace,
         logger=logger,
     )
 
