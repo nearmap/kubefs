@@ -31,18 +31,28 @@ class AsyncLoop:
         return cls._instance
 
     async def mainloop(self):
+        # launch all the cluster loops
         tasks = []
         for context in self.contexts:
             cluster_loop = ClusterLoop(loop=self.loop, context=context)
             self.cluster_loops[context] = cluster_loop
-            tasks.append(cluster_loop.run_forever())
+            task = self.loop.create_task(cluster_loop.run_forever())
+            tasks.append(task)
+
+        # wait until cluster loops have initialized
+        all_started = False
+        while not all_started:
+            for cluster_loop in self.cluster_loops.values():
+                all_started = cluster_loop.is_running
+
+            await asyncio.sleep(0)
 
         # mark ourselves as fully initialized now
         self.__class__._instance = self
         self.is_running = True
 
         while True:
-            await asyncio.gather(*tasks)
+            await asyncio.sleep(0.001)
 
     def sync_list_objects(self, context: Context) -> List[Any]:
         cluster_loop = self.cluster_loops[context]
@@ -57,7 +67,8 @@ def launch_in_thread(contexts: Sequence[Context]) -> AsyncLoop:
     thread.start()
 
     # wait for our async loop to enter its mainloop
-    time.sleep(0.9)
+    while not async_loop.is_running:
+        time.sleep(0.001)
 
     return async_loop
 
