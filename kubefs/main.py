@@ -6,6 +6,7 @@ import os
 
 import fuse
 
+from akube.main import launch_in_thread
 from kubefs.fs_kubeconfig import (
     KubeConfigClustersDir,
     KubeConfigContextsDir,
@@ -87,7 +88,10 @@ if __name__ == "__main__":
     parser.add_argument("mount")
     args = parser.parse_args()
 
+    async_loop = launch_in_thread()
+
     logging.basicConfig(
-        level=logging.DEBUG, format="%(asctime)s %(levelname)s %(name)s %(message)s)"
+        level=logging.DEBUG,
+        format="%(asctime)s %(threadName)s %(levelname)s %(name)s %(message)s)",
     )
     fuse = fuse.FUSE(KubernetesFs(), args.mount, foreground=True)

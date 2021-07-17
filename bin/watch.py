@@ -6,8 +6,8 @@ sys.path.append(".")
 
 # isort: split
 
-import curses
 import argparse
+import curses
 import pprint
 import re
 import time

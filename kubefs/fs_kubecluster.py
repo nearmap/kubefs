@@ -1,3 +1,6 @@
+import dateutil
+
+from akube.main import get_loop
 from kubefs.fs_model import Directory, File, Payload
 from kubefs.kubeclient import KubeClientCache
 from kubefs.kubeconfig import Context
@@ -16,6 +19,21 @@ def mkpayload(*, api_version, kind, obj):
 
     payload = Payload(
         name=obj.metadata.name,
+        data=block.encode(),
+        ctime=timestamp,
+        mtime=timestamp,
+    )
+
+    return payload
+
+
+def mkpayload2(*, obj):
+    block = to_json(obj)
+
+    timestamp = dateutil.parser.parse(obj["metadata"]["creationTimestamp"]).timestamp()
+
+    payload = Payload(
+        name=obj["metadata"]["name"],
         data=block.encode(),
         ctime=timestamp,
         mtime=timestamp,
@@ -147,6 +165,7 @@ class KubeClusterNamespaceDir(Directory):
         return self
 
     def get_entries(self):
+
         if not self.lazy_entries:
             dirs = []
 
@@ -183,19 +202,30 @@ class KubeClusterNamespacesDir(Directory):
 
     def get_entries(self):
         if not self.lazy_entries:
-            files = []
+            # HACK: use async client instead
+            async_loop = get_loop()
+            items = async_loop.sync_list_objects()
 
-            namespaces = self.client.get_namespaces()
-            for namespace in namespaces:
-                name = namespace.metadata.name
-                payload = Payload(name=name)
-                files.append(
-                    KubeClusterNamespaceDir.create(
-                        payload=payload, context=self.context, namespace=name
-                    )
-                )
+            files = []
+            for item in items:
+                payload = mkpayload2(obj=item)
+                files.append(File(payload=payload))
 
             self.lazy_entries = files
+
+            # files = []
+
+            # namespaces = self.client.get_namespaces()
+            # for namespace in namespaces:
+            #     name = namespace.metadata.name
+            #     payload = Payload(name=name)
+            #     files.append(
+            #         KubeClusterNamespaceDir.create(
+            #             payload=payload, context=self.context, namespace=name
+            #         )
+            #     )
+
+            # self.lazy_entries = files
 
         return self.lazy_entries
 

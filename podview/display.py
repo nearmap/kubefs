@@ -1,8 +1,9 @@
 import curses
-import _curses
 import os
 import signal
 from typing import Sequence
+
+import _curses
 
 from kube.channels.objects import OEvReceiver
 
@@ -29,7 +30,7 @@ class Display:
 
     def should_exit(self):
         try:
-            if self.screen.getkey() == 'q':
+            if self.screen.getkey() == "q":
                 return True
         except _curses.error:
             pass
