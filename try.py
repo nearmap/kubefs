@@ -1,4 +1,5 @@
 import aiohttp
+import json
 import asyncio
 
 
@@ -7,19 +8,12 @@ class KubeCli:
         self.session = aiohttp.ClientSession()
 
     async def list_objects(self, prefix='/api/v1', kind='namespaces'):
-        url = 'http://127.0.0.1:8001/%s/%s' % (prefix, kind)
-        async with self.session.get(url) as response:
-            js = await response.json()
-            try:
-                items = js['items']
-            except KeyError:
-                import ipdb as pdb; pdb.set_trace() # BREAKPOINT
+        url = 'http://127.0.0.1:8001/%s/watch/%s' % (prefix, kind)
+        async with self.session.get(url, chunked=True) as response:
+            line = await response.content.readline()
+            item = json.loads(line)
 
-            for item in items:
-                item['apiVersion'] = js['apiVersion']
-                item['kind'] = js['kind'].replace('List', '')
-
-            return items
+            return [item]
 
     async def list_all(self):
         lists = [
