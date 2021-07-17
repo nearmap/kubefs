@@ -1,8 +1,10 @@
+import base64
 import logging
 import ssl
-from typing import Any, List
+import tempfile
+from typing import Any, List, Optional
 
-from aiohttp import ClientSession
+from aiohttp import BasicAuth, ClientSession
 
 from kube.config import Context
 
@@ -15,25 +17,24 @@ class AsyncClient:
         self.context = context
         self.logger = logging.getLogger("aclient")
 
-        self.ssl_context = self.create_ssl_context()
+        self.ssl_context = self.context.create_ssl_context()
+        self.basic_auth = self.create_basic_auth(context)
 
-    def create_ssl_context(self) -> ssl.SSLContext:
-        ssl_context = ssl.create_default_context(
-            cafile=self.context.cluster.ca_cert_path
-        )
+    def create_basic_auth(self, context: Context) -> Optional[BasicAuth]:
+        if context.user.username and context.user.password:
+            return BasicAuth(
+                login=context.user.username, password=context.user.password
+            )
 
-        ssl_context.load_cert_chain(
-            certfile=self.context.user.client_cert_path,
-            keyfile=self.context.user.client_key_path,
-        )
-
-        return ssl_context
+        return None
 
     async def list_objects(self, prefix="/api/v1", kind="namespaces") -> List[Any]:
         url = f"{self.context.cluster.server}{prefix}/{kind}"
 
         self.logger.info("Fetching %s", url)
-        async with self.session.get(url, ssl=self.ssl_context) as response:
+        async with self.session.get(
+            url, ssl=self.ssl_context, auth=self.basic_auth
+        ) as response:
 
             self.logger.debug("Parsing response as json")
             js = await response.json()

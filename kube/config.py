@@ -1,6 +1,9 @@
+import base64
 import fnmatch
 import logging
 import os
+import tempfile
+from ssl import SSLContext, create_default_context
 from typing import Dict, List, Optional, Sequence
 
 import yaml
@@ -90,6 +93,38 @@ class Context:
 
     def set_file(self, file: "KubeConfigFile") -> None:
         self.file = file
+
+    def create_ssl_context(self) -> SSLContext:
+        ssl_context = create_default_context(cafile=self.cluster.ca_cert_path)
+
+        # If the cert and key are in the form of blobs then we need to create
+        # temporary files for them because the ssl lib only accepts file paths.
+        # We first create a tempdir which is rwx only for the current user, so
+        # no other users can even list its contents. We then create the two temp
+        # files inside it. The tempdir and its contents get removed when the
+        # context manager exits.
+        if self.user.client_cert_data and self.user.client_key_data:
+            with tempfile.TemporaryDirectory(prefix="kube-client.") as tempdir_name:
+                cert_content = base64.b64decode(self.user.client_cert_data)
+                cert_file_fd, cert_file_name = tempfile.mkstemp(dir=tempdir_name)
+                os.write(cert_file_fd, cert_content)
+
+                cert_content = base64.b64decode(self.user.client_key_data)
+                key_file_fd, key_file_name = tempfile.mkstemp(dir=tempdir_name)
+                os.write(key_file_fd, cert_content)
+
+                ssl_context.load_cert_chain(
+                    certfile=cert_file_name,
+                    keyfile=key_file_name,
+                )
+
+        elif self.user.client_cert_path and self.user.client_key_path:
+            ssl_context.load_cert_chain(
+                certfile=self.user.client_cert_path,
+                keyfile=self.user.client_key_path,
+            )
+
+        return ssl_context
 
 
 class KubeConfigFile:
