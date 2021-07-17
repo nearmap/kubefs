@@ -8,13 +8,15 @@ from typing import Any, List, Optional
 import aiohttp
 
 from akube.client import AsyncClient
+from kube.config import Context
 
 
 class AsyncLoop:
     _instance = None
 
-    def __init__(self, loop: AbstractEventLoop, logger=None) -> None:
+    def __init__(self, loop: AbstractEventLoop, context: Context, logger=None) -> None:
         self.loop = loop
+        self.context = context
         self.logger = logging.getLogger("aloop")
 
         self.client: Optional[AsyncClient] = None
@@ -29,7 +31,7 @@ class AsyncLoop:
 
     async def mainloop(self):
         async with aiohttp.ClientSession() as session:
-            self.client = AsyncClient(session=session, baseurl="http://127.0.0.1:8001")
+            self.client = AsyncClient(session=session, context=self.context)
 
             # mark ourselves as fully initialized now
             self.__class__._instance = self
@@ -52,9 +54,9 @@ class AsyncLoop:
         return task.result()
 
 
-def launch_in_thread():
+def launch_in_thread(context: Context) -> AsyncLoop:
     loop = asyncio.get_event_loop()
-    async_loop = AsyncLoop(loop)
+    async_loop = AsyncLoop(loop=loop, context=context)
 
     thread = Thread(target=loop.run_until_complete, args=[async_loop.mainloop()])
     thread.start()
