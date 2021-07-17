@@ -1,7 +1,4 @@
-import base64
 import logging
-import ssl
-import tempfile
 from typing import Any, List, Optional
 
 from aiohttp import BasicAuth, ClientSession
