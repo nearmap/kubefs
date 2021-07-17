@@ -41,13 +41,13 @@ class ClusterLoop:
 
     def sync_list_objects(self) -> List[Any]:
         self.logger.info("Entered list_objects()")
-        task = self.loop.create_task(self.client.list_objects())
+        future = asyncio.run_coroutine_threadsafe(self.client.list_objects(), self.loop)
 
-        while not task.done():
+        while not future.done():
             time.sleep(0.001)
 
         self.logger.info("Exiting list_objects()")
-        return task.result()
+        return future.result()
 
     def start_watching(self) -> OEvReceiver:
         oev_sender, oev_receiver = create_oev_chan()

@@ -22,10 +22,11 @@ def main(args: argparse.Namespace) -> None:
 
     async_loop = launch_in_thread(contexts)
 
-    # for context in contexts:
-    #     items = async_loop.sync_list_objects(context)
-    #     for item in items:
-    #         print(context.short_name, item)
+    for context in contexts:
+        items = async_loop.sync_list_objects(context)
+        for item in items:
+            print(context.short_name, item)
+    return
 
     receivers = []
     for context in contexts:
