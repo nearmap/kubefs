@@ -17,15 +17,13 @@ def main(args: argparse.Namespace) -> None:
 
     selector = get_selector()
     contexts = selector.fnmatch_context(args.context)
-    assert len(contexts) == 1
 
-    context = contexts[0]
+    async_loop = launch_in_thread(contexts)
 
-    async_loop = launch_in_thread(context)
-
-    items = async_loop.sync_list_objects()
-    for item in items:
-        print(item)
+    for context in contexts:
+        items = async_loop.sync_list_objects(context)
+        for item in items:
+            print(context.short_name, item)
 
 
 if __name__ == "__main__":

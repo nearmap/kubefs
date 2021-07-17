@@ -1,9 +1,10 @@
+from akube.cluster_loop import ClusterLoop
 import asyncio
 import logging
 import time
 from asyncio.events import AbstractEventLoop
 from threading import Thread
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 import aiohttp
 
@@ -14,13 +15,13 @@ from kube.config import Context
 class AsyncLoop:
     _instance = None
 
-    def __init__(self, loop: AbstractEventLoop, context: Context, logger=None) -> None:
+    def __init__(self, loop: AbstractEventLoop, contexts: Sequence[Context], logger=None) -> None:
         self.loop = loop
-        self.context = context
+        self.contexts = contexts
         self.logger = logging.getLogger("aloop")
 
-        self.client: Optional[AsyncClient] = None
         self.is_running = False
+        self.cluster_loops: Dict[Context, ClusterLoop] = {}
 
     @classmethod
     def get_instance(cls) -> "AsyncLoop":
@@ -30,40 +31,33 @@ class AsyncLoop:
         return cls._instance
 
     async def mainloop(self):
-        async with aiohttp.ClientSession() as session:
-            self.client = AsyncClient(session=session, context=self.context)
+        tasks = []
+        for context in self.contexts:
+            cluster_loop = ClusterLoop(loop=self.loop, context=context)
+            self.cluster_loops[context] = cluster_loop
+            tasks.append(cluster_loop.run_forever())
 
-            # mark ourselves as fully initialized now
-            self.__class__._instance = self
-            self.is_running = True
+        # mark ourselves as fully initialized now
+        self.__class__._instance = self
+        self.is_running = True
 
-            while True:
-                # print("run_forever loop")
-                await asyncio.sleep(0.001)
-                # items = await self.client.list_objects()
-                # print(items)
+        while True:
+            await asyncio.gather(*tasks)
 
-    def sync_list_objects(self) -> List[Any]:
-        self.logger.info("Entered list_objects()")
-        task = self.loop.create_task(self.client.list_objects())
-
-        while not task.done():
-            time.sleep(0.001)
-
-        self.logger.info("Exiting list_objects()")
-        return task.result()
+    def sync_list_objects(self, context: Context) -> List[Any]:
+        cluster_loop = self.cluster_loops[context]
+        return cluster_loop.sync_list_objects()
 
 
-def launch_in_thread(context: Context) -> AsyncLoop:
+def launch_in_thread(contexts: Sequence[Context]) -> AsyncLoop:
     loop = asyncio.get_event_loop()
-    async_loop = AsyncLoop(loop=loop, context=context)
+    async_loop = AsyncLoop(loop=loop, contexts=contexts)
 
     thread = Thread(target=loop.run_until_complete, args=[async_loop.mainloop()])
     thread.start()
 
     # wait for our async loop to enter its mainloop
-    while not async_loop.is_running:
-        time.sleep(0.001)
+    time.sleep(0.9)
 
     return async_loop
 
