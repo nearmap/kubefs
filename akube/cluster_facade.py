@@ -2,6 +2,7 @@ from typing import Any, List, Optional
 
 from akube.async_loop import AsyncLoop
 from akube.model.api_resource import ApiResource
+from akube.model.selector import ObjectSelector
 from kube.channels.objects import OEvReceiver, create_oev_chan
 from kube.config import Context
 
@@ -14,8 +15,14 @@ class SyncClusterFacade:
     def list_api_resources(self) -> List[ApiResource]:
         pass
 
-    def list_resources(self, *, apires: ApiResource) -> List[Any]:
-        pass
+    def list_objects(self, *, selector: ObjectSelector) -> List[Any]:
+        async def list_objects():
+            cluster_loop = await self.async_loop.get_cluster_loop(self.context)
+            client = await cluster_loop.get_client()
+            items = await client.list_objects(selector)
+            return items
+
+        return self.async_loop.run_coro_until_completion(list_objects())
 
     def get_resource(
         self, *, apires: ApiResource, namespace: Optional[str], name: str
@@ -29,15 +36,6 @@ class SyncClusterFacade:
 
     def stop_watching(self, *, apires: ApiResource, namespace: Optional[str]) -> None:
         pass
-
-    def list(self) -> List[Any]:
-        async def list_namespaces():
-            cluster_loop = await self.async_loop.get_cluster_loop(self.context)
-            client = await cluster_loop.get_client()
-            items = await client.list_objects()
-            return items
-
-        return self.async_loop.run_coro_until_completion(list_namespaces())
 
     def watch(self) -> OEvReceiver:
         oev_sender, oev_receiver = create_oev_chan()

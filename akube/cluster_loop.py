@@ -31,6 +31,8 @@ class AsyncClusterLoop:
             self.client = AsyncClient(
                 session=session, context=self.context, logger=logger
             )
+
+            # once we have a client we announce we are ready for use
             self.initialized_event.set()
 
             while True:

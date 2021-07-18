@@ -1,23 +1,16 @@
-from typing import Any, Dict
-
-ApiObj = Dict[str, Any]
-
-
 class ApiResource:
     """Represents a REST resource available on the kube API server."""
 
-    def __init__(self, *, endpoint: str, obj: ApiObj) -> None:
+    def __init__(
+        self, *, endpoint: str, kind: str, name: str, namespaced: bool
+    ) -> None:
         self.endpoint = endpoint
-        self.obj = obj
+        self.kind = kind
+        self.name = name
+        self.namespaced = namespaced
 
-    @property
-    def kind(self) -> str:
-        return self.obj["kind"]
 
-    @property
-    def name(self) -> str:
-        return self.obj["name"]
-
-    @property
-    def namespaced(self) -> bool:
-        return self.obj["namespaced"]
+Pod = ApiResource(endpoint="/api/v1", kind="Pod", name="pods", namespaced=True)
+Namespace = ApiResource(
+    endpoint="/api/v1", kind="Namespace", name="namespaces", namespaced=False
+)

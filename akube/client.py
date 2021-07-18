@@ -5,6 +5,7 @@ from typing import Any, List, Optional
 
 from aiohttp import BasicAuth, ClientSession
 
+from akube.model.selector import ObjectSelector
 from kube.channels.objects import OEvSender
 from kube.config import Context
 from kube.events.objects import Action, ObjectEvent
@@ -29,8 +30,16 @@ class AsyncClient:
 
         return None
 
-    async def list_objects(self, prefix="/api/v1", kind="namespaces") -> List[Any]:
-        url = f"{self.context.cluster.server}{prefix}/{kind}"
+    async def list_objects(self, selector: ObjectSelector) -> List[Any]:
+        server = self.context.cluster.server
+        prefix = selector.res.endpoint
+        name = selector.res.name
+        kind = selector.res.kind
+        url = f"{server}{prefix}/{name}"
+
+        if selector.namespace:
+            namespace = selector.namespace
+            url = f"{server}{prefix}/namespaces/{namespace}/{name}"
 
         self.logger.info("Listing %s objects on %s", kind, url)
         async with self.session.get(

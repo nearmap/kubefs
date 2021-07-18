@@ -11,9 +11,10 @@ from typing import List
 
 from akube.async_loop import launch_in_background_thread
 from akube.cluster_facade import SyncClusterFacade
+from akube.model.api_resource import Namespace, Pod
+from akube.model.selector import ObjectSelector
 from kube.channels.objects import OEvReceiver
 from kube.config import get_selector
-from kube.events.objects import ObjectEvent
 from kube.tools.logs import configure_logging
 
 
@@ -25,29 +26,30 @@ def main(args: argparse.Namespace) -> None:
 
     async_loop = launch_in_background_thread()
 
-    # context = contexts[0]
-    # facade = SyncClusterFacade(async_loop=async_loop, context=context)
-    # items = facade.list()
-    # for item in items:
-    #     print(item)
+    context = contexts[0]
+    facade = SyncClusterFacade(async_loop=async_loop, context=context)
+    selector = ObjectSelector(res=Namespace)
+    items = facade.list_objects(selector=selector)
+    for item in items:
+        print(item)
 
-    receivers: List[OEvReceiver] = []
-    for context in contexts:
-        facade = SyncClusterFacade(async_loop=async_loop, context=context)
-        oev_receiver = facade.watch()
-        receivers.append(oev_receiver)
+    # receivers: List[OEvReceiver] = []
+    # for context in contexts:
+    #     facade = SyncClusterFacade(async_loop=async_loop, context=context)
+    #     oev_receiver = facade.watch()
+    #     receivers.append(oev_receiver)
 
-    while True:
-        for receiver in receivers:
-            event: ObjectEvent = receiver.recv_nowait()
-            if event:
-                print(
-                    event.context.short_name,
-                    event.action,
-                    event.object["metadata"]["name"],
-                )
+    # while True:
+    #     for receiver in receivers:
+    #         event: ObjectEvent = receiver.recv_nowait()
+    #         if event:
+    #             print(
+    #                 event.context.short_name,
+    #                 event.action,
+    #                 event.object["metadata"]["name"],
+    #             )
 
-        time.sleep(0.01)
+    #     time.sleep(0.01)
 
 
 if __name__ == "__main__":
