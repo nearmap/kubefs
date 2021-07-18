@@ -1,5 +1,6 @@
 import asyncio
 from asyncio import Event
+from kube.tools.logs import get_silent_logger
 
 import aiohttp
 
@@ -19,15 +20,16 @@ class AsyncClusterLoop:
         await self.initialized_event.wait()
 
     async def get_client(self) -> AsyncClient:
+        if self.client is None:
+            raise RuntimeError("Have no client yet")
+
         return self.client
 
     async def mainloop(self):
         async with aiohttp.ClientSession() as session:
-            self.client = AsyncClient(session=session, context=self.context)
+            logger = get_silent_logger()
+            self.client = AsyncClient(session=session, context=self.context, logger=logger)
             self.initialized_event.set()
 
             while True:
                 await asyncio.sleep(3600)
-
-    async def do(self):
-        print(self.client)

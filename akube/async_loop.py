@@ -1,7 +1,8 @@
-from akube.client import AsyncClient
+from asyncio.base_events import BaseEventLoop
+import time
 import asyncio
 from threading import Event, Thread
-from typing import Dict
+from typing import Any, Dict
 
 from akube.cluster_loop import AsyncClusterLoop
 from kube.config import Context
@@ -11,7 +12,7 @@ class AsyncLoop:
     _instance = None
 
     def __init__(
-        self, *, loop: asyncio.BaseEventLoop, initialized_event: Event
+        self, *, loop: BaseEventLoop, initialized_event: Event
     ) -> None:
         self.loop = loop
         self.initialized_event = initialized_event
@@ -26,6 +27,7 @@ class AsyncLoop:
         return cls._instance
 
     async def initialize(self) -> None:
+        # make get_instance work
         self.__class__._instance = self
 
         # tell the world we are up and running
@@ -41,20 +43,29 @@ class AsyncLoop:
             self.loop.create_task(cluster_loop.mainloop())
             await cluster_loop.wait_until_initialized()
 
-        await cluster_loop.do()
-
         return cluster_loop
-
-    async def get_client(self, context: Context) -> AsyncClient:
-        cluster_loop = await self.get_cluster_loop(context)
-        client = await cluster_loop.get_client()
-        return client
 
     async def mainloop(self):
         await self.initialize()
 
         while True:
             await asyncio.sleep(3600)
+
+    # Helpers to facilitate running tasks on the async loop from another thread
+
+    def get_loop(self) -> BaseEventLoop:
+        return self.loop
+
+    def launch_coro(self, coro) -> None:
+        asyncio.run_coroutine_threadsafe(coro, self.loop)
+
+    def run_coro_until_completion(self, coro) -> Any:
+        fut = asyncio.run_coroutine_threadsafe(coro, self.loop)
+
+        while not fut.done():
+            time.sleep(0.001)
+
+        return fut.result()
 
 
 def launch_in_background_thread() -> AsyncLoop:

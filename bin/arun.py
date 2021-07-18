@@ -8,12 +8,13 @@ sys.path.append(".")
 import argparse
 import time
 
-from akube.async_loop import get_loop, launch_in_background_thread
-from akube.main import launch_in_thread
+from typing import List
+from kube.channels.objects import OEvReceiver
+from akube.async_loop import launch_in_background_thread
 from kube.config import get_selector
 from kube.events.objects import ObjectEvent
 from kube.tools.logs import configure_logging
-import asyncio
+from akube.cluster_facade import SyncClusterFacade
 
 
 def main(args: argparse.Namespace) -> None:
@@ -21,34 +22,19 @@ def main(args: argparse.Namespace) -> None:
 
     selector = get_selector()
     contexts = selector.fnmatch_context(args.context)
-    context = contexts[0]
 
     async_loop = launch_in_background_thread()
-    fut = asyncio.run_coroutine_threadsafe(async_loop.get_client(context), async_loop.loop)
 
-    while not fut.done():
-        time.sleep(0.001)
+    # context = contexts[0]
+    # facade = SyncClusterFacade(async_loop=async_loop, context=context)
+    # items = facade.list()
+    # for item in items:
+    #     print(item)
 
-    print(fut.result())
-
-
-def zmain(args: argparse.Namespace) -> None:
-    configure_logging()
-
-    selector = get_selector()
-    contexts = selector.fnmatch_context(args.context)
-
-    async_loop = launch_in_thread(contexts)
-
-    # for context in contexts:
-    #     items = async_loop.sync_list_objects(context)
-    #     for item in items:
-    #         print(context.short_name, item)
-    # return
-
-    receivers = []
+    receivers: List[OEvReceiver] = []
     for context in contexts:
-        oev_receiver = async_loop.add_watch(context)
+        facade = SyncClusterFacade(async_loop=async_loop, context=context)
+        oev_receiver = facade.watch()
         receivers.append(oev_receiver)
 
     while True:
