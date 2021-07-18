@@ -37,9 +37,8 @@ class AsyncClusterLoop:
         self, selector: ObjectSelector, oev_sender: OEvSender
     ) -> None:
         loop = self.async_loop.get_loop()
-        task = loop.create_task(
-            self.client.watch_objects(selector=selector, oev_sender=oev_sender)
-        )
+        coro = self.client.watch_objects(selector=selector, oev_sender=oev_sender)
+        task = loop.create_task(coro)
 
         async with self.watches_lock:
             self.watches[selector] = task
@@ -49,7 +48,7 @@ class AsyncClusterLoop:
             task = self.watches.pop(selector, None)
 
         if task is None:
-            raise RuntimeError("No such watch for selector %s" % selector)
+            raise RuntimeError("No such watch for selector %r" % selector)
 
         try:
             task.cancel()
