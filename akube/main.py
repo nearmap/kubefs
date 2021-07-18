@@ -5,7 +5,7 @@ from asyncio.events import AbstractEventLoop
 from threading import Thread
 from typing import Any, Dict, List, Sequence
 
-from akube.cluster_loop import ClusterLoop
+from akube.cluster_loop_orig import AsyncClusterLoop
 from kube.channels.objects import OEvReceiver
 from kube.config import Context
 
@@ -21,7 +21,7 @@ class AsyncLoop:
         self.logger = logger or logging.getLogger("aloop")
 
         self.is_running = False
-        self.cluster_loops: Dict[Context, ClusterLoop] = {}
+        self.cluster_loops: Dict[Context, AsyncClusterLoop] = {}
 
     @classmethod
     def get_instance(cls) -> "AsyncLoop":
@@ -34,7 +34,7 @@ class AsyncLoop:
         # launch all the cluster loops
         tasks = []
         for context in self.contexts:
-            cluster_loop = ClusterLoop(loop=self.loop, context=context)
+            cluster_loop = AsyncClusterLoop(loop=self.loop, context=context)
             self.cluster_loops[context] = cluster_loop
             task = self.loop.create_task(cluster_loop.run_forever())
             tasks.append(task)
@@ -52,7 +52,7 @@ class AsyncLoop:
         self.is_running = True
 
         while True:
-            await asyncio.sleep(0.001)
+            await asyncio.sleep(1)
 
     def sync_list_objects(self, context: Context) -> List[Any]:
         cluster_loop = self.cluster_loops[context]
@@ -65,6 +65,7 @@ class AsyncLoop:
 
 def launch_in_thread(contexts: Sequence[Context]) -> AsyncLoop:
     loop = asyncio.get_event_loop()
+    loop.set_debug(True)
     async_loop = AsyncLoop(loop=loop, contexts=contexts)
 
     thread = Thread(target=loop.run_until_complete, args=[async_loop.mainloop()])
