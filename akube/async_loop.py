@@ -35,7 +35,7 @@ class AsyncLoop:
         cluster_loop = self.cluster_loops.get(context)
 
         if cluster_loop is None:
-            cluster_loop = AsyncClusterLoop(context=context)
+            cluster_loop = AsyncClusterLoop(async_loop=self, context=context)
             self.cluster_loops[context] = cluster_loop
 
             self.loop.create_task(cluster_loop.mainloop())

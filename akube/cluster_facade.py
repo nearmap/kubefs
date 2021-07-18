@@ -29,23 +29,19 @@ class SyncClusterFacade:
     ) -> Optional[Any]:
         pass
 
-    def start_watching(
-        self, *, apires: ApiResource, namespace: Optional[str]
-    ) -> OEvReceiver:
-        pass
-
-    def stop_watching(self, *, apires: ApiResource, namespace: Optional[str]) -> None:
-        pass
-
-    def watch(self) -> OEvReceiver:
+    def start_watching(self, *, selector: ObjectSelector) -> OEvReceiver:
         oev_sender, oev_receiver = create_oev_chan()
 
-        async def watch_pods():
+        async def start_watch():
             cluster_loop = await self.async_loop.get_cluster_loop(self.context)
-            client = await cluster_loop.get_client()
-            loop = self.async_loop.get_loop()
-            # TODO: this should be "tell cluster_loop to start a watch"
-            loop.create_task(client.watch_objects(oev_sender=oev_sender))
+            await cluster_loop.start_watch(selector, oev_sender)
 
-        self.async_loop.launch_coro(watch_pods())
+        self.async_loop.run_coro_until_completion(start_watch())
         return oev_receiver
+
+    def stop_watching(self, *, selector: ObjectSelector) -> None:
+        async def stop_watch():
+            cluster_loop = await self.async_loop.get_cluster_loop(self.context)
+            await cluster_loop.stop_watch(selector)
+
+        self.async_loop.run_coro_until_completion(stop_watch())

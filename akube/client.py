@@ -76,9 +76,19 @@ class AsyncClient:
         raise RuntimeError("Failed to parse action from item: %r" % action_str)
 
     async def watch_objects(
-        self, *, prefix="/api/v1", kind="pods", oev_sender: OEvSender
+        self, *, selector: ObjectSelector, oev_sender: OEvSender
     ) -> None:
-        url = f"{self.context.cluster.server}{prefix}/watch/{kind}"
+        server = self.context.cluster.server
+        prefix = selector.res.endpoint
+        name = selector.res.name
+        kind = selector.res.kind
+        url = f"{server}{prefix}/watch/{name}"
+
+        if selector.namespace:
+            namespace = selector.namespace
+            url = f"{server}{prefix}/watch/namespaces/{namespace}/{name}"
+
+        # TODO use ?watch= instead of /watch ?
 
         self.logger.info("Watching %s objects on %s", kind, url)
         async with self.session.get(
