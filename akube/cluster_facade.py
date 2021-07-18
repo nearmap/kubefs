@@ -1,6 +1,6 @@
-from akube.async_loop import AsyncLoop
 from typing import Any, List, Optional
 
+from akube.async_loop import AsyncLoop
 from akube.model.api_resource import ApiResource
 from kube.channels.objects import OEvReceiver, create_oev_chan
 from kube.config import Context

@@ -1,6 +1,6 @@
-from asyncio.base_events import BaseEventLoop
-import time
 import asyncio
+import time
+from asyncio.events import AbstractEventLoop
 from threading import Event, Thread
 from typing import Any, Dict
 
@@ -11,9 +11,7 @@ from kube.config import Context
 class AsyncLoop:
     _instance = None
 
-    def __init__(
-        self, *, loop: BaseEventLoop, initialized_event: Event
-    ) -> None:
+    def __init__(self, *, loop: AbstractEventLoop, initialized_event: Event) -> None:
         self.loop = loop
         self.initialized_event = initialized_event
 
@@ -53,7 +51,7 @@ class AsyncLoop:
 
     # Helpers to facilitate running tasks on the async loop from another thread
 
-    def get_loop(self) -> BaseEventLoop:
+    def get_loop(self) -> AbstractEventLoop:
         return self.loop
 
     def launch_coro(self, coro) -> None:

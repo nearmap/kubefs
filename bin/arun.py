@@ -7,14 +7,14 @@ sys.path.append(".")
 # isort: split
 import argparse
 import time
-
 from typing import List
-from kube.channels.objects import OEvReceiver
+
 from akube.async_loop import launch_in_background_thread
+from akube.cluster_facade import SyncClusterFacade
+from kube.channels.objects import OEvReceiver
 from kube.config import get_selector
 from kube.events.objects import ObjectEvent
 from kube.tools.logs import configure_logging
-from akube.cluster_facade import SyncClusterFacade
 
 
 def main(args: argparse.Namespace) -> None:
