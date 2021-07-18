@@ -27,7 +27,7 @@ def main(args: argparse.Namespace) -> None:
 
     async_loop = launch_in_background_thread()
 
-    if False:
+    if 0:
         context = contexts[0]
         facade = SyncClusterFacade(async_loop=async_loop, context=context)
         selector = ObjectSelector(res=Namespace)

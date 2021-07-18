@@ -11,6 +11,10 @@ from kube.config import Context
 from kube.events.objects import Action, ObjectEvent
 
 
+class ApiError(Exception):
+    pass
+
+
 class AsyncClient:
     def __init__(
         self, *, session: ClientSession, context: Context, logger=None
@@ -30,6 +34,13 @@ class AsyncClient:
 
         return None
 
+    def maybe_parse_error(self, dct) -> None:
+        if dct.get('status') == 'Failure':
+            message = dct['message']
+            reason = dct['reason']
+            code = dct['code']
+            raise ApiError(reason, code, message)
+
     async def list_objects(self, selector: ObjectSelector) -> List[Any]:
         server = self.context.cluster.server
         prefix = selector.res.endpoint
@@ -48,6 +59,12 @@ class AsyncClient:
 
             self.logger.debug("Parsing %s response as json", kind)
             js = await response.json()
+
+            try:
+                self.maybe_parse_error(js)
+            except ApiError:
+                self.logger.exception("List request failed")
+                return []
 
             try:
                 items = js["items"]
@@ -103,6 +120,12 @@ class AsyncClient:
 
                 self.logger.debug("Parsing %s response line as json", kind)
                 dct = json.loads(line)
+
+                try:
+                    self.maybe_parse_error(dct)
+                except ApiError:
+                    self.logger.exception("Watch request failed")
+                    continue
 
                 action = self.parse_action(dct)
                 event = ObjectEvent(

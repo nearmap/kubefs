@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from asyncio import Event, Lock, Task
 from asyncio.exceptions import CancelledError
 from typing import Dict
@@ -55,8 +56,9 @@ class AsyncClusterLoop:
 
     async def mainloop(self):
         async with aiohttp.ClientSession() as session:
-            logger = None
-            logger = get_silent_logger()
+            logger = logging.getLogger('aclient')
+            logger.setLevel(logging.WARN)
+            # logger = get_silent_logger()
 
             self.client = AsyncClient(
                 session=session, context=self.context, logger=logger
