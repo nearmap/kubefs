@@ -34,6 +34,25 @@ class AsyncClient:
 
         return None
 
+    def construct_url(self, selector: ObjectSelector, watch: bool = False) -> str:
+        server = self.context.cluster.server
+        prefix = selector.res.endpoint
+        name = selector.res.name
+        url = f"{server}{prefix}/{name}"
+
+        if selector.namespace:
+            namespace = selector.namespace
+            url = f"{server}{prefix}/namespaces/{namespace}/{name}"
+
+        # TODO: add timeoutSeconds=n
+
+        if watch:
+            # TODO: add resourceVersion
+            # TODO: add resourceVersionMatch?
+            url = f"{url}?watch=1"
+
+        return url
+
     def maybe_parse_error(self, dct) -> None:
         if dct.get('status') == 'Failure':
             message = dct['message']
@@ -42,20 +61,17 @@ class AsyncClient:
             raise ApiError(reason, code, message)
 
     async def list_objects(self, selector: ObjectSelector) -> List[Any]:
-        server = self.context.cluster.server
-        prefix = selector.res.endpoint
-        name = selector.res.name
         kind = selector.res.kind
-        url = f"{server}{prefix}/{name}"
+        url = self.construct_url(selector)
 
-        if selector.namespace:
-            namespace = selector.namespace
-            url = f"{server}{prefix}/namespaces/{namespace}/{name}"
+        kwargs = dict(
+            url=url,
+            ssl_context=self.ssl_context,
+            auth=self.basic_auth,
+        )
 
         self.logger.info("Listing %s objects on %s", kind, url)
-        async with self.session.get(
-            url, ssl=self.ssl_context, auth=self.basic_auth
-        ) as response:
+        async with self.session.get(**kwargs) as response:
 
             self.logger.debug("Parsing %s response as json", kind)
             js = await response.json()
@@ -95,22 +111,17 @@ class AsyncClient:
     async def watch_objects(
         self, *, selector: ObjectSelector, oev_sender: OEvSender
     ) -> None:
-        server = self.context.cluster.server
-        prefix = selector.res.endpoint
-        name = selector.res.name
         kind = selector.res.kind
-        url = f"{server}{prefix}/watch/{name}"
+        url = self.construct_url(selector, watch=True)
 
-        if selector.namespace:
-            namespace = selector.namespace
-            url = f"{server}{prefix}/watch/namespaces/{namespace}/{name}"
-
-        # TODO use ?watch= instead of /watch ?
+        kwargs = dict(
+            url=url,
+            ssl_context=self.ssl_context,
+            auth=self.basic_auth,
+        )
 
         self.logger.info("Watching %s objects on %s", kind, url)
-        async with self.session.get(
-            url, ssl=self.ssl_context, auth=self.basic_auth
-        ) as response:
+        async with self.session.get(**kwargs) as response:
 
             while True:
                 self.logger.debug("Reading %s response line as json", kind)
@@ -125,6 +136,8 @@ class AsyncClient:
                     self.maybe_parse_error(dct)
                 except ApiError:
                     self.logger.exception("Watch request failed")
+
+                    # TODO: 'continue' on retryable error, fail otherwise
                     continue
 
                 action = self.parse_action(dct)

@@ -46,13 +46,15 @@ class AsyncClusterLoop:
 
     async def stop_watch(self, selector: ObjectSelector) -> None:
         async with self.watches_lock:
-            task = self.watches.get(selector)
+            task = self.watches.pop(selector, None)
 
-        if task:
-            try:
-                task.cancel()
-            except CancelledError:
-                pass
+        if task is None:
+            raise RuntimeError("No such watch for selector %s" % selector)
+
+        try:
+            task.cancel()
+        except CancelledError:
+            pass
 
     async def mainloop(self):
         async with aiohttp.ClientSession() as session:

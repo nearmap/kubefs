@@ -9,6 +9,15 @@ class ApiResource:
         self.name = name
         self.namespaced = namespaced
 
+    def __repr__(self) -> str:
+        return '<%s kind=%r, name=%r, namespaced=%r, endpoint=%r>' % (
+            self.__class__.__name__,
+            self.kind,
+            self.name,
+            self.namespaced,
+            self.endpoint,
+        )
+
 
 Pod = ApiResource(endpoint="/api/v1", kind="Pod", name="pods", namespaced=True)
 Namespace = ApiResource(
