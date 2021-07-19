@@ -4,7 +4,7 @@ import logging
 def configure_logging() -> None:
     logging.basicConfig(
         level=logging.DEBUG,
-        format="%(asctime)-15s %(levelname)s %(name)s %(message)s",
+        format="%(asctime)-15s %(threadName)s %(levelname)s %(name)s %(message)s",
     )
 
     # tell noisy loggers to be quiet

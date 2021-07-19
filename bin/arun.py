@@ -7,7 +7,7 @@ sys.path.append(".")
 # isort: split
 import argparse
 import time
-from typing import List
+from typing import List, Optional
 
 from akube.async_loop import launch_in_background_thread
 from akube.cluster_facade import SyncClusterFacade
@@ -22,8 +22,8 @@ from kube.tools.logs import configure_logging
 def main(args: argparse.Namespace) -> None:
     configure_logging()
 
-    selector = get_selector()
-    contexts = selector.fnmatch_context(args.context)
+    config_selector = get_selector()
+    contexts = config_selector.fnmatch_context(args.context)
 
     async_loop = launch_in_background_thread()
 
@@ -45,7 +45,7 @@ def main(args: argparse.Namespace) -> None:
 
         while True:
             for receiver in receivers:
-                event: ObjectEvent = receiver.recv_nowait()
+                event: Optional[ObjectEvent] = receiver.recv_nowait()
                 if event:
                     print(
                         event.context.short_name,

@@ -10,7 +10,7 @@ class ApiResource:
         self.namespaced = namespaced
 
     def __repr__(self) -> str:
-        return '<%s kind=%r, name=%r, namespaced=%r, endpoint=%r>' % (
+        return "<%s kind=%r, name=%r, namespaced=%r, endpoint=%r>" % (
             self.__class__.__name__,
             self.kind,
             self.name,

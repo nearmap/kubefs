@@ -14,9 +14,12 @@ from kube.tools.logs import get_silent_logger
 
 
 class AsyncClusterLoop:
-    def __init__(self, *, async_loop: "AsyncLoop", context: Context) -> None:
+    def __init__(
+        self, *, async_loop: "AsyncLoop", context: Context, logger=None
+    ) -> None:
         self.async_loop = async_loop
         self.context = context
+        self.logger = logger or logging.getLogger("cluster_loop")
 
         self.initialized_event = Event()
         self.client = None
@@ -55,10 +58,28 @@ class AsyncClusterLoop:
         except CancelledError:
             pass
 
+    async def detect_stopped_watches(self):
+        async with self.watches_lock:
+            for selector, task in self.watches.items():
+                if not task.done():
+                    continue
+
+                exc = task.exception()
+                if exc is not None:
+                    self.logger.error(
+                        "Watch with selector %r errored out: %r", selector, exc
+                    )
+                    return
+
+                # okay, it didn't crash but... it exited for some reason?
+                self.logger.warn(
+                    "Watch with selector %r completed prematurely", selector
+                )
+
     async def mainloop(self):
         async with aiohttp.ClientSession() as session:
-            logger = logging.getLogger('aclient')
-            logger.setLevel(logging.WARN)
+            logger = logging.getLogger("aclient")
+            # logger.setLevel(logging.WARN)
             # logger = get_silent_logger()
 
             self.client = AsyncClient(
@@ -69,4 +90,5 @@ class AsyncClusterLoop:
             self.initialized_event.set()
 
             while True:
-                await asyncio.sleep(3600)
+                await self.detect_stopped_watches()
+                await asyncio.sleep(1)

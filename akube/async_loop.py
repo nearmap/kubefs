@@ -73,7 +73,9 @@ def launch_in_background_thread() -> AsyncLoop:
     initialized_event = Event()
     async_loop = AsyncLoop(loop=loop, initialized_event=initialized_event)
 
-    thread = Thread(target=loop.run_until_complete, args=[async_loop.mainloop()])
+    thread = Thread(
+        name="AsyncThread", target=loop.run_until_complete, args=[async_loop.mainloop()]
+    )
     thread.start()
 
     # wait until the loop has started running on a separate thread and is ready
