@@ -17,3 +17,13 @@ class ObjectSelector:
             self.res,
             self.namespace,
         )
+
+    def pretty(self):
+        slug = ''
+
+        if self.namespace is not None:
+            slug = f"{self.namespace}/{slug}"
+
+        slug = f"{slug}{self.res.kind}"
+
+        return slug

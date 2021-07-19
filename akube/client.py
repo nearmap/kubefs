@@ -73,6 +73,34 @@ class AsyncClient:
 
         return None
 
+    # Logging
+
+    def _log(self, level: int, selector: ObjectSelector, fmtstr: str, *args, exc_info=False) -> None:
+        std_prefix = "[%s] [%s] "
+        std_args = [self.context.short_name, selector.pretty()]
+
+        args = std_args + list(args)
+        line = f"{std_prefix}{fmtstr}"
+
+        self.logger.log(level, line, *args)
+
+    def debug(self, selector: ObjectSelector, fmtstr: str, *args) -> None:
+        self._log(logging.DEBUG, selector, fmtstr, *args)
+
+    def info(self, selector: ObjectSelector, fmtstr: str, *args) -> None:
+        self._log(logging.INFO, selector, fmtstr, *args)
+
+    def warn(self, selector: ObjectSelector, fmtstr: str, *args) -> None:
+        self._log(logging.WARN, selector, fmtstr, *args)
+
+    def error(self, selector: ObjectSelector, fmtstr: str, *args) -> None:
+        self._log(logging.ERROR, selector, fmtstr, *args)
+
+    def exception(self, selector: ObjectSelector, fmtstr: str, *args) -> None:
+        self._log(logging.ERROR, selector, fmtstr, *args, exc_info=True)
+
+    # Manage resourceVersion
+
     async def get_resource_version(self) -> int:
         async with self.resource_version_lock:
             return self.resource_version
@@ -88,6 +116,8 @@ class AsyncClient:
         async with self.resource_version_lock:
             if version > self.resource_version:
                 self.resource_version = version
+
+    # Parsing responses
 
     def parse_watch_action(self, item) -> Action:
         action_str = item["type"]
@@ -159,22 +189,22 @@ class AsyncClient:
             )
         )
 
-        self.logger.info("Listing %s objects on %s", kind, url)
+        self.info(selector, "Listing %s objects on %s", kind, url)
         async with self.session.get(**kwargs) as response:
 
-            self.logger.debug("Parsing %s response as json", kind)
+            self.debug(selector, "Parsing %s response as json", kind)
             js = await response.json()
 
             try:
                 self.maybe_parse_error(js)
             except ApiError:
-                self.logger.exception("List request failed")
+                self.exception(selector, "List request failed")
                 return []
 
             try:
                 items = js["items"]
             except KeyError:
-                self.logger.error("Failed to parse %s response items: %r", kind, js)
+                self.error(selector, "Failed to parse %s response items: %r", kind, js)
                 return []
 
             for item in items:
@@ -182,7 +212,7 @@ class AsyncClient:
                 item["kind"] = js["kind"].replace("List", "")
                 await self.update_resource_version(dct=item)
 
-            self.logger.debug("Returning %s items", kind)
+            self.debug(selector, "Returning %s items", kind)
             return items
 
     async def watch_attempt(
@@ -207,19 +237,20 @@ class AsyncClient:
         # iterations from each other in log output)
         seqno = random.randint(0, 10000)
 
-        self.logger.info("[%s] Watching %s objects on %s", seqno, kind, url)
+        self.info(selector, "[%s] Watching %s objects on %s", seqno, kind, url)
         async with self.session.get(**kwargs) as response:
 
             # read one line at a time, b'\n' terminated
             while True:
-                self.logger.debug("[%s] Waiting for %s response line", seqno, kind)
+                self.debug(selector, "[%s] Waiting for %s response line", seqno, kind)
                 line = await response.content.readline()
 
                 if not line:
-                    self.logger.info("[%s] Received empty line, exiting", seqno)
+                    self.info(selector, "[%s] Received empty line, exiting", seqno)
                     break
 
-                self.logger.debug(
+                self.debug(
+                    selector,
                     "[%s] Parsing %s response line [len: %s] as json",
                     seqno,
                     kind,
@@ -237,7 +268,7 @@ class AsyncClient:
 
                 await self.update_resource_version(dct=dct["object"])
 
-                self.logger.debug("[%s] Returning %s item", seqno, kind)
+                self.debug(selector, "[%s] Returning %s item", seqno, kind)
                 oev_sender.send(event)
 
                 seqno += 1
@@ -253,12 +284,12 @@ class AsyncClient:
             except (TimeoutError, ClientPayloadError) as exc:
                 # the server timed out the watch - we expect this to happen
                 # after the normal server timeout interval (5-15min)
-                self.logger.info("Watch request completed - restarting")
+                self.info(selector, "Watch request completed - restarting")
 
             except ApiError as exc:
                 # if the http error looks transient - try again
                 if exc.is_retryable():
-                    self.logger.warn(
+                    self.warn(selector,
                         "Watch request failed with retryable error: %r - retrying", exc
                     )
                     continue
@@ -270,14 +301,16 @@ class AsyncClient:
                     continue
 
                 # if the http error seems permanet then log a traceback and exit
-                self.logger.exception(
+                self.exception(
+                    selector,
                     "Watch request failed with non-retryable error - giving up"
                 )
                 raise
 
             except Exception:
                 # we don't know what the error is so log a traceback and exit
-                self.logger.exception(
+                self.exception(
+                    selector,
                     "Watch request failed with unexpected error - giving up"
                 )
                 raise
