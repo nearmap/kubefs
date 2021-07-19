@@ -1,6 +1,7 @@
 import json
 import logging
 import random
+import re
 from asyncio.exceptions import TimeoutError
 from asyncio.locks import Lock
 from typing import Any, List, Optional
@@ -16,6 +17,9 @@ from kube.events.objects import Action, ObjectEvent
 
 
 class ApiError(Exception):
+    # too old resource version: 355452234 (358305898)
+    rx = re.compile("too old resource version: \d+ \((\d+)\)")
+
     def __init__(self, code: int, reason: str, message: str) -> None:
         super().__init__()
 
@@ -31,8 +35,19 @@ class ApiError(Exception):
             self.message,
         )
 
+    def __str__(self) -> str:
+        return self.__repr__()
+
     def is_retryable(self):
         return self.code in (500, 502, 503, 504)
+
+    def is_resource_version_too_old(self):
+        return self.rx.search(self.message) is not None
+
+    def extract_resource_version(self):
+        match = self.rx.search(self.message)
+        assert match is not None
+        return int(match.group(1))
 
 
 class AsyncClient:
@@ -61,8 +76,13 @@ class AsyncClient:
         async with self.resource_version_lock:
             return self.resource_version
 
-    async def update_resource_version(self, dct) -> None:
-        version = int(dct["metadata"]["resourceVersion"])
+    async def update_resource_version(self, *, dct=None, exc: ApiError = None) -> None:
+        assert dct or exc
+
+        if dct:
+            version = int(dct["metadata"]["resourceVersion"])
+        else:
+            version = exc.extract_resource_version()
 
         async with self.resource_version_lock:
             if version > self.resource_version:
@@ -79,9 +99,13 @@ class AsyncClient:
             if attname == action_str:
                 return attvalue
 
-        raise RuntimeError("Failed to parse action from item: %r" % action_str)
+        raise RuntimeError("Failed to parse action from item: %r" % item)
 
     def maybe_parse_error(self, dct) -> None:
+        # if it's a watch item them the object is wrapped
+        if dct.get("type") == "ERROR":
+            dct = dct["object"]
+
         if dct.get("status") == "Failure":
             message = dct["message"]
             reason = dct["reason"]
@@ -113,8 +137,9 @@ class AsyncClient:
         # TODO: add fieldSelector
         # TODO: add labelSelector
 
-        query = urlencode(query_args)
-        url = f"{url}?{query}"
+        if query_args:
+            query = urlencode(query_args)
+            url = f"{url}?{query}"
 
         return url
 
@@ -149,7 +174,7 @@ class AsyncClient:
             for item in items:
                 item["apiVersion"] = js["apiVersion"]
                 item["kind"] = js["kind"].replace("List", "")
-                await self.update_resource_version(item)
+                await self.update_resource_version(dct=item)
 
             self.logger.debug("Returning %s items", kind)
             return items
@@ -201,7 +226,7 @@ class AsyncClient:
                     context=self.context, action=action, object=dct["object"]
                 )
 
-                await self.update_resource_version(dct["object"])
+                await self.update_resource_version(dct=dct["object"])
 
                 self.logger.debug("[%s] Returning %s item", seqno, kind)
                 oev_sender.send(event)
@@ -215,7 +240,8 @@ class AsyncClient:
                 await self.watch_attempt(selector, oev_sender)
 
             except (TimeoutError, ClientPayloadError) as exc:
-                # the server timed out the watch - we expect this
+                # the server timed out the watch - we expect this to happen
+                # after the normal server timeout interval (5-15min)
                 self.logger.info("Watch request completed - restarting")
 
             except ApiError as exc:
@@ -224,6 +250,12 @@ class AsyncClient:
                     self.logger.warn(
                         "Watch request failed with retryable error: %r - retrying", exc
                     )
+                    continue
+
+                # the server said our resourceVersion is too old, but also told
+                # us an acceptable resourceVersion so let's use that
+                if exc.is_resource_version_too_old():
+                    await self.update_resource_version(exc=exc)
                     continue
 
                 # if the http error seems permanet then log a traceback and exit
