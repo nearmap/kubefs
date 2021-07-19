@@ -68,7 +68,7 @@ class AsyncLoop:
 
 def launch_in_background_thread() -> AsyncLoop:
     loop = asyncio.get_event_loop()
-    loop.set_debug(True)
+    # loop.set_debug(True)
 
     initialized_event = Event()
     async_loop = AsyncLoop(loop=loop, initialized_event=initialized_event)

@@ -8,6 +8,7 @@ from typing import Any, List, Optional
 from urllib.parse import urlencode
 
 from aiohttp import BasicAuth, ClientSession
+from aiohttp.client import ClientTimeout
 from aiohttp.client_exceptions import ClientPayloadError
 
 from akube.model.selector import ObjectSelector
@@ -127,9 +128,9 @@ class AsyncClient:
         query_args = {}
 
         if watch:
-            # TODO: add resourceVersionMatch?
-            query_args["resourceVersion"] = await self.get_resource_version()
             query_args["watch"] = 1
+            query_args["resourceVersion"] = await self.get_resource_version()
+            # TODO: add resourceVersionMatch?
 
         if timeout is not None:
             query_args["timeoutSeconds"] = timeout
@@ -151,6 +152,11 @@ class AsyncClient:
             url=url,
             ssl_context=self.ssl_context,
             auth=self.basic_auth,
+            timeout = ClientTimeout(
+                total=60,
+                sock_connect=3,
+                sock_read=15,
+            )
         )
 
         self.logger.info("Listing %s objects on %s", kind, url)
@@ -189,6 +195,11 @@ class AsyncClient:
             url=url,
             ssl_context=self.ssl_context,
             auth=self.basic_auth,
+            timeout = ClientTimeout(
+                total=60,
+                sock_connect=3,
+                sock_read=15,
+            )
         )
 
         # a bit TCP like: choose a random seqno which will be used in every log
