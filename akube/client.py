@@ -204,7 +204,7 @@ class AsyncClient:
 
         # a bit TCP like: choose a random seqno which will be used in every log
         # line and incremented for every loop iteration (to distinguish loop
-        # iterations from each other)
+        # iterations from each other in log output)
         seqno = random.randint(0, 10000)
 
         self.logger.info("[%s] Watching %s objects on %s", seqno, kind, url)
@@ -212,8 +212,6 @@ class AsyncClient:
 
             # read one line at a time, b'\n' terminated
             while True:
-                seqno += 1
-
                 self.logger.debug("[%s] Waiting for %s response line", seqno, kind)
                 line = await response.content.readline()
 
@@ -241,6 +239,8 @@ class AsyncClient:
 
                 self.logger.debug("[%s] Returning %s item", seqno, kind)
                 oev_sender.send(event)
+
+                seqno += 1
 
     async def watch_objects(
         self, *, selector: ObjectSelector, oev_sender: OEvSender
