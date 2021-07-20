@@ -83,13 +83,6 @@ class AsyncClient:
             prefix="[%s] [%s] ",
         )
 
-    def get_ctx_logger_seqno(self, selector: ObjectSelector, seqno: int) -> CtxLogger:
-        return CtxLogger(
-            logger=self.logger,
-            extra=(self.context.short_name, selector.pretty(), seqno),
-            prefix="[%s] [%s] [%s] ",
-        )
-
     # Manage resourceVersion
 
     async def get_resource_version(self) -> int:
@@ -208,6 +201,8 @@ class AsyncClient:
             return items
 
     async def watch_attempt(self, selector: ObjectSelector, oev_sender: OEvSender) -> None:
+        log = self.get_ctx_logger(selector)
+
         kind = selector.res.kind
         url = await self.construct_url(selector, watch=True)
 
@@ -220,13 +215,6 @@ class AsyncClient:
                 sock_read=300,
             ),
         )
-
-        # a bit TCP like: choose a random seqno which will be used in every log
-        # line and incremented for every loop iteration (to distinguish loop
-        # iterations from each other in log output)
-        seqno = random.randint(0, 10000)
-
-        log = self.get_ctx_logger_seqno(selector, seqno)
 
         log.info("Watching %s objects on %s", kind, url)
         async with self.session.get(**kwargs) as response:
@@ -255,8 +243,6 @@ class AsyncClient:
 
                 log.debug("Returning %s item", kind)
                 oev_sender.send(event)
-
-                seqno += 1
 
     async def watch_objects(
         self, *, selector: ObjectSelector, oev_sender: OEvSender
