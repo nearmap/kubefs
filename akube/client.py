@@ -4,7 +4,7 @@ import random
 import re
 from asyncio.exceptions import TimeoutError
 from asyncio.locks import Lock
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 from urllib.parse import urlencode
 
 from aiohttp import BasicAuth, ClientSession
@@ -15,6 +15,7 @@ from akube.model.selector import ObjectSelector
 from kube.channels.objects import OEvSender
 from kube.config import Context
 from kube.events.objects import Action, ObjectEvent
+from kube.tools.logs import CtxLogger
 
 
 class ApiError(Exception):
@@ -75,29 +76,19 @@ class AsyncClient:
 
     # Logging
 
-    def _log(self, level: int, selector: ObjectSelector, fmtstr: str, *args, exc_info=False) -> None:
-        std_prefix = "[%s] [%s] "
-        std_args = [self.context.short_name, selector.pretty()]
+    def get_ctx_logger(self, selector: ObjectSelector) -> CtxLogger:
+        return CtxLogger(
+            logger=self.logger,
+            extra=(self.context.short_name, selector.pretty()),
+            prefix="[%s] [%s] ",
+        )
 
-        args = std_args + list(args)
-        line = f"{std_prefix}{fmtstr}"
-
-        self.logger.log(level, line, *args)
-
-    def debug(self, selector: ObjectSelector, fmtstr: str, *args) -> None:
-        self._log(logging.DEBUG, selector, fmtstr, *args)
-
-    def info(self, selector: ObjectSelector, fmtstr: str, *args) -> None:
-        self._log(logging.INFO, selector, fmtstr, *args)
-
-    def warn(self, selector: ObjectSelector, fmtstr: str, *args) -> None:
-        self._log(logging.WARN, selector, fmtstr, *args)
-
-    def error(self, selector: ObjectSelector, fmtstr: str, *args) -> None:
-        self._log(logging.ERROR, selector, fmtstr, *args)
-
-    def exception(self, selector: ObjectSelector, fmtstr: str, *args) -> None:
-        self._log(logging.ERROR, selector, fmtstr, *args, exc_info=True)
+    def get_ctx_logger_seqno(self, selector: ObjectSelector, seqno: int) -> CtxLogger:
+        return CtxLogger(
+            logger=self.logger,
+            extra=(self.context.short_name, selector.pretty(), seqno),
+            prefix="[%s] [%s] [%s] ",
+        )
 
     # Manage resourceVersion
 
@@ -175,6 +166,8 @@ class AsyncClient:
         return url
 
     async def list_objects(self, selector: ObjectSelector) -> List[Any]:
+        log = self.get_ctx_logger(selector)
+
         kind = selector.res.kind
         url = await self.construct_url(selector)
 
@@ -182,29 +175,28 @@ class AsyncClient:
             url=url,
             ssl_context=self.ssl_context,
             auth=self.basic_auth,
-            timeout = ClientTimeout(
-                total=60,
+            timeout=ClientTimeout(
                 sock_connect=3,
                 sock_read=15,
-            )
+            ),
         )
 
-        self.info(selector, "Listing %s objects on %s", kind, url)
+        log.info("Listing %s objects on %s", kind, url)
         async with self.session.get(**kwargs) as response:
 
-            self.debug(selector, "Parsing %s response as json", kind)
+            log.debug("Parsing %s response as json", kind)
             js = await response.json()
 
             try:
                 self.maybe_parse_error(js)
             except ApiError:
-                self.exception(selector, "List request failed")
+                log.exception("List request failed")
                 return []
 
             try:
                 items = js["items"]
             except KeyError:
-                self.error(selector, "Failed to parse %s response items: %r", kind, js)
+                log.error("Failed to parse %s response items: %r", kind, js)
                 return []
 
             for item in items:
@@ -212,12 +204,10 @@ class AsyncClient:
                 item["kind"] = js["kind"].replace("List", "")
                 await self.update_resource_version(dct=item)
 
-            self.debug(selector, "Returning %s items", kind)
+            log.debug("Returning %s items", kind)
             return items
 
-    async def watch_attempt(
-        self, selector: ObjectSelector, oev_sender: OEvSender
-    ) -> None:
+    async def watch_attempt(self, selector: ObjectSelector, oev_sender: OEvSender) -> None:
         kind = selector.res.kind
         url = await self.construct_url(selector, watch=True)
 
@@ -225,11 +215,10 @@ class AsyncClient:
             url=url,
             ssl_context=self.ssl_context,
             auth=self.basic_auth,
-            timeout = ClientTimeout(
-                total=60,
+            timeout=ClientTimeout(
                 sock_connect=3,
-                sock_read=15,
-            )
+                sock_read=300,
+            ),
         )
 
         # a bit TCP like: choose a random seqno which will be used in every log
@@ -237,25 +226,21 @@ class AsyncClient:
         # iterations from each other in log output)
         seqno = random.randint(0, 10000)
 
-        self.info(selector, "[%s] Watching %s objects on %s", seqno, kind, url)
+        log = self.get_ctx_logger_seqno(selector, seqno)
+
+        log.info("Watching %s objects on %s", kind, url)
         async with self.session.get(**kwargs) as response:
 
             # read one line at a time, b'\n' terminated
             while True:
-                self.debug(selector, "[%s] Waiting for %s response line", seqno, kind)
+                log.debug("Waiting for %s response line", kind)
                 line = await response.content.readline()
 
                 if not line:
-                    self.info(selector, "[%s] Received empty line, exiting", seqno)
+                    log.info("Received empty line, exiting")
                     break
 
-                self.debug(
-                    selector,
-                    "[%s] Parsing %s response line [len: %s] as json",
-                    seqno,
-                    kind,
-                    len(line),
-                )
+                log.debug("Parsing %s response line [len: %s] as json", kind, len(line))
                 dct = json.loads(line)
 
                 # may raise
@@ -268,7 +253,7 @@ class AsyncClient:
 
                 await self.update_resource_version(dct=dct["object"])
 
-                self.debug(selector, "[%s] Returning %s item", seqno, kind)
+                log.debug("Returning %s item", kind)
                 oev_sender.send(event)
 
                 seqno += 1
@@ -276,6 +261,7 @@ class AsyncClient:
     async def watch_objects(
         self, *, selector: ObjectSelector, oev_sender: OEvSender
     ) -> None:
+        log = self.get_ctx_logger(selector)
 
         while True:
             try:
@@ -284,12 +270,12 @@ class AsyncClient:
             except (TimeoutError, ClientPayloadError) as exc:
                 # the server timed out the watch - we expect this to happen
                 # after the normal server timeout interval (5-15min)
-                self.info(selector, "Watch request completed - restarting")
+                log.info("Watch request completed - restarting")
 
             except ApiError as exc:
                 # if the http error looks transient - try again
                 if exc.is_retryable():
-                    self.warn(selector,
+                    log.warn(
                         "Watch request failed with retryable error: %r - retrying", exc
                     )
                     continue
@@ -301,16 +287,12 @@ class AsyncClient:
                     continue
 
                 # if the http error seems permanet then log a traceback and exit
-                self.exception(
-                    selector,
+                log.exception(
                     "Watch request failed with non-retryable error - giving up"
                 )
                 raise
 
             except Exception:
                 # we don't know what the error is so log a traceback and exit
-                self.exception(
-                    selector,
-                    "Watch request failed with unexpected error - giving up"
-                )
+                log.exception("Watch request failed with unexpected error - giving up")
                 raise

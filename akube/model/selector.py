@@ -19,7 +19,7 @@ class ObjectSelector:
         )
 
     def pretty(self):
-        slug = ''
+        slug = ""
 
         if self.namespace is not None:
             slug = f"{self.namespace}/{slug}"
