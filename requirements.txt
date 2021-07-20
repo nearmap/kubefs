@@ -7,5 +7,6 @@ humanize==3.6.0
 kubernetes==17.17.0
 python-dateutil==2.8.2
 requests==2.25.1
-types-requests==2.25.0
 types-PyYAML==5.4.3
+types-python-dateutil==0.1.4
+types-requests==2.25.0

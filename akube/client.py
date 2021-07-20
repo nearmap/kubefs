@@ -1,11 +1,10 @@
-import json
 import asyncio
+import json
 import logging
-import random
 import re
 from asyncio.exceptions import TimeoutError
 from asyncio.locks import Lock
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional
 from urllib.parse import urlencode
 
 from aiohttp import BasicAuth, ClientSession
@@ -181,6 +180,7 @@ class AsyncClient:
             log.debug("Parsing %s response as json", kind)
             js = await response.json()
 
+            # may raise
             self.maybe_parse_error(js)
 
             items = js["items"]
@@ -215,7 +215,9 @@ class AsyncClient:
                     await asyncio.sleep(0.3)
                     continue
 
-                log.exception("List request failed with non-retryable error - giving up")
+                log.exception(
+                    "List request failed with non-retryable error - giving up"
+                )
                 raise
 
             except Exception:
@@ -223,7 +225,9 @@ class AsyncClient:
                 log.exception("List request failed with unexpected error - giving up")
                 raise
 
-    async def watch_attempt(self, selector: ObjectSelector, oev_sender: OEvSender) -> None:
+    async def watch_attempt(
+        self, selector: ObjectSelector, oev_sender: OEvSender
+    ) -> None:
         log = self.get_ctx_logger(selector)
 
         kind = selector.res.kind
