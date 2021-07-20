@@ -158,7 +158,7 @@ class AsyncClient:
 
         return url
 
-    async def list_objects(self, selector: ObjectSelector) -> List[Any]:
+    async def list_attempt(self, selector: ObjectSelector) -> List[Any]:
         log = self.get_ctx_logger(selector)
 
         kind = selector.res.kind
@@ -180,17 +180,9 @@ class AsyncClient:
             log.debug("Parsing %s response as json", kind)
             js = await response.json()
 
-            try:
-                self.maybe_parse_error(js)
-            except ApiError:
-                log.exception("List request failed")
-                return []
+            self.maybe_parse_error(js)
 
-            try:
-                items = js["items"]
-            except KeyError:
-                log.error("Failed to parse %s response items: %r", kind, js)
-                return []
+            items = js["items"]
 
             for item in items:
                 item["apiVersion"] = js["apiVersion"]
@@ -199,6 +191,17 @@ class AsyncClient:
 
             log.debug("Returning %s items", kind)
             return items
+
+    async def list_objects(self, selector: ObjectSelector) -> List[Any]:
+        log = self.get_ctx_logger(selector)
+
+        try:
+            return await self.list_attempt(selector)
+
+        except Exception:
+            # we don't know what the error is so log a traceback and exit
+            log.exception("List request failed with unexpected error - giving up")
+            raise
 
     async def watch_attempt(self, selector: ObjectSelector, oev_sender: OEvSender) -> None:
         log = self.get_ctx_logger(selector)
