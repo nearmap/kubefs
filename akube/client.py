@@ -215,6 +215,7 @@ class AsyncClient:
                     await asyncio.sleep(0.3)
                     continue
 
+                log.exception("List request failed with non-retryable error - giving up")
                 raise
 
             except Exception:
