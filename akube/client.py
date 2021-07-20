@@ -1,4 +1,5 @@
 import json
+import asyncio
 import logging
 import random
 import re
@@ -195,13 +196,31 @@ class AsyncClient:
     async def list_objects(self, selector: ObjectSelector) -> List[Any]:
         log = self.get_ctx_logger(selector)
 
-        try:
-            return await self.list_attempt(selector)
+        retries = 0
+        max_retries = 3
 
-        except Exception:
-            # we don't know what the error is so log a traceback and exit
-            log.exception("List request failed with unexpected error - giving up")
-            raise
+        while True:
+
+            try:
+                return await self.list_attempt(selector)
+
+            except ApiError as exc:
+                # if the http error looks transient - try again
+                if exc.is_retryable() and retries < max_retries:
+                    retries += 1
+                    log.warn(
+                        "List request failed with retryable error: %r - retrying", exc
+                    )
+
+                    await asyncio.sleep(0.3)
+                    continue
+
+                raise
+
+            except Exception:
+                # we don't know what the error is so log a traceback and exit
+                log.exception("List request failed with unexpected error - giving up")
+                raise
 
     async def watch_attempt(self, selector: ObjectSelector, oev_sender: OEvSender) -> None:
         log = self.get_ctx_logger(selector)
