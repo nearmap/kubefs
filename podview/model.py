@@ -1,6 +1,6 @@
 import time
 from datetime import datetime
-from typing import Dict
+from typing import Dict, List
 
 from kube.config import Context
 from podview.value import Value
@@ -34,6 +34,11 @@ class PodModel:
             self.containers[name] = container
 
         return container
+
+    def iter_containers(self) -> List[ContainerModel]:
+        containers = list(self.containers.values())
+        containers.sort(key=lambda cont: cont.name)
+        return containers
 
 
 class ClusterModel:

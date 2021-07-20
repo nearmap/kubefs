@@ -14,6 +14,15 @@ class Value(Generic[V]):
         self.previous_value: Optional[V] = None
         self.previous_time: Optional[float] = None
 
+    def __repr__(self) -> str:
+        return "<%s curval=%r, curtime=%r, prevval=%r, prevtime=%r>" % (
+            self.__class__.__name__,
+            self.current_value,
+            self.current_time,
+            self.previous_value,
+            self.previous_time,
+        )
+
     def set(self, value: V, ts: float):
         self.previous_value = self.current_value
         self.previous_time = self.current_time

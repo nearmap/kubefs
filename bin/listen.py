@@ -149,7 +149,7 @@ def run_forever(contexts: List[Context], oev_receivers: Sequence[OEvReceiver]) -
 
 def main(args: argparse.Namespace) -> None:
     configure_logging()
-    async_loop = launch_in_background_thread()
+    launch_in_background_thread()
 
     printer = TerminalPrinter()
 
