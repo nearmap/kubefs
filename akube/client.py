@@ -279,7 +279,9 @@ class AsyncClient:
             except (TimeoutError, ClientPayloadError) as exc:
                 # the server timed out the watch - we expect this to happen
                 # after the normal server timeout interval (5-15min)
+                # this could also happen if the server is unreachable....
                 log.info("Watch request completed - restarting")
+                await asyncio.sleep(1)  # don't retry aggressively
 
             except ApiError as exc:
                 # if the http error looks transient - try again
@@ -287,6 +289,8 @@ class AsyncClient:
                     log.warn(
                         "Watch request failed with retryable error: %r - retrying", exc
                     )
+
+                    await asyncio.sleep(1)  # don't retry aggressively
                     continue
 
                 # the server said our resourceVersion is too old, but also told
