@@ -1,6 +1,7 @@
 import contextlib
 import enum
-from typing import Iterator, List, Tuple
+from collections import defaultdict
+from typing import DefaultDict, Dict, Iterator, List, Tuple
 
 from colored import bg, fg
 from colored.colored import stylize
@@ -12,7 +13,30 @@ class TextAlign(enum.Enum):
     CENTER = 2
 
 
+class ColorSpan:
+    def __init__(
+        self, offset: int, length: int, fg_col: str = "", bg_col: str = ""
+    ) -> None:
+        self.offset = offset
+        self.length = length
+        self.fg_col = fg_col
+        self.bg_col = bg_col
+
+        self.styles = []
+        if fg_col:
+            self.styles.append(fg(fg_col))
+        if bg_col:
+            self.styles.append(bg(bg_col))
+
+
 class ScreenBuffer:
+    """
+    Represents a buffer of lines of text. The buffer is of unlimited size and
+    thus allows to grow taller or wider than the size of the viewport. This
+    allows implementing scrolling behavior by rendering a section of the buffer
+    onto the viewing surface using an offset and surface dimensions.
+    """
+
     def __init__(self, fillchar=" ") -> None:
         self.pos_x = 0
         self.pos_y = 0
@@ -20,6 +44,7 @@ class ScreenBuffer:
 
         self.fillchar = fillchar
         self.lines = [self.create_blank_line()]
+        self.colspans: DefaultDict[int, List[ColorSpan]] = defaultdict(list)
 
     def create_blank_line(self):
         return ""
@@ -34,9 +59,9 @@ class ScreenBuffer:
         self,
         *,
         text: str,
-        width: int = None,
-        fg_col: str = None,
-        bg_col: str = None,
+        width: int = 0,
+        fg_col: str = "",
+        bg_col: str = "",
         align: TextAlign = TextAlign.LEFT
     ) -> None:
         length = len(text)
@@ -63,6 +88,12 @@ class ScreenBuffer:
         line = before + buf
 
         self.lines[self.pos_y] = line
+
+        if fg_col or bg_col:
+            colspan = ColorSpan(
+                offset=len(before), length=len(buf), fg_col=fg_col, bg_col=bg_col
+            )
+            self.colspans[self.pos_y].append(colspan)
 
         self.pos_x = indent + width
 
@@ -107,7 +138,25 @@ class ScreenBuffer:
                 deficit = dim_x + offset_x - len(line)
                 line = line + self.fillchar * deficit
 
-            line = border_vert + line[offset_x : offset_x + dim_x] + border_vert
+            line = line[offset_x : offset_x + dim_x]
+            for colspan in self.colspans[y]:
+                begin_index = colspan.offset - offset_x
+                end_index = begin_index + colspan.length
+
+                if begin_index > dim_x:
+                    continue
+
+                if begin_index < 0:
+                    begin_index = 0
+                if end_index > dim_x:
+                    end_index = dim_x
+
+                segment = line[begin_index:end_index]
+                segment = stylize(text=segment, styles=colspan.styles, reset=True)
+
+                line = line[:begin_index] + segment + line[end_index:]
+
+            line = border_vert + line + border_vert
             lines.append(line)
 
         if border_horiz:
@@ -121,7 +170,7 @@ class ScreenBuffer:
 
 if __name__ == "__main__":
     buf = ScreenBuffer(fillchar=" ")
-    buf.write(text="cluster-name")
+    buf.write(text="cluster-name", bg_col="dodger_blue_1")
 
     with buf.indent(width=2):
         buf.write(text="pod-name-1")
@@ -144,6 +193,6 @@ if __name__ == "__main__":
             buf.write(text="cont-name-2")
             buf.end_line()
 
-    buf.write(text="cluster-name")
+    buf.write(text="cluster-name", bg_col="indian_red_1a")
 
-    print(buf.assemble(dim=(80, 25), offset=(0, 0), border_horiz="-", border_vert="|"))
+    print(buf.assemble(dim=(80, 24), offset=(0, 0), border_horiz="-", border_vert="|"))
