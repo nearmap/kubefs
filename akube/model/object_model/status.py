@@ -1,7 +1,7 @@
-from akube.model.object_model.helpers import maybe_parse_date
 from datetime import datetime
 from typing import List, Optional
 
+from akube.model.object_model.helpers import maybe_parse_date
 from akube.model.object_model.types import RawObject
 
 
@@ -22,11 +22,11 @@ class ContainerStatus:
         self.state: Optional[ContainerState] = None
         self.lastState: Optional[ContainerState] = None
 
-        state = obj.get('state')
+        state = obj.get("state")
         if state:
             self.state = ContainerState(state)
 
-        lastState = obj.get('lastState')
+        lastState = obj.get("lastState")
         if lastState:
             self.lastState = ContainerState(lastState)
 
@@ -48,8 +48,8 @@ class PodStatus(ObjectStatus):
         self.containerStatuses: List[ContainerStatus] = None
 
         self.startTime = maybe_parse_date(obj.get("startTime"))
-        self.message = obj.get('message')
-        self.reason = obj.get('reason')
+        self.message = obj.get("message")
+        self.reason = obj.get("reason")
         self.containerStatuses = [
             ContainerStatus(cont) for cont in obj.get("containerStatuses", [])
         ]

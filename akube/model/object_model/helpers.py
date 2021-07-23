@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+
 from dateutil.parser import parse as parse_date
 
 

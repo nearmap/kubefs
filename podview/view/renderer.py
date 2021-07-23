@@ -4,7 +4,7 @@ from podview.view.buffer import ScreenBuffer
 
 class BufferRenderer:
     def render(self, model: ScreenModel) -> ScreenBuffer:
-        buffer = ScreenBuffer(dim=(80, 24))
+        buffer = ScreenBuffer()
 
         clusters = model.iter_clusters()
         if not clusters:

@@ -68,7 +68,7 @@ class Program:
         while True:
             self.updater.run(model=self.model, timeout=0.5)
             buffer = self.renderer.render(self.model)
-            print(buffer.assemble())
+            print(buffer.assemble(dim=(80, 24)))
 
     def run(self):
         self.initialize()

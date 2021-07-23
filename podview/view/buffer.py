@@ -1,6 +1,6 @@
 import contextlib
 import enum
-from typing import Tuple
+from typing import Iterator, List, Tuple
 
 from colored import bg, fg
 from colored.colored import stylize
@@ -13,18 +13,22 @@ class TextAlign(enum.Enum):
 
 
 class ScreenBuffer:
-    def __init__(self, *, dim: Tuple[int, int]) -> None:
-        self.dim_x, self.dim_y = dim
-
+    def __init__(self, fillchar=" ") -> None:
         self.pos_x = 0
         self.pos_y = 0
-        self.indents = []
+        self.indents: List[int] = []
 
-        self.blank_char = " "
+        self.fillchar = fillchar
         self.lines = [self.create_blank_line()]
 
     def create_blank_line(self):
-        return self.blank_char * self.dim_x
+        return ""
+
+    def end_line(self) -> None:
+        self.lines.append(self.create_blank_line())
+
+        self.pos_x = 0
+        self.pos_y += 1
 
     def write(
         self,
@@ -36,16 +40,8 @@ class ScreenBuffer:
         align: TextAlign = TextAlign.LEFT
     ) -> None:
         length = len(text)
-        width = width or length
+        width = max(width, length) if width else length
         indent = sum(self.indents) if self.indents else self.pos_x
-
-        if width and length > width:
-            raise RuntimeError(
-                "Cannot write text %r that will not fit in width %r" % (text, width)
-            )
-
-        # if indent + width > self.dim_x:
-        #     raise RuntimeError("Tried to write beyond width of the screen buffer")
 
         start_pos = 0
         if align is TextAlign.RIGHT:
@@ -53,30 +49,25 @@ class ScreenBuffer:
         elif align is TextAlign.CENTER:
             start_pos = int((width - length) / 2)
 
-        buf = " " * width
+        buf = self.fillchar * width
         buf = buf[:start_pos] + text + buf[start_pos + length :]
         assert len(buf) == width
 
         line = self.lines[self.pos_y]
 
-        line = line[:indent] + buf + line[indent + width :]
+        before = line[:indent]
+        if len(before) < indent:
+            deficit = indent - len(before)
+            before = before + self.fillchar * deficit
+
+        line = before + buf
 
         self.lines[self.pos_y] = line
 
         self.pos_x = indent + width
 
-    def end_line(self) -> None:
-        # if self.pos_y + 1 > len(self.lines) - 1:
-        #     raise RuntimeError("Tried to write beyond height of the screen buffer")
-
-        blank = self.create_blank_line()
-        self.lines.append(blank)
-
-        self.pos_x = 0
-        self.pos_y += 1
-
     @contextlib.contextmanager
-    def indent(self, width: int) -> None:
+    def indent(self, width: int) -> Iterator[None]:
         try:
             width = self.pos_x + width
             self.indents.append(width)
@@ -88,15 +79,48 @@ class ScreenBuffer:
             if not self.pos_x == 0:
                 self.end_line()
 
-    def assemble(self) -> str:
-        lines = ["%s|" % line for line in self.lines if line.strip()]
-        lines.append("-" * self.dim_x)
+    def assemble(
+        self,
+        dim: Tuple[int, int],
+        offset: Tuple[int, int] = (0, 0),
+        border_horiz="",
+        border_vert="",
+    ) -> str:
+        dim_x, dim_y = dim
+        offset_x, offset_y = offset
+
+        source_lines = self.lines
+
+        if len(source_lines) < dim_y + offset_y:
+            deficit = dim_y + offset_y - len(source_lines)
+            source_lines.extend([self.create_blank_line()] * deficit)
+
+        lines: List[str] = []
+        for y, line in enumerate(source_lines):
+            if y < offset_y:
+                continue
+
+            if len(lines) >= dim_y:
+                break
+
+            if len(line) < dim_x + offset_x:
+                deficit = dim_x + offset_x - len(line)
+                line = line + self.fillchar * deficit
+
+            line = border_vert + line[offset_x : offset_x + dim_x] + border_vert
+            lines.append(line)
+
+        if border_horiz:
+            length = dim_x + 2 if border_vert else dim_x
+            line = border_horiz * length
+            lines = [line] + lines + [line]
+
         block = "\n".join(lines)
         return block
 
 
 if __name__ == "__main__":
-    buf = ScreenBuffer(dim=(80, 24))
+    buf = ScreenBuffer(fillchar=" ")
     buf.write(text="cluster-name")
 
     with buf.indent(width=2):
@@ -122,4 +146,4 @@ if __name__ == "__main__":
 
     buf.write(text="cluster-name")
 
-    print(buf.assemble())
+    print(buf.assemble(dim=(80, 25), offset=(0, 0), border_horiz="-", border_vert="|"))
