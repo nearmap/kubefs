@@ -1,5 +1,5 @@
-import enum
 import contextlib
+import enum
 from typing import Tuple
 
 from colored import bg, fg
@@ -20,8 +20,11 @@ class ScreenBuffer:
         self.pos_y = 0
         self.indents = []
 
-        self.blank_char = ' '
-        self.lines = [self.blank_char * self.dim_x for _ in range(self.dim_y)]
+        self.blank_char = " "
+        self.lines = [self.create_blank_line()]
+
+    def create_blank_line(self):
+        return self.blank_char * self.dim_x
 
     def write(
         self,
@@ -37,10 +40,12 @@ class ScreenBuffer:
         indent = sum(self.indents) if self.indents else self.pos_x
 
         if width and length > width:
-            raise RuntimeError("Cannot write text %r that will not fit in width %r" % (text, width))
+            raise RuntimeError(
+                "Cannot write text %r that will not fit in width %r" % (text, width)
+            )
 
-        if indent + width > self.dim_x:
-            raise RuntimeError("Tried to write beyond width of the screen buffer")
+        # if indent + width > self.dim_x:
+        #     raise RuntimeError("Tried to write beyond width of the screen buffer")
 
         start_pos = 0
         if align is TextAlign.RIGHT:
@@ -48,19 +53,25 @@ class ScreenBuffer:
         elif align is TextAlign.CENTER:
             start_pos = int((width - length) / 2)
 
-        buf = ' ' * width
-        buf = buf[:start_pos] + text + buf[start_pos+length:]
+        buf = " " * width
+        buf = buf[:start_pos] + text + buf[start_pos + length :]
         assert len(buf) == width
 
         line = self.lines[self.pos_y]
 
-        line = line[:indent] + buf + line[indent+width:]
+        line = line[:indent] + buf + line[indent + width :]
 
         self.lines[self.pos_y] = line
 
         self.pos_x = indent + width
-    
+
     def end_line(self) -> None:
+        # if self.pos_y + 1 > len(self.lines) - 1:
+        #     raise RuntimeError("Tried to write beyond height of the screen buffer")
+
+        blank = self.create_blank_line()
+        self.lines.append(blank)
+
         self.pos_x = 0
         self.pos_y += 1
 
@@ -78,35 +89,37 @@ class ScreenBuffer:
                 self.end_line()
 
     def assemble(self) -> str:
-        block = '\n'.join(('%s|' % line for line in self.lines))
+        lines = ["%s|" % line for line in self.lines if line.strip()]
+        lines.append("-" * self.dim_x)
+        block = "\n".join(lines)
         return block
 
 
-buf = ScreenBuffer(dim=(80, 24))
-buf.write(text='cluster-name')
-
-with buf.indent(width=2):
-    buf.write(text='pod-name-1')
-    buf.end_line()
+if __name__ == "__main__":
+    buf = ScreenBuffer(dim=(80, 24))
+    buf.write(text="cluster-name")
 
     with buf.indent(width=2):
-        buf.write(text='cont-name-1')
+        buf.write(text="pod-name-1")
         buf.end_line()
 
-        buf.write(text='cont-name-2')
+        with buf.indent(width=2):
+            buf.write(text="cont-name-1")
+            buf.end_line()
+
+            buf.write(text="cont-name-2")
+            buf.end_line()
+
+        buf.write(text="pod-name-2")
         buf.end_line()
 
-    buf.write(text='pod-name-2')
-    buf.end_line()
+        with buf.indent(width=2):
+            buf.write(text="cont-name-1")
+            buf.end_line()
 
-    with buf.indent(width=2):
-        buf.write(text='cont-name-1')
-        buf.end_line()
+            buf.write(text="cont-name-2")
+            buf.end_line()
 
-        buf.write(text='cont-name-2')
-        buf.end_line()
+    buf.write(text="cluster-name")
 
-buf.write(text='cluster-name')
-
-
-print(buf.assemble())
+    print(buf.assemble())

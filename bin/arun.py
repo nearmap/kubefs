@@ -11,7 +11,7 @@ from typing import List, Optional
 
 from akube.async_loop import launch_in_background_thread
 from akube.cluster_facade import SyncClusterFacade
-from akube.model.api_resource import Namespace, Pod
+from akube.model.api_resource import NamespaceKind, PodKind
 from akube.model.selector import ObjectSelector
 from kube.channels.objects import OEvReceiver
 from kube.config import get_selector
@@ -30,7 +30,7 @@ def main(args: argparse.Namespace) -> None:
     if 0:
         context = contexts[0]
         facade = SyncClusterFacade(async_loop=async_loop, context=context)
-        selector = ObjectSelector(res=Namespace)
+        selector = ObjectSelector(res=NamespaceKind)
         items = facade.list_objects(selector=selector)
         for item in items:
             print(item)
@@ -39,7 +39,7 @@ def main(args: argparse.Namespace) -> None:
         receivers: List[OEvReceiver] = []
         for context in contexts:
             facade = SyncClusterFacade(async_loop=async_loop, context=context)
-            selector = ObjectSelector(res=Pod, namespace="kube-system")
+            selector = ObjectSelector(res=PodKind, namespace="kube-system")
             oev_receiver = facade.start_watching(selector=selector)
             receivers.append(oev_receiver)
 

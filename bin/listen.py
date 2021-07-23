@@ -18,7 +18,7 @@ from colored.colored import stylize
 
 from akube.async_loop import get_loop, launch_in_background_thread
 from akube.cluster_facade import SyncClusterFacade
-from akube.model.api_resource import Namespace, Pod
+from akube.model.api_resource import NamespaceKind, PodKind
 from akube.model.selector import ObjectSelector
 from kube.channels.objects import OEvReceiver
 from kube.config import Context, get_selector
@@ -53,7 +53,7 @@ def find_matching_namespace(
 
     async_loop = get_loop()
     facade = SyncClusterFacade(async_loop=async_loop, context=context)
-    selector = ObjectSelector(res=Namespace)
+    selector = ObjectSelector(res=NamespaceKind)
     namespace_objs = facade.list_objects(selector=selector)
     namespaces = [namespace["metadata"]["name"] for namespace in namespace_objs]
 
@@ -68,7 +68,7 @@ def launch(args: argparse.Namespace, context: Context) -> OEvReceiver:
     facade = SyncClusterFacade(async_loop=async_loop, context=context)
 
     namespace = find_matching_namespace(args, context)
-    selector = ObjectSelector(res=Pod, namespace=namespace)
+    selector = ObjectSelector(res=PodKind, namespace=namespace)
 
     # list first to advance the resourceVersion in the client to the current
     # point in time - so we can skip events that are in the past

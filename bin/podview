@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+
+import sys
+
+sys.path.append(".")
+
+# isort: split
+
+import argparse
+
+from podview.main import Program
+
+
+def main(args: argparse.Namespace) -> None:
+    program = Program(args)
+    program.run()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-c", "--context",
+        dest="context",
+        action="store",
+        required=True,
+        help=(f"Kube contexts to select - matched like a filesystem wildcard"),
+    )
+    parser.add_argument(
+        "-n", "--namespace",
+        dest="namespace",
+        action="store",
+        help=(f"Kube namespace to select - matched like a filesystem wildcard"),
+    )
+    parser.add_argument(
+        "-p", "--pod",
+        dest="pod",
+        action="store",
+        # required=True,
+        help=(f"Kube pod name to select - matched like a filesystem wildcard"),
+    )
+    args = parser.parse_args()
+
+    main(args)

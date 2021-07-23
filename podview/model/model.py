@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Dict, List
 
 from kube.config import Context
-from podview.value import Value
+from podview.model.value import Value
 
 
 class ContainerModel:
@@ -63,6 +63,11 @@ class ClusterModel:
 
         return pod
 
+    def iter_pods(self) -> List[PodModel]:
+        pods = list(self.pods.values())
+        pods.sort(key=lambda pod: pod.name)
+        return pods
+
 
 class ScreenModel:
     def __init__(self) -> None:
@@ -79,3 +84,8 @@ class ScreenModel:
             self.clusters[context] = cluster
 
         return cluster
+
+    def iter_clusters(self) -> List[ClusterModel]:
+        clusters = list(self.clusters.values())
+        clusters.sort(key=lambda cluster: cluster.context.short_name)
+        return clusters

@@ -30,7 +30,8 @@ class Display:
 
     def should_exit(self):
         try:
-            if self.screen.getkey() == "q":
+            # if self.screen.getkey() == "q":
+            if self.screen.getkey():
                 return True
         except _curses.error:
             pass
@@ -46,11 +47,11 @@ class Display:
         # curses.resizeterm(lines, cols)
 
         try:
-            for y in range(lines):
+            for y in range(lines - 1):
                 for x in range(cols):
                     self.screen.addstr("%s" % (x % 10))
         except curses.error:
-            pass
+            raise
 
     def on_resize(self, signum, frame):
         # with open('log', 'w') as fl:
@@ -63,16 +64,21 @@ class Display:
         # self.should_exit()
 
     def mainloop(self):
-        while True:
-            # for receiver in self.oev_receivers:
-            #     event = receiver.recv_nowait()
-            #     if event:
-            #         self.objs.append(event.object)
+        try:
+            while True:
+                # for receiver in self.oev_receivers:
+                #     event = receiver.recv_nowait()
+                #     if event:
+                #         self.objs.append(event.object)
 
-            self.draw()
+                self.draw()
 
-            if self.should_exit():
-                break
+                if self.should_exit():
+                    curses.endwin()
+                    break
+
+        except KeyboardInterrupt:
+            curses.endwin()
 
 
 d = Display(oev_receivers=None)

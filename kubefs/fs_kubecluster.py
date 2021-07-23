@@ -1,6 +1,9 @@
 import dateutil
 
-from akube.main import get_loop
+from akube.async_loop import get_loop
+from akube.cluster_facade import SyncClusterFacade
+from akube.model.api_resource import NamespaceKind
+from akube.model.selector import ObjectSelector
 from kubefs.fs_model import Directory, File, Payload
 from kubefs.kubeclient import KubeClientCache
 from kubefs.kubeconfig import Context
@@ -204,7 +207,9 @@ class KubeClusterNamespacesDir(Directory):
         if not self.lazy_entries:
             # HACK: use async client instead
             async_loop = get_loop()
-            items = async_loop.sync_list_objects()
+            facade = SyncClusterFacade(async_loop=async_loop, context=self.context)
+            selector = ObjectSelector(res=NamespaceKind)
+            items = facade.list_objects(selector=selector)
 
             files = []
             for item in items:

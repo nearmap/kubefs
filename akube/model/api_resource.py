@@ -19,7 +19,7 @@ class ApiResource:
         )
 
 
-Pod = ApiResource(endpoint="/api/v1", kind="Pod", name="pods", namespaced=True)
-Namespace = ApiResource(
+PodKind = ApiResource(endpoint="/api/v1", kind="Pod", name="pods", namespaced=True)
+NamespaceKind = ApiResource(
     endpoint="/api/v1", kind="Namespace", name="namespaces", namespaced=False
 )

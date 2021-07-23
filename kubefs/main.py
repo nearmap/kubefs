@@ -6,7 +6,7 @@ import os
 
 import fuse
 
-from akube.main import launch_in_thread
+from akube.async_loop import launch_in_background_thread
 from kubefs.fs_kubeconfig import (
     KubeConfigClustersDir,
     KubeConfigContextsDir,
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     parser.add_argument("mount")
     args = parser.parse_args()
 
-    async_loop = launch_in_thread()
+    async_loop = launch_in_background_thread()
 
     logging.basicConfig(
         level=logging.DEBUG,
