@@ -9,7 +9,7 @@ from urllib.parse import urlencode
 
 from aiohttp import BasicAuth, ClientSession
 from aiohttp.client import ClientTimeout
-from aiohttp.client_exceptions import ClientPayloadError
+from aiohttp.client_exceptions import ClientConnectorError, ClientPayloadError
 
 from akube.model.selector import ObjectSelector
 from kube.channels.objects import OEvSender
@@ -203,6 +203,21 @@ class AsyncClient:
 
             try:
                 return await self.list_attempt(selector)
+
+            except ClientConnectorError as exc:
+                if retries < max_retries:
+                    retries += 1
+                    log.warn(
+                        "List request failed with retryable error: %r - retrying", exc
+                    )
+
+                    await asyncio.sleep(0.3)
+                    continue
+
+                log.exception(
+                    "List request failed with non-retryable error - giving up"
+                )
+                raise
 
             except ApiError as exc:
                 # if the http error looks transient - try again

@@ -66,7 +66,7 @@ def main(args: argparse.Namespace) -> None:
     listener = Listener(oev_receivers)
 
     try:
-        listener.run(3600)
+        listener.run(36000000)
     except KeyboardInterrupt:
         printer.loudln("\nCtrl-C received")
 

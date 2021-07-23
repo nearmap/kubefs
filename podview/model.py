@@ -10,11 +10,17 @@ class ContainerModel:
     def __init__(self, name: str) -> None:
         self.name = name
 
+        self.ready: Value[bool] = Value()
         self.image_hash: Value[str] = Value()
         self.restart_count: Value[int] = Value()
+
         self.state: Value[str] = Value()
-        # self.started_at: Value[datetime] = Value()
-        # self.finished_at: Value[datetime] = Value()
+        # self.state_started_at: Value[datetime] = Value()
+        # self.state_finished_at: Value[datetime] = Value()
+
+        # self.last_state: Value[str] = Value()
+        # self.last_state_started_at: Value[datetime] = Value()
+        # self.last_state_finished_at: Value[datetime] = Value()
 
 
 class PodModel:
@@ -22,6 +28,7 @@ class PodModel:
         self.name = name
         self.containers: Dict[str, ContainerModel] = {}
 
+        self.creation_timestamp: Value[datetime] = Value()
         self.phase: Value[str] = Value()
         self.start_time: Value[datetime] = Value()
         self.image_hash: Value[str] = Value()

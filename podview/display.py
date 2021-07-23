@@ -42,12 +42,13 @@ class Display:
         curses.curs_set(False)
 
         self.screen.clear()
-        # cols, lines = os.get_terminal_size()
+        cols, lines = os.get_terminal_size()
         # curses.resizeterm(lines, cols)
 
         try:
-            for obj in self.objs:
-                self.screen.addstr("%s\n" % obj["metadata"]["name"])
+            for y in range(lines):
+                for x in range(cols):
+                    self.screen.addstr("%s" % (x % 10))
         except curses.error:
             pass
 
@@ -63,12 +64,17 @@ class Display:
 
     def mainloop(self):
         while True:
-            for receiver in self.oev_receivers:
-                event = receiver.recv_nowait()
-                if event:
-                    self.objs.append(event.object)
+            # for receiver in self.oev_receivers:
+            #     event = receiver.recv_nowait()
+            #     if event:
+            #         self.objs.append(event.object)
 
             self.draw()
 
             if self.should_exit():
                 break
+
+
+d = Display(oev_receivers=None)
+d.start()
+d.mainloop()
