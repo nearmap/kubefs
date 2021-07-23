@@ -5,9 +5,7 @@ import time
 from typing import List, Tuple
 from urllib.parse import urlparse
 
-from dateutil.parser import parse as parse_date
-
-from akube.model.object_model import Pod
+from akube.model.object_model.kinds import Pod
 from kube.channels.objects import OEvReceiver
 from kube.events.objects import ObjectEvent
 from podview.model.model import ScreenModel
@@ -29,46 +27,28 @@ class ModelUpdater:
 
     def update_model(self, model: ScreenModel, event: ObjectEvent) -> None:
         context = event.context
-        pod = event.object
+        pod = Pod(event.object)
         ts = event.time_created
 
-        assert pod["kind"] == "Pod"
-
-        pod_meta = pod["metadata"]
-        pod_name = pod_meta["name"]
-        pod_app_name = (pod_meta.get("labels") or {}).get("app")
-
-        pod_status = pod["status"]
-        pod_phase = pod_status["phase"]
-        pod_start_time_val = pod_status.get("startTime")
-        pod_start_time = pod_start_time_val and parse_date(pod_start_time_val)
-        pod_cont_statuses = pod_status.get("containerStatuses") or []
+        pod_app_name = pod.meta.labels.get("app")
 
         cluster_model = model.get_cluster(context)
-        pod_model = cluster_model.get_pod(pod_name)
-        pod_model.phase.set(value=pod_phase, ts=ts)
-        pod_model.start_time.set(value=pod_start_time, ts=ts)
+        pod_model = cluster_model.get_pod(pod.meta.name)
+        pod_model.phase.set(value=pod.status.phase, ts=ts)
+        pod_model.start_time.set(value=pod.status.startTime, ts=ts)
 
-        for cont in pod_cont_statuses:
-            cont_name = cont["name"]
-            cont_ready = cont["ready"]
-            cont_image_name, cont_image_hash = self.parse_image(cont["imageID"])
-            cont_restarts = cont["restartCount"]
+        for cont in pod.status.containerStatuses:
+            cont_image_name, cont_image_hash = self.parse_image(cont.imageID)
 
-            cont_state_key = None
-            cont_state = cont.get("state")
-            if cont_state:
-                cont_state_key = list(cont_state.keys())[0]
-
-            container_model = pod_model.get_container(cont_name)
-            container_model.ready.set(value=cont_ready, ts=ts)
+            container_model = pod_model.get_container(cont.name)
+            container_model.ready.set(value=cont.ready, ts=ts)
             container_model.image_hash.set(value=cont_image_hash, ts=ts)
-            container_model.restart_count.set(value=cont_restarts, ts=ts)
-            container_model.state.set(value=cont_state_key, ts=ts)
+            container_model.restart_count.set(value=cont.restartCount, ts=ts)
+            # container_model.state.set(value=cont_state_key, ts=ts)
 
             if pod_app_name and cont_image_name.startswith(pod_app_name):
                 pod_model.image_hash.set(value=cont_image_hash, ts=ts)
-            elif cont_name.startswith(pod_name):
+            elif cont.name.startswith(pod.meta.name):
                 pod_model.image_hash.set(value=cont_image_hash, ts=ts)
 
     def filter_event(self, event: ObjectEvent) -> bool:

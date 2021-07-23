@@ -5,7 +5,7 @@ from typing import Optional
 from akube.async_loop import launch_in_background_thread
 from akube.cluster_facade import SyncClusterFacade
 from akube.model.api_resource import NamespaceKind, PodKind
-from akube.model.object_model import Namespace
+from akube.model.object_model.kinds import Namespace
 from akube.model.selector import ObjectSelector
 from kube.channels.objects import OEvReceiver
 from kube.config import Context, get_selector
