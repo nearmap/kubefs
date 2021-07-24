@@ -1,54 +1,82 @@
-from podview.model.model import ScreenModel
-from podview.view.buffer import ScreenBuffer
+from podview.model.model import ContainerModel, PodModel, ScreenModel
+from podview.view.buffer import ScreenBuffer, TextAlign
 
 
 class BufferRenderer:
-    def render(self, model: ScreenModel) -> ScreenBuffer:
-        buffer = ScreenBuffer()
+    def __init__(self, model: ScreenModel) -> None:
+        self.model = model
+        self.buffer = ScreenBuffer()
 
-        clusters = model.iter_clusters()
+        self.cluster_name_width = 0
+        self.pod_name_width = 0
+
+        self.precompute_name_widths()
+
+    def precompute_name_widths(self):
+        clusters = self.model.iter_clusters()
+        for cluster in clusters:
+            cluster_name_len = len(cluster.context.short_name)
+            if cluster_name_len > self.cluster_name_width:
+                self.cluster_name_width = cluster_name_len
+
+            for pod in cluster.iter_pods():
+                pod_name_len = len(pod.name)
+                if pod_name_len > self.pod_name_width:
+                    self.pod_name_width = pod_name_len
+
+    def render_container(self, container: ContainerModel, name_width: int) -> None:
+        self.buffer.write(text=container.name, width=name_width)
+
+        with self.buffer.indent(width=4):
+            val = container.state.current_value or ""
+            self.buffer.write(text=val, width=10)
+
+            with self.buffer.indent(width=3):
+                val = container.state.current_elapsed_pretty
+                if val:
+                    val = f"({val})"
+                    self.buffer.write(text=val)
+
+    def render_pod(self, pod: PodModel) -> None:
+        self.buffer.write(text=pod.name, width=self.pod_name_width)
+
+        with self.buffer.indent(width=4):
+            val = pod.phase.current_value and pod.phase.current_value.lower()
+            self.buffer.write(text=val)
+
+            with self.buffer.indent(width=3):
+                val = pod.phase.current_elapsed_pretty
+                if val:
+                    val = f"({val})"
+                    self.buffer.write(text=val)
+
+        containers = pod.iter_containers()
+        cont_name_width = 0
+        if containers:
+            cont_name_width = max(len(cont.name) for cont in containers)
+
+        with self.buffer.indent(width=2):
+            for container in containers:
+                self.render_container(container, cont_name_width)
+
+    def render(self) -> ScreenBuffer:
+        ela = self.model.elapsed.current_elapsed_pretty
+        ela = f"[{ela}]"
+        self.buffer.write(text=ela, width=14, align=TextAlign.CENTER)
+        self.buffer.end_line()
+        self.buffer.end_line()
+
+        clusters = self.model.iter_clusters()
         if not clusters:
-            return buffer
-
-        cluster_name_width = max(
-            (len(cluster.context.short_name) for cluster in clusters)
-        )
+            return self.buffer
 
         for cluster in clusters:
-            buffer.write(text=cluster.context.short_name, width=cluster_name_width)
+            self.buffer.write(
+                text=cluster.context.short_name, width=self.cluster_name_width
+            )
 
-            with buffer.indent(width=3):
+            with self.buffer.indent(width=3):
                 for pod in cluster.iter_pods():
-                    buffer.write(text=pod.name)
-                    buffer.end_line()
+                    self.render_pod(pod)
 
-                    with buffer.indent(width=2):
-                        for container in pod.iter_containers():
-                            buffer.write(text=container.name)
-                            buffer.end_line()
-
-        return buffer
-
-        # lines = []
-        # lines.append(
-        #     "%s    %s  %s (%s)    %s "
-        #     % (
-        #         cluster_model.context.short_name,
-        #         pod_model.name,
-        #         pod_model.phase.current_value,
-        #         pod_model.phase.current_elapsed_pretty or "",
-        #         pod_model.image_hash.current_value
-        #         and pod_model.image_hash.current_value[:6]
-        #         or "",
-        #     )
-        # )
-        # for cont in pod_model.iter_containers():
-        #     lines.append(
-        #         "    %s  %s  %s"
-        #         % (
-        #             cont.name,
-        #             cont.state.current_value,
-        #             cont.image_hash.current_value and cont.image_hash.current_value[:6],
-        #         )
-        #     )
-        # print("\n" + "\n".join(lines) + "\n")
+        return self.buffer

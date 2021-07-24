@@ -7,7 +7,35 @@ from akube.model.object_model.types import RawObject
 
 class ContainerState:
     def __init__(self, obj: RawObject) -> None:
-        pass
+        self._obj = obj
+        self.key: str
+
+
+class ContainerStateRunning(ContainerState):
+    def __init__(self, obj: RawObject) -> None:
+        self.key = "running"
+        self.startedAt: Optional[datetime] = maybe_parse_date(obj.get("startedAt"))
+
+
+class ContainerStateTerminated(ContainerState):
+    def __init__(self, obj: RawObject) -> None:
+        self.key = "terminated"
+        self.startedAt: Optional[datetime] = maybe_parse_date(obj.get("startedAt"))
+        self.finishedAt: Optional[datetime] = maybe_parse_date(obj.get("finishedAt"))
+        self.exitCode: Optional[int] = obj.get("exitCode")
+        self.message: Optional[str] = obj.get("message")
+        self.reason: Optional[str] = obj.get("reason")
+
+
+def parse_container_state(obj: RawObject) -> Optional[ContainerState]:
+    key = list(obj.keys())[0]
+
+    if key == "running":
+        return ContainerStateRunning(obj)
+    elif key == "terminated":
+        return ContainerStateTerminated(obj)
+
+    return None
 
 
 class ContainerStatus:
@@ -24,11 +52,11 @@ class ContainerStatus:
 
         state = obj.get("state")
         if state:
-            self.state = ContainerState(state)
+            self.state = parse_container_state(state)
 
         lastState = obj.get("lastState")
         if lastState:
-            self.lastState = ContainerState(lastState)
+            self.lastState = parse_container_state(lastState)
 
 
 class ObjectStatus:

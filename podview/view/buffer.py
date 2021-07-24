@@ -103,8 +103,12 @@ class ScreenBuffer:
     @contextlib.contextmanager
     def indent(self, width: int) -> Iterator[None]:
         try:
-            width = self.pos_x + width
-            self.indents.append(width)
+            intended_pos = self.pos_x + width
+            incremental = intended_pos - sum(self.indents)
+            if incremental < 0:
+                incremental = width
+
+            self.indents.append(incremental)
 
             yield
 
@@ -173,21 +177,29 @@ class ScreenBuffer:
 
 if __name__ == "__main__":
     buf = ScreenBuffer(fillchar=" ")
-    buf.write(text="cluster-name", bg_col="dodger_blue_1")
+    buf.write(text="cluster-one", bg_col="dodger_blue_1", fg_col="white")
 
     with buf.indent(width=2):
         buf.write(text="pod-name-1")
-        buf.end_line()
+        with buf.indent(width=6):
+            buf.write(text="running")
+            with buf.indent(width=3):
+                buf.write(text="2 min")
 
         with buf.indent(width=2):
             buf.write(text="cont-name-1")
-            buf.end_line()
+            with buf.indent(width=4):
+                buf.write(text="terminated")
 
             buf.write(text="cont-name-2")
-            buf.end_line()
+            with buf.indent(width=4):
+                buf.write(text="running")
 
         buf.write(text="pod-name-2")
-        buf.end_line()
+        with buf.indent(width=6):
+            buf.write(text="running")
+            with buf.indent(width=3):
+                buf.write(text="2 min")
 
         with buf.indent(width=2):
             buf.write(text="cont-name-1")
@@ -196,6 +208,6 @@ if __name__ == "__main__":
             buf.write(text="cont-name-2")
             buf.end_line()
 
-    buf.write(text="cluster-name", bg_col="indian_red_1a")
+    buf.write(text="cluster-two", bg_col="indian_red_1a", fg_col="white")
 
     print(buf.assemble(dim=(80, 24), offset=(0, 0), border_horiz="-", border_vert="|"))

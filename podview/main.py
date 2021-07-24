@@ -14,6 +14,7 @@ from kube.config import Context, get_selector
 from kube.tools.logs import configure_logging
 from podview.model.model import ScreenModel
 from podview.model.updater import ModelUpdater
+from podview.view.buffer import ScreenBuffer
 from podview.view.display import CursesDisplay, CursesDisplayError
 from podview.view.renderer import BufferRenderer
 
@@ -25,7 +26,6 @@ class Program:
         self.logger = logging.getLogger("program")
 
         self.model = ScreenModel()
-        self.renderer = BufferRenderer()
         self.display = CursesDisplay()
 
         self.async_loop = None
@@ -75,8 +75,10 @@ class Program:
         try:
             while True:
                 self.updater.run(model=self.model, timeout=0.01)
-                buffer = self.renderer.render(self.model)
-                # print(buffer.assemble(dim=(80, 24), border_horiz="-", border_vert="|"))
+                # self.updater.run(model=self.model, timeout=0.5)
+                renderer = BufferRenderer(self.model)
+                buffer = renderer.render()
+                # print(buffer.assemble(dim=(120, 24), border_horiz="-", border_vert="|"))
                 if self.display.interact(buffer, timeout=0.5):
                     break
 

@@ -48,7 +48,8 @@ class ModelUpdater:
             container_model.ready.set(value=cont.ready, ts=ts)
             container_model.image_hash.set(value=cont_image_hash, ts=ts)
             container_model.restart_count.set(value=cont.restartCount, ts=ts)
-            # container_model.state.set(value=cont_state_key, ts=ts)
+            if cont.state:
+                container_model.state.set(value=cont.state.key, ts=ts)
 
             if pod_app_name and cont_image_name.startswith(pod_app_name):
                 pod_model.image_hash.set(value=cont_image_hash, ts=ts)
