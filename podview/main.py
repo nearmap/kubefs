@@ -1,6 +1,7 @@
 import argparse
 import fnmatch
 import logging
+from threading import current_thread
 from typing import Optional
 
 from akube.async_loop import launch_in_background_thread
@@ -55,6 +56,9 @@ class Program:
         return facade.list_then_watch(selector=selector)
 
     def initialize(self):
+        main_thread = current_thread()
+        main_thread.setName("UiThread")
+
         configure_logging(filename=self.logfile)
         self.async_loop = launch_in_background_thread()
 
