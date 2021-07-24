@@ -34,7 +34,7 @@ class ScreenBuffer:
     Represents a buffer of lines of text. The buffer is of unlimited size and
     thus allows to grow taller or wider than the size of the viewport. This
     allows implementing scrolling behavior by rendering a section of the buffer
-    onto the viewing surface using an offset and surface dimensions.
+    onto the viewing surface using dimensions and an offset.
     """
 
     def __init__(self, fillchar=" ") -> None:
@@ -91,7 +91,10 @@ class ScreenBuffer:
 
         if fg_col or bg_col:
             colspan = ColorSpan(
-                offset=len(before), length=len(buf), fg_col=fg_col, bg_col=bg_col
+                offset=len(before) + start_pos,
+                length=len(text),
+                fg_col=fg_col,
+                bg_col=bg_col,
             )
             self.colspans[self.pos_y].append(colspan)
 
