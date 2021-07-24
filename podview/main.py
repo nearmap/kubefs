@@ -12,6 +12,7 @@ from kube.config import Context, get_selector
 from kube.tools.logs import configure_logging
 from podview.model.model import ScreenModel
 from podview.model.updater import ModelUpdater
+from podview.view.display import CursesDisplay, CursesDisplayError
 from podview.view.renderer import BufferRenderer
 
 
@@ -21,6 +22,7 @@ class Program:
 
         self.model = ScreenModel()
         self.renderer = BufferRenderer()
+        self.display = CursesDisplay()
 
         self.async_loop = None
         self.updater = None
@@ -49,12 +51,12 @@ class Program:
 
         # list first to advance the resourceVersion in the client to the current
         # point in time - so we can skip events that are in the past
-        facade.list_objects(selector=selector)
+        # facade.list_objects(selector=selector)
 
         return facade.start_watching(selector=selector)
 
     def initialize(self):
-        configure_logging()
+        configure_logging(filename="podview.log")
         self.async_loop = launch_in_background_thread()
 
         selector = get_selector()
@@ -65,10 +67,18 @@ class Program:
         self.updater = ModelUpdater(receivers=oev_receivers, args=self.args)
 
     def run_ui_loop(self):
-        while True:
-            self.updater.run(model=self.model, timeout=0.5)
-            buffer = self.renderer.render(self.model)
-            print(buffer.assemble(dim=(80, 24), border_horiz="-", border_vert="|"))
+        self.display.initialize()
+
+        try:
+            while True:
+                self.updater.run(model=self.model, timeout=0.3)
+                buffer = self.renderer.render(self.model)
+                # print(buffer.assemble(dim=(80, 24), border_horiz="-", border_vert="|"))
+                if self.display.interact(buffer, timeout=0.5):
+                    break
+
+        except (KeyboardInterrupt, CursesDisplayError):
+            self.display.exit()
 
     def run(self):
         self.initialize()

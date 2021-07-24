@@ -1,11 +1,12 @@
 from logging import CRITICAL, DEBUG, Logger, LoggerAdapter, basicConfig, getLogger
-from typing import Any, Mapping, Tuple
+from typing import Any, Optional, Tuple
 
 
-def configure_logging() -> None:
+def configure_logging(filename: Optional[str]) -> None:
     basicConfig(
         level=DEBUG,
         format="%(asctime)-15s %(threadName)s %(levelname)s %(name)s %(message)s",
+        filename=filename,
     )
 
     # tell noisy loggers to be quiet
