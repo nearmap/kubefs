@@ -18,6 +18,9 @@ class CursesDisplay:
         self.window = None
         self.logger = logger or logging.getLogger("display")
 
+        self.dim_x = 0
+        self.dim_y = 0
+
         self.buffer: ScreenBuffer = None
         self.buffer_offset_x = 0
         self.buffer_offset_y = 0
@@ -38,6 +41,8 @@ class CursesDisplay:
         self.window.nodelay(1)
         self.window.keypad(True)
 
+        self.dim_x, self.dim_y = os.get_terminal_size()
+
         signal.signal(signal.SIGWINCH, self.on_resize)
 
     def exit(self):
@@ -54,15 +59,6 @@ class CursesDisplay:
         if key not in (None, -1):
             if key == "q":
                 return True
-            elif key == curses.KEY_DOWN:
-                self.logger.info("Down arrow pressed")
-                self.buffer_offset_y += 1
-                self.redraw()
-
-            elif key == curses.KEY_UP:
-                self.logger.info("Up arrow pressed")
-                self.buffer_offset_y = max(0, self.buffer_offset_y - 1)
-                self.redraw()
 
             elif key == curses.KEY_LEFT:
                 self.logger.info("Left arrow pressed")
@@ -74,6 +70,28 @@ class CursesDisplay:
                 self.buffer_offset_x += 1
                 self.redraw()
 
+            elif key == curses.KEY_DOWN:
+                self.logger.info("Down arrow pressed")
+                self.buffer_offset_y += 1
+                self.redraw()
+
+            elif key == curses.KEY_UP:
+                self.logger.info("Up arrow pressed")
+                self.buffer_offset_y = max(0, self.buffer_offset_y - 1)
+                self.redraw()
+
+            elif key == curses.KEY_PPAGE:
+                self.logger.info("Page Up pressed")
+                self.buffer_offset_y = max(
+                    0, self.buffer_offset_y - int(self.dim_y / 2)
+                )
+                self.redraw()
+
+            elif key == curses.KEY_NPAGE:
+                self.logger.info("Page Down pressed")
+                self.buffer_offset_y += int(self.dim_y / 2)
+                self.redraw()
+
             else:
                 self.logger.info("Unmapped key pressed: %r", key)
 
@@ -82,11 +100,8 @@ class CursesDisplay:
     def redraw(self):
         self.window.clear()
 
-        cols, lines = os.get_terminal_size()
-        dim = (cols - 1, lines)
-
+        dim = (self.dim_x - 1, self.dim_y)
         offset = (self.buffer_offset_x, self.buffer_offset_y)
-
         block = self.buffer.assemble(dim=dim, offset=offset)
 
         try:
@@ -96,8 +111,8 @@ class CursesDisplay:
             raise CursesDisplayError()
 
     def on_resize(self, signum, frame):
-        cols, lines = os.get_terminal_size()
-        curses.resizeterm(lines, cols)
+        self.dim_x, self.dim_y = os.get_terminal_size()
+        curses.resizeterm(self.dim_y, self.dim_x)
 
         self.redraw()
 
