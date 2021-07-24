@@ -1,8 +1,14 @@
+import os
 from logging import CRITICAL, DEBUG, Logger, LoggerAdapter, basicConfig, getLogger
 from typing import Any, Optional, Tuple
 
 
 def configure_logging(filename: Optional[str]) -> None:
+    if filename is not None:
+        path = os.path.dirname(filename)
+        if not os.path.exists(path):
+            os.makedirs(path)
+
     basicConfig(
         level=DEBUG,
         format="%(asctime)-15s %(threadName)s %(levelname)s %(name)s %(message)s",

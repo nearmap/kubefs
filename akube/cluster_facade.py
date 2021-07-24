@@ -5,6 +5,7 @@ from akube.model.api_resource import ApiResource
 from akube.model.selector import ObjectSelector
 from kube.channels.objects import OEvReceiver, create_oev_chan
 from kube.config import Context
+from kube.events.objects import Action, ObjectEvent
 
 
 class SyncClusterFacade:
@@ -30,14 +31,14 @@ class SyncClusterFacade:
         pass
 
     def start_watching(self, *, selector: ObjectSelector) -> OEvReceiver:
-        oev_sender, oev_receiver = create_oev_chan()
+        oev_chan = create_oev_chan()
 
         async def start_watch():
             cluster_loop = await self.async_loop.get_cluster_loop(self.context)
-            await cluster_loop.start_watch(selector, oev_sender)
+            await cluster_loop.start_watch(selector, oev_chan.sender)
 
         self.async_loop.run_coro_until_completion(start_watch())
-        return oev_receiver
+        return oev_chan.receiver
 
     def stop_watching(self, *, selector: ObjectSelector) -> None:
         async def stop_watch():
@@ -45,3 +46,22 @@ class SyncClusterFacade:
             await cluster_loop.stop_watch(selector)
 
         self.async_loop.run_coro_until_completion(stop_watch())
+
+    def list_then_watch(self, *, selector: ObjectSelector) -> OEvReceiver:
+        oev_chan = create_oev_chan()
+
+        async def list_watch():
+            cluster_loop = await self.async_loop.get_cluster_loop(self.context)
+            client = await cluster_loop.get_client()
+            items = await client.list_objects(selector)
+
+            for item in items:
+                event = ObjectEvent(
+                    context=self.context, action=Action.LISTED, object=item
+                )
+                oev_chan.sender.send(event)
+
+            await cluster_loop.start_watch(selector, oev_chan.sender)
+
+        self.async_loop.launch_coro(list_watch())
+        return oev_chan.receiver

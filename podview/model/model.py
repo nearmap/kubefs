@@ -65,7 +65,7 @@ class ClusterModel:
 
     def iter_pods(self) -> List[PodModel]:
         pods = list(self.pods.values())
-        pods.sort(key=lambda pod: pod.name)
+        pods.sort(key=lambda pod: (pod.creation_timestamp.current_value, pod.name))
         return pods
 
 

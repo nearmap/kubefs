@@ -21,5 +21,5 @@ class NamespacedMeta(ObjectMeta):
         super().__init__(obj)
 
         self.namespace: str = self._meta["namespace"]
-        self.labels: Dict[str, str] = self._meta["labels"]
-        self.annotations: Dict[str, str] = self._meta["annotations"]
+        self.labels: Dict[str, str] = self._meta.get("labels") or {}
+        self.annotations: Dict[str, str] = self._meta.get("annotations") or {}

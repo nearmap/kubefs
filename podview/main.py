@@ -1,5 +1,6 @@
 import argparse
 import fnmatch
+import logging
 from typing import Optional
 
 from akube.async_loop import launch_in_background_thread
@@ -17,8 +18,10 @@ from podview.view.renderer import BufferRenderer
 
 
 class Program:
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, args: argparse.Namespace, logfile="var/log/podview.log") -> None:
         self.args = args
+        self.logfile = logfile
+        self.logger = logging.getLogger("program")
 
         self.model = ScreenModel()
         self.renderer = BufferRenderer()
@@ -49,14 +52,10 @@ class Program:
 
         selector = ObjectSelector(res=PodKind, namespace=namespace)
 
-        # list first to advance the resourceVersion in the client to the current
-        # point in time - so we can skip events that are in the past
-        # facade.list_objects(selector=selector)
-
-        return facade.start_watching(selector=selector)
+        return facade.list_then_watch(selector=selector)
 
     def initialize(self):
-        configure_logging(filename="podview.log")
+        configure_logging(filename=self.logfile)
         self.async_loop = launch_in_background_thread()
 
         selector = get_selector()
@@ -78,6 +77,10 @@ class Program:
                     break
 
         except (KeyboardInterrupt, CursesDisplayError):
+            self.display.exit()
+
+        except Exception:
+            self.logger.exception("Uncaught exception in run_ui_loop()")
             self.display.exit()
 
     def run(self):
