@@ -1,7 +1,7 @@
 import contextlib
 import enum
 from collections import defaultdict
-from typing import DefaultDict, Dict, Iterator, List, Tuple
+from typing import DefaultDict, Iterator, List, Tuple
 
 from colored import bg, fg
 from colored.colored import stylize

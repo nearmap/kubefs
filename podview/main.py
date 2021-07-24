@@ -71,7 +71,7 @@ class Program:
 
         try:
             while True:
-                self.updater.run(model=self.model, timeout=0.3)
+                self.updater.run(model=self.model, timeout=0.01)
                 buffer = self.renderer.render(self.model)
                 # print(buffer.assemble(dim=(80, 24), border_horiz="-", border_vert="|"))
                 if self.display.interact(buffer, timeout=0.5):

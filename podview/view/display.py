@@ -15,12 +15,15 @@ class CursesDisplayError(Exception):
 
 class CursesDisplay:
     def __init__(self, logger=None):
-        self.screen = None
-        self.buffer: ScreenBuffer = None
+        self.window = None
         self.logger = logger or logging.getLogger("display")
 
+        self.buffer: ScreenBuffer = None
+        self.buffer_offset_x = 0
+        self.buffer_offset_y = 0
+
     def initialize(self):
-        self.screen = curses.initscr()
+        self.window = curses.initscr()
         curses.start_color()
         curses.use_default_colors()
 
@@ -31,7 +34,9 @@ class CursesDisplay:
         curses.curs_set(False)
 
         # ms timeout for reading key presses
-        self.screen.timeout(10)
+        self.window.timeout(10)
+        self.window.nodelay(1)
+        self.window.keypad(True)
 
         signal.signal(signal.SIGWINCH, self.on_resize)
 
@@ -39,24 +44,53 @@ class CursesDisplay:
         curses.endwin()
 
     def should_exit(self):
+        key = None
+
         try:
-            if self.screen.getkey() == "q":
-                # if self.screen.getkey():
-                return True
+            key = self.window.getch()
         except _curses.error:
             pass
+
+        if key not in (None, -1):
+            if key == "q":
+                return True
+            elif key == curses.KEY_DOWN:
+                self.logger.info("Down arrow pressed")
+                self.buffer_offset_y += 1
+                self.redraw()
+
+            elif key == curses.KEY_UP:
+                self.logger.info("Up arrow pressed")
+                self.buffer_offset_y = max(0, self.buffer_offset_y - 1)
+                self.redraw()
+
+            elif key == curses.KEY_LEFT:
+                self.logger.info("Left arrow pressed")
+                self.buffer_offset_x = max(0, self.buffer_offset_x - 1)
+                self.redraw()
+
+            elif key == curses.KEY_RIGHT:
+                self.logger.info("Right arrow pressed")
+                self.buffer_offset_x += 1
+                self.redraw()
+
+            else:
+                self.logger.info("Unmapped key pressed: %r", key)
 
         return False
 
     def redraw(self):
-        self.screen.clear()
+        self.window.clear()
 
         cols, lines = os.get_terminal_size()
         dim = (cols - 1, lines)
-        block = self.buffer.assemble(dim=dim)
+
+        offset = (self.buffer_offset_x, self.buffer_offset_y)
+
+        block = self.buffer.assemble(dim=dim, offset=offset)
 
         try:
-            self.screen.addstr(block)
+            self.window.addstr(block)
         except curses.error:
             self.logger.exception("Failed to redraw screen")
             raise CursesDisplayError()
@@ -80,6 +114,8 @@ class CursesDisplay:
             if self.should_exit():
                 self.exit()
                 return True
+
+            time.sleep(timeout / 100)
 
         return False
 
