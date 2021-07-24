@@ -22,10 +22,10 @@ class BufferRenderer:
                     buffer.write(text=pod.name)
                     buffer.end_line()
 
-                    # with buffer.indent(width=2):
-                    #     for container in pod.iter_containers():
-                    #         buffer.write(text=container.name)
-                    #         buffer.end_line()
+                    with buffer.indent(width=2):
+                        for container in pod.iter_containers():
+                            buffer.write(text=container.name)
+                            buffer.end_line()
 
         return buffer
 

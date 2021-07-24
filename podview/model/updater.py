@@ -1,5 +1,6 @@
 import argparse
 import fnmatch
+import logging
 import os
 import time
 from typing import List, Tuple
@@ -12,9 +13,12 @@ from podview.model.model import ScreenModel
 
 
 class ModelUpdater:
-    def __init__(self, receivers: List[OEvReceiver], args: argparse.Namespace) -> None:
+    def __init__(
+        self, receivers: List[OEvReceiver], args: argparse.Namespace, logger=None
+    ) -> None:
         self.receivers = receivers
         self.args = args
+        self.logger = logger or logging.getLogger(__name__)
 
     def parse_image(self, image_url) -> Tuple[str, str]:
         st = urlparse(image_url)

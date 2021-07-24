@@ -16,7 +16,7 @@ class CursesDisplayError(Exception):
 class CursesDisplay:
     def __init__(self, logger=None):
         self.window = None
-        self.logger = logger or logging.getLogger("display")
+        self.logger = logger or logging.getLogger(__name__)
 
         self.dim_x = 0
         self.dim_y = 0

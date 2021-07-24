@@ -47,9 +47,9 @@ class PodStatus(ObjectStatus):
         self.message: Optional[str] = None
         self.containerStatuses: List[ContainerStatus] = None
 
-        self.startTime = maybe_parse_date(obj.get("startTime"))
-        self.message = obj.get("message")
-        self.reason = obj.get("reason")
+        self.startTime = maybe_parse_date(self._status.get("startTime"))
+        self.message = self._status.get("message")
+        self.reason = self._status.get("reason")
         self.containerStatuses = [
-            ContainerStatus(cont) for cont in obj.get("containerStatuses", [])
+            ContainerStatus(cont) for cont in self._status.get("containerStatuses", [])
         ]
