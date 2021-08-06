@@ -1,5 +1,6 @@
 PyYAML==5.4.1
 aiohttp==3.7.4.post0
+aiodns==3.0.0
 colored==1.4.2
 deepdiff==5.5.0
 fusepy==3.0.1

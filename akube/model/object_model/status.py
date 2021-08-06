@@ -27,6 +27,13 @@ class ContainerStateTerminated(ContainerState):
         self.reason: Optional[str] = obj.get("reason")
 
 
+class ContainerStateWaiting(ContainerState):
+    def __init__(self, obj: RawObject) -> None:
+        self.key = "waiting"
+        self.message: Optional[str] = obj.get("message")
+        self.reason: Optional[str] = obj.get("reason")
+
+
 def parse_container_state(obj: RawObject) -> Optional[ContainerState]:
     key = list(obj.keys())[0]
 
@@ -34,6 +41,8 @@ def parse_container_state(obj: RawObject) -> Optional[ContainerState]:
         return ContainerStateRunning(obj)
     elif key == "terminated":
         return ContainerStateTerminated(obj)
+    elif key == "waiting":
+        return ContainerStateWaiting(obj)
 
     return None
 
