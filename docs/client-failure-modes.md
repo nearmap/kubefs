@@ -26,7 +26,6 @@ force. If it completed very quickly then it probably was an error.
 
 We don't think the request has any chance of succeeding so we don't retry:
 - `aiohttp.InvalidURL` - the url is malformed and the client rejected it
-- `asyncio.TimeoutError` (if client timeout set to seconds then it's probably too aggressive)
 - HTTP 4xx excl 429
 
 We think the request could succeed if retried so we will retry:
@@ -34,6 +33,8 @@ We think the request could succeed if retried so we will retry:
 - `aiohttp.ClientConnectorError` - dns or tcp
 - `aiohttp.ServerTimeoutError` - tcp read timeout (server is being slow)
     - could also be that the timeout is too aggressive - could we bump it maybe?
+- `asyncio.TimeoutError` (if client timeout set to seconds then it's probably too aggressive)
+    - could we bump it and retry maybe?
 - `aiohttp.ClientOSError` - tcp (some kind of) timeout
 - `aiohttp.ClientConnectorCertificateError` - tls
     - retrying most likely won't help if the server is misconfigured
