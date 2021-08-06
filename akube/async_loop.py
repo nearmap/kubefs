@@ -87,6 +87,8 @@ class AsyncLoop:
             except CancelledError:
                 pass
 
+        self.loop.stop()
+
 
 def launch_in_background_thread() -> AsyncLoop:
     loop = asyncio.get_event_loop()
