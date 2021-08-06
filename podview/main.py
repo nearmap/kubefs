@@ -84,12 +84,12 @@ class Program:
 
         except (KeyboardInterrupt, CursesDisplayError):
             self.display.exit()
-            self.async_loop.shutdown()
 
         except Exception:
             self.logger.exception("Uncaught exception in run_ui_loop()")
             self.display.exit()
-            self.async_loop.shutdown()
+
+        self.async_loop.shutdown()
 
     def run(self):
         self.initialize()

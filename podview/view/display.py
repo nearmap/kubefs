@@ -57,7 +57,7 @@ class CursesDisplay:
             pass
 
         if key not in (None, -1):
-            if key == "q":
+            if key == ord("q"):
                 return True
 
             elif key == curses.KEY_LEFT:
