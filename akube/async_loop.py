@@ -1,6 +1,7 @@
 import asyncio
 import time
 from asyncio.events import AbstractEventLoop
+from asyncio.exceptions import CancelledError
 from threading import Event, Thread
 from typing import Any, Dict
 
@@ -49,6 +50,18 @@ class AsyncLoop:
         while True:
             await asyncio.sleep(3600)
 
+    async def safe_mainloop(self):
+        """
+        We need this wrapper function because mainloop() is used as an
+        entrypoint for Thread and thus we need to catch CancelledError to have a
+        graceful shutdown.
+        """
+
+        try:
+            await self.mainloop()
+        except CancelledError:
+            return
+
     # Helpers to facilitate running tasks on the async loop from another thread
 
     def get_loop(self) -> AbstractEventLoop:
@@ -65,6 +78,15 @@ class AsyncLoop:
 
         return fut.result()
 
+    def shutdown(self):
+        "Shutdown the AsyncLoop and join the thread it runs in."
+
+        for task in asyncio.all_tasks(loop=self.loop):
+            try:
+                task.cancel()
+            except CancelledError:
+                pass
+
 
 def launch_in_background_thread() -> AsyncLoop:
     loop = asyncio.get_event_loop()
@@ -74,7 +96,9 @@ def launch_in_background_thread() -> AsyncLoop:
     async_loop = AsyncLoop(loop=loop, initialized_event=initialized_event)
 
     thread = Thread(
-        name="AsyncThread", target=loop.run_until_complete, args=[async_loop.mainloop()]
+        name="AsyncThread",
+        target=loop.run_until_complete,
+        args=[async_loop.safe_mainloop()],
     )
     thread.start()
 
