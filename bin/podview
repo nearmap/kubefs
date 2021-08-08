@@ -19,23 +19,20 @@ def main(args: argparse.Namespace) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-c",
-        "--context",
+        "-c", "--context",
         dest="context",
         action="store",
         required=True,
         help=(f"Kube contexts to select - matched like a filesystem wildcard"),
     )
     parser.add_argument(
-        "-n",
-        "--namespace",
+        "-n", "--namespace",
         dest="namespace",
         action="store",
         help=(f"Kube namespace to select - matched like a filesystem wildcard"),
     )
     parser.add_argument(
-        "-p",
-        "--pod",
+        "-p", "--pod",
         dest="pod",
         action="store",
         # required=True,
