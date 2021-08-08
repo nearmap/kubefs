@@ -9,7 +9,15 @@ from urllib.parse import urlencode
 
 from aiohttp import BasicAuth, ClientSession
 from aiohttp.client import ClientTimeout
-from aiohttp.client_exceptions import ClientConnectorError, ClientPayloadError
+from aiohttp.client_exceptions import (
+    ClientConnectorCertificateError,
+    ClientConnectorError,
+    ClientConnectorSSLError,
+    ClientOSError,
+    ClientPayloadError,
+    ServerTimeoutError,
+    TooManyRedirects,
+)
 
 from akube.model.selector import ObjectSelector
 from kube.channels.objects import OEvSender
@@ -41,7 +49,7 @@ class ApiError(Exception):
         return self.__repr__()
 
     def is_retryable(self):
-        return self.code in (500, 502, 503, 504)
+        return self.code in (429, 500, 502, 503, 504)
 
     def is_resource_version_too_old(self):
         return self.rx.search(self.message) is not None
@@ -170,7 +178,7 @@ class AsyncClient:
             auth=self.basic_auth,
             timeout=ClientTimeout(
                 sock_connect=3,
-                sock_read=15,
+                total=15,
             ),
         )
 
@@ -198,13 +206,22 @@ class AsyncClient:
 
         retries = 0
         max_retries = 3
+        retriable_connection_errors = (
+            ClientConnectorError,
+            ServerTimeoutError,
+            TimeoutError,
+            TooManyRedirects,
+            ClientOSError,
+            ClientConnectorCertificateError,
+            ClientConnectorSSLError,
+        )
 
         while True:
 
             try:
                 return await self.list_attempt(selector)
 
-            except ClientConnectorError as exc:
+            except retriable_connection_errors as exc:
                 if retries < max_retries:
                     retries += 1
                     log.warn(
@@ -254,7 +271,7 @@ class AsyncClient:
             auth=self.basic_auth,
             timeout=ClientTimeout(
                 sock_connect=3,
-                sock_read=300,
+                total=300,
             ),
         )
 
@@ -291,16 +308,37 @@ class AsyncClient:
     ) -> None:
         log = self.get_ctx_logger(selector)
 
+        successful_completion_exceptions = (
+            TimeoutError,
+            ClientPayloadError,
+        )
+        retriable_connection_errors = (
+            ClientConnectorError,
+            ServerTimeoutError,
+            TooManyRedirects,
+            ClientOSError,
+            ClientConnectorCertificateError,
+            ClientConnectorSSLError,
+        )
+
         while True:
             try:
                 await self.watch_attempt(selector, oev_sender)
 
-            except (TimeoutError, ClientPayloadError) as exc:
+            except successful_completion_exceptions as exc:
                 # the server timed out the watch - we expect this to happen
                 # after the normal server timeout interval (5-15min)
-                # this could also happen if the server is unreachable....
+                # (this could also happen if the server is unreachable....)
                 log.info("Watch request completed - restarting")
                 await asyncio.sleep(1)  # don't retry aggressively
+
+            except retriable_connection_errors as exc:
+                log.warn(
+                    "Watch request failed with retryable error: %r - retrying", exc
+                )
+
+                await asyncio.sleep(1)  # don't retry aggressively
+                continue
 
             except ApiError as exc:
                 # if the http error looks transient - try again
