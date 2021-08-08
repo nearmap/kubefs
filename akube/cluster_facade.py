@@ -53,7 +53,16 @@ class SyncClusterFacade:
         async def list_watch():
             cluster_loop = await self.async_loop.get_cluster_loop(self.context)
             client = await cluster_loop.get_client()
-            items = await client.list_objects(selector)
+
+            items = []
+            try:
+                items = await client.list_objects(selector)
+            except Exception as exc:
+                event = ObjectEvent(
+                    context=self.context, action=Action.LISTED, object=exc,
+                )
+                oev_chan.sender.send(event)
+                return  # fail fast if list failed
 
             for item in items:
                 event = ObjectEvent(

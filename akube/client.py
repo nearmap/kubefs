@@ -166,6 +166,14 @@ class AsyncClient:
 
         return url
 
+    def send_error(self, exc: Exception, oev_sender: OEvSender) -> None:
+        event = ObjectEvent(
+            context=self.context,
+            action=Action.ADDED,
+            object=exc,
+        )
+        oev_sender.send(event)
+
     async def list_attempt(self, selector: ObjectSelector) -> List[Any]:
         log = self.get_ctx_logger(selector)
 
@@ -360,9 +368,11 @@ class AsyncClient:
                 log.exception(
                     "Watch request failed with non-retryable error - giving up"
                 )
-                raise
+                self.send_error(exc, oev_sender)
+                break
 
             except Exception:
                 # we don't know what the error is so log a traceback and exit
                 log.exception("Watch request failed with unexpected error - giving up")
-                raise
+                self.send_error(exc, oev_sender)
+                break

@@ -57,6 +57,9 @@ class ModelUpdater:
                 pod_model.image_hash.set(value=cont_image_hash, ts=ts)
 
     def filter_event(self, event: ObjectEvent) -> bool:
+        if isinstance(event.object, Exception):
+            raise event.object  # re-raise as uncaught exception
+
         pod = Pod(event.object)
         app_name = pod.meta.labels.get("app")
 
