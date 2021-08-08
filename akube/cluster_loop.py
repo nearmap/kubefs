@@ -80,6 +80,7 @@ class AsyncClusterLoop:
         async with aiohttp.ClientSession() as session:
             logger = logging.getLogger("aclient")
             # logger.setLevel(logging.WARN)
+            logger.setLevel(logging.INFO)
             # logger = get_silent_logger()
 
             self.client = AsyncClient(
