@@ -74,18 +74,30 @@ class ModelUpdater:
             ts = event.time_created
             is_terminal_state = False
 
+            exit_code = None
+            message = None
+            reason = None
+
             if isinstance(state, ContainerStateWaiting):
-                pass
+                message = state.message
+                reason = state.reason
             elif isinstance(state, ContainerStateRunning):
                 dt = state.startedAt
             elif isinstance(state, ContainerStateTerminated):
                 dt = state.finishedAt
                 is_terminal_state = True
 
+                exit_code = state.exitCode
+                message = state.message
+                reason = state.reason
+
             if dt is not None:
                 ts = dt.timestamp()
 
             model.state.set(value=state.key, ts=ts, is_terminal_state=is_terminal_state)
+            model.exit_code.set(value=exit_code, ts=ts)
+            model.message.set(value=message, ts=ts)
+            model.reason.set(value=reason, ts=ts)
 
     def update_model(self, model: ScreenModel, event: ObjectEvent) -> None:
         context = event.context

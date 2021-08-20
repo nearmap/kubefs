@@ -1,3 +1,4 @@
+from akube.model.object_model.status import ContainerStateTerminated
 from podview.model.model import ContainerModel, PodModel, ScreenModel
 from podview.view.buffer import ScreenBuffer, TextAlign
 
@@ -25,17 +26,34 @@ class BufferRenderer:
                     self.pod_name_width = pod_name_len
 
     def render_container(self, container: ContainerModel, name_width: int) -> None:
-        self.buffer.write(text=container.name, width=name_width)
+        self.buffer.write(text=f"- {container.name}", width=name_width)
 
         with self.buffer.indent(width=4):
             val = container.state.current_value or ""
-            self.buffer.write(text=val, width=10)
+            self.buffer.write(text=val)
 
-            with self.buffer.indent(width=3):
+            with self.buffer.indent(width=1):
                 val = container.state.current_elapsed_pretty
                 if val:
-                    val = f"({val})"
                     self.buffer.write(text=val)
+
+        with self.buffer.indent(width=2):
+            if container.restart_count.current_value > 0:
+                val = f"- restartCount: {container.restart_count.current_value}"
+                self.buffer.write(text=val)
+                self.buffer.end_line()
+            if container.exit_code.current_value not in (None, 0):
+                code = f"- exitCode: {container.exit_code.current_value}"
+                self.buffer.write(text=code)
+                self.buffer.end_line()
+            if container.reason.current_value not in (None, "Completed"):
+                code = f"- reason: {container.reason.current_value}"
+                self.buffer.write(text=code)
+                self.buffer.end_line()
+            if container.message.current_value:
+                code = f"- message: {container.message.current_value}"
+                self.buffer.write(text=code)
+                self.buffer.end_line()
 
     def render_pod(self, pod: PodModel) -> None:
         self.buffer.write(text=pod.name, width=self.pod_name_width)
@@ -44,16 +62,15 @@ class BufferRenderer:
             val = pod.phase.current_value and pod.phase.current_value.lower()
             self.buffer.write(text=val)
 
-            with self.buffer.indent(width=3):
+            with self.buffer.indent(width=1):
                 val = pod.phase.current_elapsed_pretty
                 if val:
-                    val = f"({val})"
                     self.buffer.write(text=val)
 
         containers = pod.iter_containers()
         cont_name_width = 0
         if containers:
-            cont_name_width = max(len(cont.name) for cont in containers)
+            cont_name_width = max(len(f"- {cont.name}") for cont in containers)
 
         with self.buffer.indent(width=2):
             for container in containers:

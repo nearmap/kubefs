@@ -4,7 +4,7 @@ import logging
 from threading import current_thread
 from typing import Optional
 
-from akube.async_loop import launch_in_background_thread
+from akube.async_loop import AsyncLoop, launch_in_background_thread
 from akube.cluster_facade import SyncClusterFacade
 from akube.model.api_resource import NamespaceKind, PodKind
 from akube.model.object_model.kinds import Namespace
@@ -28,12 +28,14 @@ class Program:
         self.model = ScreenModel()
         self.display = CursesDisplay()
 
-        self.async_loop = None
+        self.async_loop: Optional[AsyncLoop] = None
         self.updater = None
 
     def find_matching_namespace(
         self, namespace_pat: str, context: Context
     ) -> Optional[str]:
+        assert self.async_loop is not None  # help mypy
+
         facade = SyncClusterFacade(async_loop=self.async_loop, context=context)
         selector = ObjectSelector(res=NamespaceKind)
         namespace_objs = facade.list_objects(selector=selector)
@@ -45,6 +47,8 @@ class Program:
         return namespaces[0]
 
     def launch_watcher(self, context: Context) -> OEvReceiver:
+        assert self.async_loop is not None  # help mypy
+
         facade = SyncClusterFacade(async_loop=self.async_loop, context=context)
 
         namespace = None

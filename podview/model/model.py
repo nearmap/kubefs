@@ -15,12 +15,11 @@ class ContainerModel:
         self.restart_count: Value[int] = Value()
 
         self.state: Value[str] = Value()
-        # self.state_started_at: Value[datetime] = Value()
-        # self.state_finished_at: Value[datetime] = Value()
+        self.exit_code: Value[int] = Value()
+        self.reason: Value[str] = Value()
+        self.message: Value[str] = Value()
 
         # self.last_state: Value[str] = Value()
-        # self.last_state_started_at: Value[datetime] = Value()
-        # self.last_state_finished_at: Value[datetime] = Value()
 
 
 class PodModel:
