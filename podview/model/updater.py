@@ -14,7 +14,7 @@ from akube.model.object_model.status import (
     ContainerStatus,
 )
 from kube.channels.objects import OEvReceiver
-from kube.events.objects import ObjectEvent
+from kube.events.objects import Action, ObjectEvent
 from podview.model.model import ContainerModel, PodModel, ScreenModel
 
 
@@ -57,6 +57,12 @@ class ModelUpdater:
                         if dt is None or cont.state.finishedAt > dt:
                             dt = cont.state.finishedAt
 
+                is_terminal_state = True
+
+            # deleted pods still show up in phase 'running'
+            if event.action is Action.DELETED:
+                phase = "deleted"
+                dt = pod.meta.deletionTimestamp
                 is_terminal_state = True
 
             if dt is not None:
@@ -109,6 +115,7 @@ class ModelUpdater:
         cluster_model = model.get_cluster(context)
         pod_model = cluster_model.get_pod(pod.meta.name)
         pod_model.creation_timestamp.set(value=pod.meta.creationTimestamp, ts=ts)
+        pod_model.deletion_timestamp.set(value=pod.meta.deletionTimestamp, ts=ts)
         self.update_pod_phase(event, pod, pod_model)
 
         for cont in pod.status.containerStatuses:

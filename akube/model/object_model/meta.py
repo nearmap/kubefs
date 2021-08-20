@@ -3,6 +3,7 @@ from typing import Dict
 
 from dateutil.parser import parse as parse_date
 
+from akube.model.object_model.helpers import maybe_parse_date
 from akube.model.object_model.types import RawObject
 
 
@@ -11,6 +12,9 @@ class ObjectMeta:
         self._meta = obj["metadata"]
 
         self.creationTimestamp: datetime = parse_date(self._meta["creationTimestamp"])
+        self.deletionTimestamp: datetime = maybe_parse_date(
+            self._meta.get("deletionTimestamp")
+        )
         self.name: str = self._meta["name"]
         self.resourceVersion: int = int(self._meta["resourceVersion"])
         self.uid: str = self._meta["uid"]

@@ -35,7 +35,12 @@ class BufferRenderer:
             with self.buffer.indent(width=1):
                 val = container.state.current_elapsed_pretty
                 if val:
-                    self.buffer.write(text=val)
+                    self.buffer.write(text=val, width=4)
+
+                with self.buffer.indent(width=3):
+                    val = container.image_hash.current_value
+                    if val:
+                        self.buffer.write(text=val[:8])
 
         with self.buffer.indent(width=4):
             # for containers in waiting/running show started/ready is False

@@ -30,6 +30,7 @@ class PodModel:
         self.containers: Dict[str, ContainerModel] = {}
 
         self.creation_timestamp: Value[datetime] = Value()
+        self.deletion_timestamp: Value[datetime] = Value()
         self.phase: Value[str] = Value()
         self.image_hash: Value[str] = Value()
 
