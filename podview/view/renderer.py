@@ -37,15 +37,31 @@ class BufferRenderer:
                 if val:
                     self.buffer.write(text=val)
 
-        with self.buffer.indent(width=2):
+        with self.buffer.indent(width=4):
+            # for containers in waiting/running show started/ready is False
+            if container.state.current_value not in ('terminated',):
+                if container.started.current_value not in (None, True):
+                    code = f"- started: {container.started.current_value}"
+                    self.buffer.write(text=code)
+                    self.buffer.end_line()
+                if container.ready.current_value not in (None, True):
+                    code = f"- ready: {container.ready.current_value}"
+                    self.buffer.write(text=code)
+                    self.buffer.end_line()
+
+            # show restartCount if not zero
             if container.restart_count.current_value > 0:
                 val = f"- restartCount: {container.restart_count.current_value}"
                 self.buffer.write(text=val)
                 self.buffer.end_line()
+
+            # show exitCode if not zero
             if container.exit_code.current_value not in (None, 0):
                 code = f"- exitCode: {container.exit_code.current_value}"
                 self.buffer.write(text=code)
                 self.buffer.end_line()
+
+            # show reason and message if set and not trivial
             if container.reason.current_value not in (None, "Completed"):
                 code = f"- reason: {container.reason.current_value}"
                 self.buffer.write(text=code)

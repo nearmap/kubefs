@@ -11,6 +11,7 @@ class ContainerModel:
         self.name = name
 
         self.ready: Value[bool] = Value()
+        self.started: Value[bool] = Value()
         self.image_hash: Value[str] = Value()
         self.restart_count: Value[int] = Value()
 

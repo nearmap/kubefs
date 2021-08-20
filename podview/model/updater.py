@@ -116,6 +116,7 @@ class ModelUpdater:
 
             container_model = pod_model.get_container(cont.name)
             container_model.ready.set(value=cont.ready, ts=ts)
+            container_model.started.set(value=cont.started, ts=ts)
             container_model.image_hash.set(value=cont_image_hash, ts=ts)
             container_model.restart_count.set(value=cont.restartCount, ts=ts)
             self.update_container_state(event, cont, container_model)
