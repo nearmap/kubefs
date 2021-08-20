@@ -71,7 +71,9 @@ class Program:
 
         oev_receivers = [self.launch_watcher(ctx) for ctx in contexts]
 
-        self.updater = ModelUpdater(receivers=oev_receivers, args=self.args)
+        self.updater = ModelUpdater(
+            contexts=contexts, receivers=oev_receivers, args=self.args
+        )
 
     def run_ui_loop(self):
         self.display.initialize()

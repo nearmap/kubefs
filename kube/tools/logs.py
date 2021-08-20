@@ -3,7 +3,7 @@ from logging import CRITICAL, DEBUG, Logger, LoggerAdapter, basicConfig, getLogg
 from typing import Any, Optional, Tuple
 
 
-def configure_logging(filename: Optional[str]) -> None:
+def configure_logging(filename: Optional[str] = None) -> None:
     if filename is not None:
         path = os.path.dirname(filename)
         if not os.path.exists(path):

@@ -1,4 +1,4 @@
-from akube.model.object_model.status import ContainerStateTerminated
+from podview.model.colors import Color
 from podview.model.model import ContainerModel, PodModel, ScreenModel
 from podview.view.buffer import ScreenBuffer, TextAlign
 
@@ -120,7 +120,9 @@ class BufferRenderer:
 
         for cluster in clusters:
             self.buffer.write(
-                text=cluster.context.short_name, width=self.cluster_name_width
+                text=cluster.name.current_value,
+                width=self.cluster_name_width,
+                color=cluster.name.current_color,
             )
 
             with self.buffer.indent(width=3):

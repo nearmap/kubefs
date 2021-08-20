@@ -106,8 +106,8 @@ class CursesDisplay:
 
         try:
             self.window.addstr(block)
-        except curses.error:
-            self.logger.exception("Failed to redraw screen")
+        except curses.error as exc:
+            self.logger.exception("Failed to redraw screen: %r", exc)
             raise CursesDisplayError()
 
     def on_resize(self, signum, frame):

@@ -52,7 +52,8 @@ class PodModel:
 class ClusterModel:
     def __init__(self, context: Context) -> None:
         self.context = context
-        self.name = context.short_name
+
+        self.name: Value[str] = Value()
         self.pods: Dict[str, PodModel] = {}
 
     def get_pod(self, name: str) -> PodModel:

@@ -14,17 +14,26 @@ from akube.model.object_model.status import (
     ContainerStatus,
 )
 from kube.channels.objects import OEvReceiver
+from kube.config import Context
 from kube.events.objects import Action, ObjectEvent
+from podview.model.colors import ColorPicker
 from podview.model.model import ContainerModel, PodModel, ScreenModel
 
 
 class ModelUpdater:
     def __init__(
-        self, receivers: List[OEvReceiver], args: argparse.Namespace, logger=None
+        self,
+        contexts: List[Context],
+        receivers: List[OEvReceiver],
+        args: argparse.Namespace,
+        logger=None,
     ) -> None:
+        self.contexts = contexts
         self.receivers = receivers
         self.args = args
         self.logger = logger or logging.getLogger(__name__)
+
+        self.color_picker = ColorPicker(contexts)
 
     def parse_image(self, image_url) -> Tuple[str, str]:
         st = urlparse(image_url)
@@ -113,6 +122,12 @@ class ModelUpdater:
         pod_app_name = pod.meta.labels.get("app")
 
         cluster_model = model.get_cluster(context)
+        cluster_model.name.set(
+            value=context.short_name,
+            ts=ts,
+            color=self.color_picker.get_for_context(context),
+        )
+
         pod_model = cluster_model.get_pod(pod.meta.name)
         pod_model.creation_timestamp.set(value=pod.meta.creationTimestamp, ts=ts)
         pod_model.deletion_timestamp.set(value=pod.meta.deletionTimestamp, ts=ts)

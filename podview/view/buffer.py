@@ -1,10 +1,12 @@
 import contextlib
 import enum
 from collections import defaultdict
-from typing import DefaultDict, Iterator, List, Tuple
+from typing import DefaultDict, Iterator, List, Optional, Tuple
 
 from colored import bg, fg
 from colored.colored import stylize
+
+from podview.model.colors import Color
 
 
 class TextAlign(enum.Enum):
@@ -60,8 +62,7 @@ class ScreenBuffer:
         *,
         text: str,
         width: int = 0,
-        fg_col: str = "",
-        bg_col: str = "",
+        color: Optional[Color] = None,
         align: TextAlign = TextAlign.LEFT
     ) -> None:
         length = len(text)
@@ -89,12 +90,12 @@ class ScreenBuffer:
 
         self.lines[self.pos_y] = line
 
-        if fg_col or bg_col:
+        if color is not None:
             colspan = ColorSpan(
                 offset=len(before) + start_pos,
                 length=len(text),
-                fg_col=fg_col,
-                bg_col=bg_col,
+                fg_col=color.fg,
+                bg_col=color.bg,
             )
             self.colspans[self.pos_y].append(colspan)
 
@@ -177,7 +178,7 @@ class ScreenBuffer:
 
 if __name__ == "__main__":
     buf = ScreenBuffer(fillchar=" ")
-    buf.write(text="cluster-one", bg_col="dodger_blue_1", fg_col="white")
+    buf.write(text="cluster-one", color=Color(bg="dodger_blue_1", fg="white"))
 
     with buf.indent(width=2):
         buf.write(text="pod-name-1")
@@ -208,6 +209,6 @@ if __name__ == "__main__":
             buf.write(text="cont-name-2")
             buf.end_line()
 
-    buf.write(text="cluster-two", bg_col="indian_red_1a", fg_col="white")
+    buf.write(text="cluster-two", color=Color(bg="indian_red_1a", fg="white"))
 
     print(buf.assemble(dim=(80, 24), offset=(0, 0), border_horiz="-", border_vert="|"))

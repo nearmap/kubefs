@@ -3,6 +3,7 @@ from datetime import timedelta
 from typing import Generic, Optional, TypeVar
 
 from podview.common.timekeeping import humanize_delta
+from podview.model.colors import Color
 
 V = TypeVar("V")
 
@@ -16,6 +17,8 @@ class Value(Generic[V]):
         # if the current value represents a state, is it a terminal state or and
         # intermediate state? for terminal states elapsed pretty will show 'ago'
         self.current_is_terminal_state: bool = False
+        # the color of the current value of the attribute
+        self.current_color: Optional[Color] = None
 
         # the previous value for the attribute
         self.previous_value: Optional[V] = None
@@ -31,7 +34,13 @@ class Value(Generic[V]):
             self.previous_time,
         )
 
-    def set(self, value: V, ts: float, is_terminal_state: bool = False) -> None:
+    def set(
+        self,
+        value: V,
+        ts: float,
+        is_terminal_state: bool = False,
+        color: Optional[Color] = None,
+    ) -> None:
         if value != self.current_value:
             self.previous_value = self.current_value
             self.previous_time = self.current_time
@@ -39,6 +48,7 @@ class Value(Generic[V]):
             self.current_value = value
             self.current_time = ts
             self.current_is_terminal_state = is_terminal_state
+            self.current_color = color
 
     @property
     def current_elapsed_pretty(self) -> Optional[str]:
