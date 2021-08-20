@@ -2,7 +2,7 @@ import time
 from datetime import timedelta
 from typing import Generic, Optional, TypeVar
 
-import humanize
+from podview.common.timekeeping import humanize_delta
 
 V = TypeVar("V")
 
@@ -44,7 +44,7 @@ class Value(Generic[V]):
     def current_elapsed_pretty(self) -> Optional[str]:
         if self.current_time:
             delta = time.time() - self.current_time
-            fmt = humanize.naturaldelta(timedelta(seconds=delta))
+            fmt = humanize_delta(timedelta(seconds=delta))
 
             if self.current_is_terminal_state:
                 fmt = f"{fmt} ago"

@@ -60,9 +60,11 @@ class BufferRenderer:
                 self.render_container(container, cont_name_width)
 
     def render(self) -> ScreenBuffer:
+        self.buffer.write(text="podview", width=9)
+
         ela = self.model.elapsed.current_elapsed_pretty
-        ela = f"[{ela}]"
-        self.buffer.write(text=ela, width=14, align=TextAlign.CENTER)
+        ela = f"[uptime: {ela}]"
+        self.buffer.write(text=ela)
         self.buffer.end_line()
         self.buffer.end_line()
 

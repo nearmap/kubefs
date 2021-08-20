@@ -16,7 +16,6 @@ from akube.model.object_model.status import (
 from kube.channels.objects import OEvReceiver
 from kube.events.objects import ObjectEvent
 from podview.model.model import ContainerModel, PodModel, ScreenModel
-from podview.view.tools import date_now
 
 
 class ModelUpdater:
@@ -51,6 +50,13 @@ class ModelUpdater:
             elif phase == "running":
                 dt = pod.status.startTime
             elif phase in ("succeeded", "failed", "unknown"):
+                # we don't have an insightful timestamp at the pod level to use
+                # reach into the container statuses for the most recent finishedAt
+                for cont in pod.status.containerStatuses:
+                    if isinstance(cont.state, ContainerStateTerminated):
+                        if dt is None or cont.state.finishedAt > dt:
+                            dt = cont.state.finishedAt
+
                 is_terminal_state = True
 
             if dt is not None:
@@ -68,7 +74,6 @@ class ModelUpdater:
             ts = event.time_created
             is_terminal_state = False
 
-            self.logger.info("state %r", state.__dict__)
             if isinstance(state, ContainerStateWaiting):
                 pass
             elif isinstance(state, ContainerStateRunning):
