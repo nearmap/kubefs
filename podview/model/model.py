@@ -1,3 +1,4 @@
+import argparse
 import time
 from datetime import datetime
 from typing import Dict, List
@@ -69,11 +70,19 @@ class ClusterModel:
 
 
 class ScreenModel:
-    def __init__(self) -> None:
+    def __init__(self, args: argparse.Namespace) -> None:
         self.clusters: Dict[Context, ClusterModel] = {}
 
-        self.elapsed: Value[str] = Value()
-        self.elapsed.set(value="", ts=time.time())
+        self.context: Value[str] = Value()
+        self.namespace: Value[str] = Value()
+        self.pod: Value[str] = Value()
+        self.uptime: Value[str] = Value()
+
+        ts = time.time()
+        self.context.set(args.context, ts=ts)
+        self.namespace.set(args.namespace, ts=ts)
+        self.pod.set(args.pod, ts=ts)
+        self.uptime.set(value="", ts=ts)
 
     def get_cluster(self, context: Context) -> ClusterModel:
         cluster = self.clusters.get(context)

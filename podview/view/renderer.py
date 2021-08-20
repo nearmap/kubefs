@@ -39,7 +39,7 @@ class BufferRenderer:
 
         with self.buffer.indent(width=4):
             # for containers in waiting/running show started/ready is False
-            if container.state.current_value not in ('terminated',):
+            if container.state.current_value not in ("terminated",):
                 if container.started.current_value not in (None, True):
                     code = f"- started: {container.started.current_value}"
                     self.buffer.write(text=code)
@@ -93,13 +93,21 @@ class BufferRenderer:
                 self.render_container(container, cont_name_width)
 
     def render(self) -> ScreenBuffer:
-        self.buffer.write(text="podview", width=9)
+        self.buffer.write(text="podview")
 
-        ela = self.model.elapsed.current_elapsed_pretty
-        ela = f"[uptime: {ela}]"
-        self.buffer.write(text=ela)
-        self.buffer.end_line()
-        self.buffer.end_line()
+        with self.buffer.indent(width=2):
+            context = self.model.context.current_value or "*"
+            namespace = self.model.namespace.current_value or "*"
+            pod = self.model.pod.current_value or "*"
+            fmt = f"context:{context}  namespace:{namespace}  pod:{pod}"
+            self.buffer.write(text=fmt, width=60, align=TextAlign.CENTER)
+
+            with self.buffer.indent(width=2):
+                ela = self.model.uptime.current_elapsed_pretty
+                ela = f"uptime: {ela}"
+                self.buffer.write(text=ela, width=12, align=TextAlign.RIGHT)
+                self.buffer.end_line()
+                self.buffer.end_line()
 
         clusters = self.model.iter_clusters()
         if not clusters:

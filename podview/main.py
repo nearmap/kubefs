@@ -25,7 +25,7 @@ class Program:
         self.logfile = logfile
         self.logger = logging.getLogger("program")
 
-        self.model = ScreenModel()
+        self.model = ScreenModel(args)
         self.display = CursesDisplay()
 
         self.async_loop: Optional[AsyncLoop] = None
