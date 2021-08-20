@@ -47,7 +47,7 @@ class Value(Generic[V]):
             fmt = humanize.naturaldelta(timedelta(seconds=delta))
 
             if self.current_is_terminal_state:
-                fmt = f'{fmt} ago'
+                fmt = f"{fmt} ago"
 
             return fmt
 

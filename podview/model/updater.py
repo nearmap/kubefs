@@ -2,15 +2,21 @@ import argparse
 import fnmatch
 import logging
 import os
-from podview.view.tools import date_now
 import time
 from typing import List, Tuple
 from urllib.parse import urlparse
 
 from akube.model.object_model.kinds import Pod
+from akube.model.object_model.status import (
+    ContainerStateRunning,
+    ContainerStateTerminated,
+    ContainerStateWaiting,
+    ContainerStatus,
+)
 from kube.channels.objects import OEvReceiver
 from kube.events.objects import ObjectEvent
-from podview.model.model import PodModel, ScreenModel
+from podview.model.model import ContainerModel, PodModel, ScreenModel
+from podview.view.tools import date_now
 
 
 class ModelUpdater:
@@ -40,17 +46,41 @@ class ModelUpdater:
             ts = event.time_created
             is_terminal_state = False
 
-            if phase == 'pending':
+            if phase == "pending":
                 dt = pod.meta.creationTimestamp
-            elif phase == 'running':
+            elif phase == "running":
                 dt = pod.status.startTime
-            elif phase in ('succeeded', 'failed', 'unknown'):
+            elif phase in ("succeeded", "failed", "unknown"):
                 is_terminal_state = True
 
             if dt is not None:
                 ts = dt.timestamp()
 
             model.phase.set(value=phase, ts=ts, is_terminal_state=is_terminal_state)
+
+    def update_container_state(
+        self, event: ObjectEvent, cont: ContainerStatus, model: ContainerModel
+    ) -> None:
+        # https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
+        state = cont.state
+        if state:
+            dt = None
+            ts = event.time_created
+            is_terminal_state = False
+
+            self.logger.info("state %r", state.__dict__)
+            if isinstance(state, ContainerStateWaiting):
+                pass
+            elif isinstance(state, ContainerStateRunning):
+                dt = state.startedAt
+            elif isinstance(state, ContainerStateTerminated):
+                dt = state.finishedAt
+                is_terminal_state = True
+
+            if dt is not None:
+                ts = dt.timestamp()
+
+            model.state.set(value=state.key, ts=ts, is_terminal_state=is_terminal_state)
 
     def update_model(self, model: ScreenModel, event: ObjectEvent) -> None:
         context = event.context
@@ -71,8 +101,7 @@ class ModelUpdater:
             container_model.ready.set(value=cont.ready, ts=ts)
             container_model.image_hash.set(value=cont_image_hash, ts=ts)
             container_model.restart_count.set(value=cont.restartCount, ts=ts)
-            if cont.state:
-                container_model.state.set(value=cont.state.key, ts=ts)
+            self.update_container_state(event, cont, container_model)
 
             if pod_app_name and cont_image_name.startswith(pod_app_name):
                 pod_model.image_hash.set(value=cont_image_hash, ts=ts)

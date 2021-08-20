@@ -38,11 +38,11 @@ def parse_container_state(obj: RawObject) -> Optional[ContainerState]:
     key = list(obj.keys())[0]
 
     if key == "running":
-        return ContainerStateRunning(obj)
+        return ContainerStateRunning(obj[key])
     elif key == "terminated":
-        return ContainerStateTerminated(obj)
+        return ContainerStateTerminated(obj[key])
     elif key == "waiting":
-        return ContainerStateWaiting(obj)
+        return ContainerStateWaiting(obj[key])
 
     return None
 
