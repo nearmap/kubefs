@@ -2,6 +2,7 @@ import argparse
 import fnmatch
 import logging
 import os
+from podview.view.tools import date_now
 import time
 from typing import List, Tuple
 from urllib.parse import urlparse
@@ -9,7 +10,7 @@ from urllib.parse import urlparse
 from akube.model.object_model.kinds import Pod
 from kube.channels.objects import OEvReceiver
 from kube.events.objects import ObjectEvent
-from podview.model.model import ScreenModel
+from podview.model.model import PodModel, ScreenModel
 
 
 class ModelUpdater:
@@ -29,6 +30,28 @@ class ModelUpdater:
         name = os.path.basename(path)
         return name, digest
 
+    def update_pod_phase(self, event: ObjectEvent, pod: Pod, model: PodModel) -> None:
+        # https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase
+
+        phase = pod.status.phase
+        if phase:
+            phase = phase.lower()
+            dt = None
+            ts = event.time_created
+            is_terminal_state = False
+
+            if phase == 'pending':
+                dt = pod.meta.creationTimestamp
+            elif phase == 'running':
+                dt = pod.status.startTime
+            elif phase in ('succeeded', 'failed', 'unknown'):
+                is_terminal_state = True
+
+            if dt is not None:
+                ts = dt.timestamp()
+
+            model.phase.set(value=phase, ts=ts, is_terminal_state=is_terminal_state)
+
     def update_model(self, model: ScreenModel, event: ObjectEvent) -> None:
         context = event.context
         pod = Pod(event.object)
@@ -38,8 +61,8 @@ class ModelUpdater:
 
         cluster_model = model.get_cluster(context)
         pod_model = cluster_model.get_pod(pod.meta.name)
-        pod_model.phase.set(value=pod.status.phase, ts=ts)
-        pod_model.start_time.set(value=pod.status.startTime, ts=ts)
+        pod_model.creation_timestamp.set(value=pod.meta.creationTimestamp, ts=ts)
+        self.update_pod_phase(event, pod, pod_model)
 
         for cont in pod.status.containerStatuses:
             cont_image_name, cont_image_hash = self.parse_image(cont.imageID)

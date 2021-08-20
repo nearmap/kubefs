@@ -72,7 +72,7 @@ class ObjectStatus:
     def __init__(self, obj: RawObject) -> None:
         self._status = obj["status"]
 
-        self.phase = self._status["phase"]
+        self.phase: Optional[str] = self._status["phase"]
 
 
 class PodStatus(ObjectStatus):

@@ -13,6 +13,9 @@ class Value(Generic[V]):
         self.current_value: Optional[V] = None
         # the timestamp when that value was (first) set
         self.current_time: Optional[float] = None
+        # if the current value represents a state, is it a terminal state or and
+        # intermediate state? for terminal states elapsed pretty will show 'ago'
+        self.current_is_terminal_state: bool = False
 
         # the previous value for the attribute
         self.previous_value: Optional[V] = None
@@ -28,18 +31,24 @@ class Value(Generic[V]):
             self.previous_time,
         )
 
-    def set(self, value: V, ts: float) -> None:
+    def set(self, value: V, ts: float, is_terminal_state: bool = False) -> None:
         if value != self.current_value:
             self.previous_value = self.current_value
             self.previous_time = self.current_time
 
             self.current_value = value
             self.current_time = ts
+            self.current_is_terminal_state = is_terminal_state
 
     @property
     def current_elapsed_pretty(self) -> Optional[str]:
         if self.current_time:
             delta = time.time() - self.current_time
-            return humanize.naturaldelta(timedelta(seconds=delta))
+            fmt = humanize.naturaldelta(timedelta(seconds=delta))
+
+            if self.current_is_terminal_state:
+                fmt = f'{fmt} ago'
+
+            return fmt
 
         return None

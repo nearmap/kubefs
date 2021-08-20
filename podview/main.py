@@ -74,10 +74,12 @@ class Program:
 
         try:
             while True:
-                self.updater.run(model=self.model, timeout=0.01)
                 # self.updater.run(model=self.model, timeout=0.5)
+                self.updater.run(model=self.model, timeout=0.01)
+
                 renderer = BufferRenderer(self.model)
                 buffer = renderer.render()
+
                 # print(buffer.assemble(dim=(120, 24), border_horiz="-", border_vert="|"))
                 if self.display.interact(buffer, timeout=0.5):
                     break

@@ -30,7 +30,6 @@ class PodModel:
 
         self.creation_timestamp: Value[datetime] = Value()
         self.phase: Value[str] = Value()
-        self.start_time: Value[datetime] = Value()
         self.image_hash: Value[str] = Value()
 
     def get_container(self, name: str) -> ContainerModel:

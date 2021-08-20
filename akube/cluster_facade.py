@@ -59,7 +59,9 @@ class SyncClusterFacade:
                 items = await client.list_objects(selector)
             except Exception as exc:
                 event = ObjectEvent(
-                    context=self.context, action=Action.LISTED, object=exc,
+                    context=self.context,
+                    action=Action.LISTED,
+                    object=exc,
                 )
                 oev_chan.sender.send(event)
                 return  # fail fast if list failed
