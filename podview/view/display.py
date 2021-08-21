@@ -6,6 +6,7 @@ import time
 
 import _curses
 
+from kube.tools.logs import configure_logging
 from podview.view.buffer import ScreenBuffer
 
 
@@ -136,6 +137,23 @@ class CursesDisplay:
 
 
 if __name__ == "__main__":
-    d = CursesDisplay(oev_receivers=None)
-    d.initialize()
-    d.mainloop()
+    configure_logging(filename="var/log/display.log")
+
+    display = CursesDisplay()
+    display.initialize()
+
+    exc = None
+
+    try:
+        while True:
+            buffer = ScreenBuffer()
+            buffer.write(text="hi mom")
+            if display.interact(buffer, timeout=0.5):
+                break
+
+    except (KeyboardInterrupt, Exception) as ex:
+        exc = ex
+        display.exit()
+
+    if exc is not None:
+        raise exc
