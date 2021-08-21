@@ -1,6 +1,7 @@
 import random
 from typing import List
 
+import colored
 import colored.colors
 
 from kube.config import Context
@@ -33,6 +34,14 @@ class Color:
 class ColorPicker:
     _instance = None
 
+    _error_color = Color(fg="indian_red_1b")
+    _dim_color = Color(fg="grey_70")
+
+    _waiting_color = Color(fg="gold_3b")
+    _in_progress_color = Color(fg="sky_blue_3")
+    _stopped_color = Color(fg="dark_gray")
+    _succeeded_color = Color(fg="cyan")
+
     _context_colors = (
         Color(bg="dodger_blue_1", fg="white"),
         Color(bg="indian_red_1a", fg="white"),
@@ -43,18 +52,20 @@ class ColorPicker:
     )
 
     _pod_phase_colors = {
-        "pending": Color(fg="yellow"),
-        "running": Color(fg="green"),
-        "succeeded": Color(fg="cyan"),
-        "failed": Color(fg="red"),
-        "unknown": Color(fg="dark_gray"),
-        "deleted": Color(fg="dark_gray"),
+        "pending": _waiting_color,
+        "running": _in_progress_color,
+        "succeeded": _succeeded_color,
+        "failed": _error_color,
+        "unknown": _stopped_color,
+        "deleted": _stopped_color,
     }
 
+    _container_name_color = _dim_color
+
     _container_state_colors = {
-        "waiting": Color(fg="yellow"),
-        "running": Color(fg="green"),
-        "terminated": Color(fg="dark_gray"),
+        "waiting": _waiting_color,
+        "running": _in_progress_color,
+        "terminated": _stopped_color,
     }
 
     def __init__(self, contexts: List[Context]) -> None:
@@ -69,12 +80,18 @@ class ColorPicker:
 
         return cls._instance
 
+    def get_error_color(self) -> Color:
+        return self._error_color
+
     def get_for_context(self, context: Context) -> Color:
         idx = self.contexts.index(context) % len(self._context_colors)
         return self._context_colors[idx]
 
     def get_for_pod_phase(self, phase: str) -> Color:
         return self._pod_phase_colors[phase]
+
+    def get_for_container_name(self) -> Color:
+        return self._container_name_color
 
     def get_for_container_state(self, state: str) -> Color:
         return self._container_state_colors[state]
@@ -91,3 +108,14 @@ class ColorPicker:
             self.image_hash_colors[hash] = color
 
         return color
+
+
+if __name__ == "__main__":
+    for idx, name in enumerate(colored.colors.names):
+        name = name.lower()
+        fg = colored.stylize(name, [colored.fg(name)])
+        bg = colored.stylize(name, [colored.fg("white"), colored.bg(name)])
+
+        print(f"{idx:3}    {fg}")
+        # print(f'{idx}    {bg}')
+        # print()

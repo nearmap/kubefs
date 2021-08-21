@@ -57,7 +57,9 @@ class Value(Generic[V]):
             fmt = humanize_delta(timedelta(seconds=delta))
 
             if self.current_is_terminal_state:
-                fmt = f"{fmt} ago"
+                fmt = f"({fmt} ago)"
+            else:
+                fmt = f"({fmt})"
 
             return fmt
 

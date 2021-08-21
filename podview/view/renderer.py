@@ -1,4 +1,4 @@
-from podview.model.colors import Color, ColorPicker
+from podview.model.colors import ColorPicker
 from podview.model.model import ContainerModel, PodModel, ScreenModel
 from podview.view.buffer import ScreenBuffer, TextAlign
 
@@ -11,6 +11,7 @@ class BufferRenderer:
         self.cluster_name_width = 0
         self.pod_name_width = 0
         self.cont_name_width = 0
+        self.status_width = 21  # terminated 12mo ago
 
         self.color_picker = ColorPicker.get_instance(contexts=[])
 
@@ -34,72 +35,83 @@ class BufferRenderer:
                         self.cont_name_width = cont_name_len
 
     def render_container(self, container: ContainerModel, name_width: int) -> None:
-        self.buffer.write(text=f"{container.name}")
+        state = (
+            container.state.current_value
+            and container.state.current_value.lower()
+            or ""
+        )
+        ela = container.state.current_elapsed_pretty
+        color = container.state.current_color
 
-        wid = self.cont_name_width + 9  # : + hash
-        name_len = len(container.name)
+        label = ""
+        if state and ela:
+            label = f"{state} {ela}"
 
-        with self.buffer.indent(width=0):
-            hash = container.image_hash.current_value
-            color = self.color_picker.get_for_image_hash(hash)
-            if hash:
-                rem = wid - name_len
-                self.buffer.write(text=f":{hash[:8]}", width=rem, color=color)
+        self.buffer.write(text=label, width=self.status_width, color=color)
 
-            with self.buffer.indent(width=2):
-                val = container.state.current_value or ""
-                self.buffer.write(text=val, color=container.state.current_color)
+        with self.buffer.indent(width=3):
+            name_color = self.color_picker.get_for_container_name()
+            self.buffer.write(text=f"{container.name}", color=name_color)
 
-                with self.buffer.indent(width=1):
-                    val = container.state.current_elapsed_pretty
-                    if val:
-                        self.buffer.write(text=val, width=4)
+            wid = self.cont_name_width + 9  # : + hash
+            name_len = len(container.name)
 
-        with self.buffer.indent(width=4):
-            # for containers in waiting/running show started/ready is False
-            if container.state.current_value not in ("terminated",):
-                if container.started.current_value not in (None, True):
-                    code = f"- started: {container.started.current_value}"
-                    self.buffer.write(text=code)
+            with self.buffer.indent(width=0):
+                hash = container.image_hash.current_value
+                color = self.color_picker.get_for_image_hash(hash)
+                if hash:
+                    rem = wid - name_len
+                    # self.buffer.write(text=f":{hash[:8]}", width=rem, color=color)
+                    self.buffer.write(text=f":{hash[:8]}", width=rem)
+
+                with self.buffer.indent(width=2):
+                    if container.restart_count.current_value > 0:
+                        val = f"[restarts: {container.restart_count.current_value}]"
+                        self.buffer.write(text=val, color=name_color)
+
+            with self.buffer.indent(width=0):
+                error_color = self.color_picker.get_error_color()
+                # for containers in waiting/running show started/ready is False
+                # if container.state.current_value not in ("terminated",):
+                #     if container.started.current_value not in (None, True):
+                #         code = f"- started: {container.started.current_value}"
+                #         self.buffer.write(text=code)
+                #         self.buffer.end_line()
+                #     if container.ready.current_value not in (None, True):
+                #         code = f"- ready: {container.ready.current_value}"
+                #         self.buffer.write(text=code)
+                #         self.buffer.end_line()
+
+                # show exitCode if not zero
+                if container.exit_code.current_value not in (None, 0):
+                    code = f"- exitCode: {container.exit_code.current_value}"
+                    self.buffer.write(text=code, color=error_color)
                     self.buffer.end_line()
-                if container.ready.current_value not in (None, True):
-                    code = f"- ready: {container.ready.current_value}"
-                    self.buffer.write(text=code)
+
+                # show reason and message if set and not trivial
+                if container.reason.current_value not in (None, "Completed"):
+                    code = f"- reason: {container.reason.current_value}"
+                    self.buffer.write(text=code, color=error_color)
                     self.buffer.end_line()
-
-            # show restartCount if not zero
-            if container.restart_count.current_value > 0:
-                val = f"- restartCount: {container.restart_count.current_value}"
-                self.buffer.write(text=val)
-                self.buffer.end_line()
-
-            # show exitCode if not zero
-            if container.exit_code.current_value not in (None, 0):
-                code = f"- exitCode: {container.exit_code.current_value}"
-                self.buffer.write(text=code)
-                self.buffer.end_line()
-
-            # show reason and message if set and not trivial
-            if container.reason.current_value not in (None, "Completed"):
-                code = f"- reason: {container.reason.current_value}"
-                self.buffer.write(text=code)
-                self.buffer.end_line()
-            if container.message.current_value:
-                code = f"- message: {container.message.current_value}"
-                self.buffer.write(text=code)
-                self.buffer.end_line()
+                if container.message.current_value:
+                    code = f"- message: {container.message.current_value}"
+                    self.buffer.write(text=code, color=error_color)
+                    self.buffer.end_line()
 
     def render_pod(self, pod: PodModel) -> None:
-        self.buffer.write(text=pod.name, width=self.pod_name_width)
+        phase = pod.phase.current_value and pod.phase.current_value.lower() or ""
+        ela = pod.phase.current_elapsed_pretty
 
-        with self.buffer.indent(width=4):
-            val = pod.phase.current_value and pod.phase.current_value.lower()
-            self.buffer.write(text=val, color=pod.phase.current_color)
+        label = ""
+        if phase and ela:
+            label = f"{phase} {ela}"
 
-            with self.buffer.indent(width=1):
-                val = pod.phase.current_elapsed_pretty
-                if val:
-                    self.buffer.write(text=val)
+        self.buffer.write(
+            text=label, width=self.status_width, color=pod.phase.current_color
+        )
+
+        with self.buffer.indent(width=3):
+            self.buffer.write(text=pod.name, width=self.pod_name_width)
 
         containers = pod.iter_containers()
         cont_name_width = 0
@@ -135,7 +147,7 @@ class BufferRenderer:
             self.buffer.write(
                 text=cluster.name.current_value,
                 width=self.cluster_name_width,
-                color=cluster.name.current_color,
+                # color=cluster.name.current_color,
             )
 
             with self.buffer.indent(width=3):
