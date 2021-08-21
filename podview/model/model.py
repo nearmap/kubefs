@@ -75,13 +75,13 @@ class ScreenModel:
     def __init__(self, args: argparse.Namespace) -> None:
         self.clusters: Dict[Context, ClusterModel] = {}
 
-        self.context: Value[str] = Value()
+        self.cluster: Value[str] = Value()
         self.namespace: Value[str] = Value()
         self.pod: Value[str] = Value()
         self.uptime: Value[str] = Value()
 
         ts = time.time()
-        self.context.set(args.context, ts=ts)
+        self.cluster.set(args.cluster_context, ts=ts)
         self.namespace.set(args.namespace, ts=ts)
         self.pod.set(args.pod, ts=ts)
         self.uptime.set(value="", ts=ts)

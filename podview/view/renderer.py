@@ -101,10 +101,10 @@ class BufferRenderer:
         self.buffer.write(text="podview")
 
         with self.buffer.indent(width=2):
-            context = self.model.context.current_value or "*"
+            cluster = self.model.cluster.current_value or "*"
             namespace = self.model.namespace.current_value or "*"
             pod = self.model.pod.current_value or "*"
-            fmt = f"context:{context}  namespace:{namespace}  pod:{pod}"
+            fmt = f"cluster:{cluster}  namespace:{namespace}  pod:{pod}"
             self.buffer.write(text=fmt, width=60, align=TextAlign.CENTER)
 
             with self.buffer.indent(width=2):

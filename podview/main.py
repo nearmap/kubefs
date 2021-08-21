@@ -67,7 +67,7 @@ class Program:
         self.async_loop = launch_in_background_thread()
 
         selector = get_selector()
-        contexts = selector.fnmatch_context(self.args.context)
+        contexts = selector.fnmatch_context(self.args.cluster_context)
 
         oev_receivers = [self.launch_watcher(ctx) for ctx in contexts]
 
