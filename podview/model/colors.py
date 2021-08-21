@@ -1,4 +1,5 @@
 import logging
+import random
 from typing import List
 
 import colored
@@ -129,10 +130,12 @@ class ColorPicker:
 
         if not color:
             lookup_idx = hash(image_hash) % len(self._image_hash_indices)
+            # lookup_idx = random.randint(0, len(self._image_hash_indices) - 1)
             idx = self._image_hash_indices[lookup_idx]
             name = colored.colors.names[idx].lower()
             color = Color(fg=name)
             self.image_hash_colors[image_hash] = color
+            self._image_hash_indices.pop(lookup_idx)  # consume this color for this hash
 
         self.logger.info(
             "image hash color: %r %s for hash %r",
