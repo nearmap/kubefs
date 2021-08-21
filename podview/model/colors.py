@@ -1,5 +1,7 @@
 from typing import List
 
+import colored.colors
+
 from kube.config import Context
 
 
@@ -8,6 +10,14 @@ class Color:
         # fg/bg are human readable names as defined by 'colored'
         self.fg = fg
         self.bg = bg
+
+    @property
+    def bg_id(self) -> int:
+        return colored.colors.names.index(self.bg.upper())
+
+    @property
+    def fg_id(self) -> int:
+        return colored.colors.names.index(self.fg.upper())
 
 
 class ColorPicker:

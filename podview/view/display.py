@@ -7,6 +7,7 @@ import time
 import _curses
 
 from kube.tools.logs import configure_logging
+from podview.model.colors import Color
 from podview.view.buffer import ScreenBuffer
 
 
@@ -31,8 +32,12 @@ class CursesDisplay:
         curses.start_color()
         curses.use_default_colors()
 
-        for i in range(0, curses.COLORS):
-            curses.init_pair(i + 1, i, -1)
+        self.logger.info("has_colors: %r", curses.has_colors())
+        self.logger.info("can_change_color: %r", curses.can_change_color())
+        self.logger.info("curses.COLORS: %r", curses.COLORS)
+
+        # for i in range(0, curses.COLORS):
+        #     curses.init_pair(i + 1, i, -1)
 
         # don't display cursor
         curses.curs_set(False)
@@ -107,6 +112,7 @@ class CursesDisplay:
 
         try:
             self.window.addstr(block)
+            self.window.chgat(0, 3, 2, curses.color_pair(1))
         except curses.error as exc:
             self.logger.exception("Failed to redraw screen: %r", exc)
             raise CursesDisplayError()
@@ -146,8 +152,13 @@ if __name__ == "__main__":
 
     try:
         while True:
+            color = Color(fg="white", bg="dodger_blue_1")
+            display.logger.info("color fg: %r bg: %r", color.fg_id, color.bg_id)
+            curses.init_pair(1, color.fg_id, color.bg_id)
+
             buffer = ScreenBuffer()
             buffer.write(text="hi mom")
+
             if display.interact(buffer, timeout=0.5):
                 break
 
