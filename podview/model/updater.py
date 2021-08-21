@@ -33,7 +33,7 @@ class ModelUpdater:
         self.args = args
         self.logger = logger or logging.getLogger(__name__)
 
-        self.color_picker = ColorPicker(contexts)
+        self.color_picker = ColorPicker.get_instance(contexts)
 
     def parse_image(self, image_url) -> Tuple[str, str]:
         st = urlparse(image_url)
@@ -77,7 +77,11 @@ class ModelUpdater:
             if dt is not None:
                 ts = dt.timestamp()
 
-            model.phase.set(value=phase, ts=ts, is_terminal_state=is_terminal_state)
+            color = self.color_picker.get_for_pod_phase(phase)
+
+            model.phase.set(
+                value=phase, ts=ts, is_terminal_state=is_terminal_state, color=color
+            )
 
     def update_container_state(
         self, event: ObjectEvent, cont: ContainerStatus, model: ContainerModel
@@ -109,7 +113,9 @@ class ModelUpdater:
             if dt is not None:
                 ts = dt.timestamp()
 
-            model.state.set(value=state.key, ts=ts, is_terminal_state=is_terminal_state)
+            color = self.color_picker.get_for_container_state(state.key)
+
+            model.state.set(value=state.key, ts=ts, is_terminal_state=is_terminal_state, color=color)
             model.exit_code.set(value=exit_code, ts=ts)
             model.message.set(value=message, ts=ts)
             model.reason.set(value=reason, ts=ts)

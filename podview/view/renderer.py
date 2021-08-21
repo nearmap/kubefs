@@ -1,4 +1,4 @@
-from podview.model.colors import Color
+from podview.model.colors import Color, ColorPicker
 from podview.model.model import ContainerModel, PodModel, ScreenModel
 from podview.view.buffer import ScreenBuffer, TextAlign
 
@@ -10,6 +10,9 @@ class BufferRenderer:
 
         self.cluster_name_width = 0
         self.pod_name_width = 0
+        self.cont_name_width = 0
+
+        self.color_picker = ColorPicker.get_instance(contexts=[])
 
         self.precompute_name_widths()
 
@@ -25,12 +28,17 @@ class BufferRenderer:
                 if pod_name_len > self.pod_name_width:
                     self.pod_name_width = pod_name_len
 
-    def render_container(self, container: ContainerModel, name_width: int) -> None:
-        self.buffer.write(text=f"- {container.name}", width=name_width)
+                for cont in pod.iter_containers():
+                    cont_name_len = len(cont.name)
+                    if cont_name_len > self.cont_name_width:
+                        self.cont_name_width = cont_name_len
 
-        with self.buffer.indent(width=4):
+    def render_container(self, container: ContainerModel, name_width: int) -> None:
+        self.buffer.write(text=f"{container.name}", width=self.cont_name_width)
+
+        with self.buffer.indent(width=2):
             val = container.state.current_value or ""
-            self.buffer.write(text=val)
+            self.buffer.write(text=val, color=container.state.current_color)
 
             with self.buffer.indent(width=1):
                 val = container.state.current_elapsed_pretty
@@ -39,8 +47,9 @@ class BufferRenderer:
 
                 with self.buffer.indent(width=3):
                     val = container.image_hash.current_value
+                    color = self.color_picker.get_for_image_hash(val)
                     if val:
-                        self.buffer.write(text=val[:8])
+                        self.buffer.write(text=val[:8], color=color)
 
         with self.buffer.indent(width=4):
             # for containers in waiting/running show started/ready is False
@@ -81,7 +90,7 @@ class BufferRenderer:
 
         with self.buffer.indent(width=4):
             val = pod.phase.current_value and pod.phase.current_value.lower()
-            self.buffer.write(text=val)
+            self.buffer.write(text=val, color=pod.phase.current_color)
 
             with self.buffer.indent(width=1):
                 val = pod.phase.current_elapsed_pretty
