@@ -53,9 +53,9 @@ class BufferRenderer:
 
         with self.buffer.indent(width=3):
             name_color = self.color_picker.get_for_container_name()
-            self.buffer.write(text=f"{container.name}", color=name_color)
+            self.buffer.write(text=f"{container.name}:", color=name_color)
 
-            wid = self.cont_name_width + 9  # : + hash
+            wid = self.cont_name_width + 8  # hash
             name_len = len(container.name)
 
             with self.buffer.indent(width=0):
@@ -63,7 +63,7 @@ class BufferRenderer:
                 color = self.color_picker.get_for_image_hash(hash)
                 if hash:
                     rem = wid - name_len
-                    self.buffer.write(text=f":{hash[:8]}", width=rem, color=color)
+                    self.buffer.write(text=f"{hash[:8]}", width=rem, color=color)
 
                 with self.buffer.indent(width=2):
                     if container.restart_count.current_value > 0:
