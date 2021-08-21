@@ -13,7 +13,7 @@ class BufferRenderer:
         self.cont_name_width = 0
         self.status_width = 21  # terminated 12mo ago
 
-        self.color_picker = ColorPicker.get_instance(contexts=[])
+        self.color_picker = ColorPicker.get_instance()
 
         self.precompute_name_widths()
 

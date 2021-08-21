@@ -33,7 +33,7 @@ class ModelUpdater:
         self.args = args
         self.logger = logger or logging.getLogger(__name__)
 
-        self.color_picker = ColorPicker.get_instance(contexts)
+        self.color_picker = ColorPicker.get_instance()
 
     def parse_image(self, image_url) -> Tuple[str, str]:
         st = urlparse(image_url)

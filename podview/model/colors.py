@@ -1,4 +1,4 @@
-import random
+import logging
 from typing import List
 
 import colored
@@ -12,6 +12,18 @@ class Color:
         # fg/bg are human readable names as defined by 'colored'
         self.fg = fg
         self.bg = bg
+
+        self.styles = self.create_styles()
+
+    def create_styles(self) -> List[str]:
+        styles = []
+
+        if self.fg:
+            styles.append(colored.fg(self.fg))
+        if self.bg:
+            styles.append(colored.bg(self.bg))
+
+        return styles
 
     def __eq__(self, other) -> bool:
         return all((self.fg == other.fg, self.bg == other.bg))
@@ -30,6 +42,9 @@ class Color:
     def fg_id(self) -> int:
         return colored.colors.names.index(self.fg.upper())
 
+    def stylize(self, text: str, reset: bool = True) -> str:
+        return colored.stylize(text=text, styles=self.styles, reset=reset)
+
 
 class ColorPicker:
     _instance = None
@@ -43,15 +58,6 @@ class ColorPicker:
     _in_progress_color = Color(fg="sky_blue_3")
     _stopped_color = Color(fg="dark_gray")
     _succeeded_color = Color(fg="cyan")
-
-    _context_colors = (
-        Color(bg="dodger_blue_1", fg="white"),
-        Color(bg="indian_red_1a", fg="white"),
-        Color(bg="chartreuse_3a", fg="white"),
-        Color(bg="royal_blue_1", fg="white"),
-        Color(bg="light_pink_3", fg="white"),
-        Color(bg="green_3b", fg="white"),
-    )
 
     _pod_phase_colors = {
         "pending": _waiting_color,
@@ -74,7 +80,7 @@ class ColorPicker:
     _image_hash_ranges = [
         (33, 39),
         (69, 75),
-        (77, 81),
+        (77, 80),
         (99, 117),
         (130, 153),
         (166, 189),
@@ -82,19 +88,19 @@ class ColorPicker:
     ]
     _image_hash_indices = []
 
-    def __init__(self, contexts: List[Context]) -> None:
-        self.contexts = contexts
-
+    def __init__(self, logger=None) -> None:
         self.image_hash_colors = {}
 
         for lower, upper in self._image_hash_ranges:
             series = list(range(lower, upper + 1))
             self._image_hash_indices.extend(series)
 
+        self.logger = logger or logging.getLogger(__name__)
+
     @classmethod
-    def get_instance(cls, contexts: List[Context]) -> "ColorPicker":
+    def get_instance(cls) -> "ColorPicker":
         if cls._instance is None:
-            cls._instance = cls(contexts)
+            cls._instance = cls()
 
         return cls._instance
 
@@ -106,8 +112,6 @@ class ColorPicker:
 
     def get_for_context(self, context: Context) -> Color:
         return self._dim_color
-        # idx = self.contexts.index(context) % len(self._context_colors)
-        # return self._context_colors[idx]
 
     def get_for_pod_phase(self, phase: str) -> Color:
         return self._pod_phase_colors[phase]
@@ -124,20 +128,37 @@ class ColorPicker:
         color = self.image_hash_colors.get(image_hash)
 
         if not color:
-            idx = hash(image_hash) % len(self._image_hash_indices)
+            lookup_idx = hash(image_hash) % len(self._image_hash_indices)
+            idx = self._image_hash_indices[lookup_idx]
             name = colored.colors.names[idx].lower()
             color = Color(fg=name)
             self.image_hash_colors[image_hash] = color
 
+        self.logger.info(
+            "image hash color: %r %s for hash %r",
+            color.fg_id,
+            color.stylize(color.fg),
+            image_hash,
+        )
         return color
 
 
 if __name__ == "__main__":
-    for idx, name in enumerate(colored.colors.names):
-        name = name.lower()
-        fg = colored.stylize(name, [colored.fg(name)])
-        bg = colored.stylize(name, [colored.fg("white"), colored.bg(name)])
+    if 1:
+        for idx, name in enumerate(colored.colors.names):
+            name = name.lower()
+            fg = colored.stylize(name, [colored.fg(name)])
+            bg = colored.stylize(name, [colored.fg("white"), colored.bg(name)])
 
-        print(f"{idx:3}    {fg}")
-        # print(f'{idx}    {bg}')
-        # print()
+            print(f"{idx:3}    {fg}")
+            # print(f'{idx}    {bg}')
+            # print()
+
+    else:
+        picker = ColorPicker()
+
+        for i in range(20):
+            image_hash = f"hash{i}"
+            color = picker.get_for_image_hash(image_hash)
+
+            print(f"image:{color.stylize(image_hash)}      {color.fg}")

@@ -4,8 +4,6 @@ import logging
 from collections import defaultdict
 from typing import DefaultDict, Iterator, List, Optional, Tuple
 
-import colored
-
 from podview.model.colors import Color
 
 
@@ -21,20 +19,8 @@ class ColorSpan:
         self.length = length
         self.color = color
 
-        self.styles = self.create_styles()
-
-    def create_styles(self) -> List[str]:
-        styles = []
-
-        if self.color.fg:
-            styles.append(colored.fg(self.color.fg))
-        if self.color.bg:
-            styles.append(colored.bg(self.color.bg))
-
-        return styles
-
     def stylize(self, text: str, reset: bool = True) -> str:
-        return colored.stylize(text=text, styles=self.styles, reset=reset)
+        return self.color.stylize(text=text, reset=reset)
 
 
 Colspans = DefaultDict[int, List[ColorSpan]]
