@@ -137,12 +137,12 @@ class ColorPicker:
             self.image_hash_colors[image_hash] = color
             # self._image_hash_indices.pop(lookup_idx)  # consume this color for this hash
 
-        self.logger.info(
-            "image hash color: %r %s for hash %r",
-            color.fg_id,
-            color.stylize(color.fg),
-            image_hash,
-        )
+        # self.logger.info(
+        #     "image hash color: %r %s for hash %r",
+        #     color.fg_id,
+        #     color.stylize(color.fg),
+        #     image_hash,
+        # )
         return color
 
 
