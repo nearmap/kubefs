@@ -35,6 +35,8 @@ class BufferRenderer:
                         self.cont_name_width = cont_name_len
 
     def render_container(self, container: ContainerModel, name_width: int) -> None:
+        warn_color = self.color_picker.get_warn_color()
+
         state = (
             container.state.current_value
             and container.state.current_value.lower()
@@ -61,8 +63,7 @@ class BufferRenderer:
                 color = self.color_picker.get_for_image_hash(hash)
                 if hash:
                     rem = wid - name_len
-                    # self.buffer.write(text=f":{hash[:8]}", width=rem, color=color)
-                    self.buffer.write(text=f":{hash[:8]}", width=rem)
+                    self.buffer.write(text=f":{hash[:8]}", width=rem, color=color)
 
                 with self.buffer.indent(width=2):
                     if container.restart_count.current_value > 0:
@@ -70,7 +71,6 @@ class BufferRenderer:
                         self.buffer.write(text=val, color=name_color)
 
             with self.buffer.indent(width=0):
-                error_color = self.color_picker.get_error_color()
                 # for containers in waiting/running show started/ready is False
                 # if container.state.current_value not in ("terminated",):
                 #     if container.started.current_value not in (None, True):
@@ -85,17 +85,17 @@ class BufferRenderer:
                 # show exitCode if not zero
                 if container.exit_code.current_value not in (None, 0):
                     code = f"- exitCode: {container.exit_code.current_value}"
-                    self.buffer.write(text=code, color=error_color)
+                    self.buffer.write(text=code, color=warn_color)
                     self.buffer.end_line()
 
                 # show reason and message if set and not trivial
                 if container.reason.current_value not in (None, "Completed"):
                     code = f"- reason: {container.reason.current_value}"
-                    self.buffer.write(text=code, color=error_color)
+                    self.buffer.write(text=code, color=warn_color)
                     self.buffer.end_line()
                 if container.message.current_value:
                     code = f"- message: {container.message.current_value}"
-                    self.buffer.write(text=code, color=error_color)
+                    self.buffer.write(text=code, color=warn_color)
                     self.buffer.end_line()
 
     def render_pod(self, pod: PodModel) -> None:
@@ -147,7 +147,7 @@ class BufferRenderer:
             self.buffer.write(
                 text=cluster.name.current_value,
                 width=self.cluster_name_width,
-                # color=cluster.name.current_color,
+                color=cluster.name.current_color,
             )
 
             with self.buffer.indent(width=3):

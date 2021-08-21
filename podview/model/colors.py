@@ -35,6 +35,8 @@ class ColorPicker:
     _instance = None
 
     _error_color = Color(fg="indian_red_1b")
+    _warn_color = Color(fg="dark_orange")
+
     _dim_color = Color(fg="grey_70")
 
     _waiting_color = Color(fg="gold_3b")
@@ -68,10 +70,26 @@ class ColorPicker:
         "terminated": _stopped_color,
     }
 
+    # trying to pick colors that are not too saturated nor too dim
+    _image_hash_ranges = [
+        (33, 39),
+        (69, 75),
+        (77, 81),
+        (99, 117),
+        (130, 153),
+        (166, 189),
+        (209, 219),
+    ]
+    _image_hash_indices = []
+
     def __init__(self, contexts: List[Context]) -> None:
         self.contexts = contexts
 
         self.image_hash_colors = {}
+
+        for lower, upper in self._image_hash_ranges:
+            series = list(range(lower, upper + 1))
+            self._image_hash_indices.extend(series)
 
     @classmethod
     def get_instance(cls, contexts: List[Context]) -> "ColorPicker":
@@ -83,9 +101,13 @@ class ColorPicker:
     def get_error_color(self) -> Color:
         return self._error_color
 
+    def get_warn_color(self) -> Color:
+        return self._warn_color
+
     def get_for_context(self, context: Context) -> Color:
-        idx = self.contexts.index(context) % len(self._context_colors)
-        return self._context_colors[idx]
+        return self._dim_color
+        # idx = self.contexts.index(context) % len(self._context_colors)
+        # return self._context_colors[idx]
 
     def get_for_pod_phase(self, phase: str) -> Color:
         return self._pod_phase_colors[phase]
@@ -96,16 +118,16 @@ class ColorPicker:
     def get_for_container_state(self, state: str) -> Color:
         return self._container_state_colors[state]
 
-    def get_for_image_hash(self, hash: str) -> Color:
+    def get_for_image_hash(self, image_hash: str) -> Color:
         """Hash the image hash onto a color."""
 
-        color = self.image_hash_colors.get(hash)
+        color = self.image_hash_colors.get(image_hash)
 
         if not color:
-            idx = random.randint(1, 255)
+            idx = hash(image_hash) % len(self._image_hash_indices)
             name = colored.colors.names[idx].lower()
             color = Color(fg=name)
-            self.image_hash_colors[hash] = color
+            self.image_hash_colors[image_hash] = color
 
         return color
 
