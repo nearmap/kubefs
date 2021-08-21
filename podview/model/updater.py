@@ -115,7 +115,9 @@ class ModelUpdater:
 
             color = self.color_picker.get_for_container_state(state.key)
 
-            model.state.set(value=state.key, ts=ts, is_terminal_state=is_terminal_state, color=color)
+            model.state.set(
+                value=state.key, ts=ts, is_terminal_state=is_terminal_state, color=color
+            )
             model.exit_code.set(value=exit_code, ts=ts)
             model.message.set(value=message, ts=ts)
             model.reason.set(value=reason, ts=ts)

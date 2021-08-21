@@ -1,5 +1,5 @@
-from typing import List
 import random
+from typing import List
 
 import colored.colors
 
@@ -52,9 +52,9 @@ class ColorPicker:
     }
 
     _container_state_colors = {
-        "waiting": Color(fg="yellow", bg="green"),
-        "running": Color(fg="white", bg="green"),
-        "terminated": Color(fg="black", bg="green"),
+        "waiting": Color(fg="yellow"),
+        "running": Color(fg="green"),
+        "terminated": Color(fg="dark_gray"),
     }
 
     def __init__(self, contexts: List[Context]) -> None:
@@ -63,7 +63,7 @@ class ColorPicker:
         self.image_hash_colors = {}
 
     @classmethod
-    def get_instance(cls, contexts: List[Context]) -> 'ColorPicker':
+    def get_instance(cls, contexts: List[Context]) -> "ColorPicker":
         if cls._instance is None:
             cls._instance = cls(contexts)
 

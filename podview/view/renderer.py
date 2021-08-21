@@ -34,22 +34,26 @@ class BufferRenderer:
                         self.cont_name_width = cont_name_len
 
     def render_container(self, container: ContainerModel, name_width: int) -> None:
-        self.buffer.write(text=f"{container.name}", width=self.cont_name_width)
+        self.buffer.write(text=f"{container.name}")
 
-        with self.buffer.indent(width=2):
-            val = container.state.current_value or ""
-            self.buffer.write(text=val, color=container.state.current_color)
+        wid = self.cont_name_width + 9  # : + hash
+        name_len = len(container.name)
 
-            with self.buffer.indent(width=1):
-                val = container.state.current_elapsed_pretty
-                if val:
-                    self.buffer.write(text=val, width=4)
+        with self.buffer.indent(width=0):
+            hash = container.image_hash.current_value
+            color = self.color_picker.get_for_image_hash(hash)
+            if hash:
+                rem = wid - name_len
+                self.buffer.write(text=f":{hash[:8]}", width=rem, color=color)
 
-                with self.buffer.indent(width=3):
-                    val = container.image_hash.current_value
-                    color = self.color_picker.get_for_image_hash(val)
+            with self.buffer.indent(width=2):
+                val = container.state.current_value or ""
+                self.buffer.write(text=val, color=container.state.current_color)
+
+                with self.buffer.indent(width=1):
+                    val = container.state.current_elapsed_pretty
                     if val:
-                        self.buffer.write(text=val[:8], color=color)
+                        self.buffer.write(text=val, width=4)
 
         with self.buffer.indent(width=4):
             # for containers in waiting/running show started/ready is False
