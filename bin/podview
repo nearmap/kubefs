@@ -23,7 +23,8 @@ if __name__ == "__main__":
         "--context",
         dest="context",
         action="store",
-        required=True,
+        # required=True,
+        default='*',
         help=(f"Kube contexts to select - matched like a filesystem wildcard"),
     )
     parser.add_argument(
@@ -31,6 +32,7 @@ if __name__ == "__main__":
         "--namespace",
         dest="namespace",
         action="store",
+        default='*',
         help=(f"Kube namespace to select - matched like a filesystem wildcard"),
     )
     parser.add_argument(
@@ -38,7 +40,7 @@ if __name__ == "__main__":
         "--pod",
         dest="pod",
         action="store",
-        # required=True,
+        default='*',
         help=(f"Kube pod name to select - matched like a filesystem wildcard"),
     )
     args = parser.parse_args()

@@ -1,10 +1,10 @@
 import contextlib
 import enum
+import logging
 from collections import defaultdict
 from typing import DefaultDict, Iterator, List, Optional, Tuple
 
-from colored import bg, fg
-from colored.colored import stylize
+import colored
 
 from podview.model.colors import Color
 
@@ -16,19 +16,28 @@ class TextAlign(enum.Enum):
 
 
 class ColorSpan:
-    def __init__(
-        self, offset: int, length: int, fg_col: str = "", bg_col: str = ""
-    ) -> None:
+    def __init__(self, offset: int, length: int, color: Color) -> None:
         self.offset = offset
         self.length = length
-        self.fg_col = fg_col
-        self.bg_col = bg_col
+        self.color = color
 
-        self.styles = []
-        if fg_col:
-            self.styles.append(fg(fg_col))
-        if bg_col:
-            self.styles.append(bg(bg_col))
+        self.styles = self.create_styles()
+
+    def create_styles(self) -> List[str]:
+        styles = []
+
+        if self.color.fg:
+            styles.append(colored.fg(self.color.fg))
+        if self.color.bg:
+            styles.append(colored.bg(self.color.bg))
+
+        return styles
+
+    def stylize(self, text: str, reset: bool = True) -> str:
+        return colored.stylize(text=text, styles=self.styles, reset=reset)
+
+
+Colspans = DefaultDict[int, List[ColorSpan]]
 
 
 class ScreenBuffer:
@@ -39,14 +48,16 @@ class ScreenBuffer:
     onto the viewing surface using dimensions and an offset.
     """
 
-    def __init__(self, fillchar=" ") -> None:
+    def __init__(self, fillchar=" ", logger=None) -> None:
         self.pos_x = 0
         self.pos_y = 0
         self.indents: List[int] = []
 
         self.fillchar = fillchar
         self.lines = [self.create_blank_line()]
-        self.colspans: DefaultDict[int, List[ColorSpan]] = defaultdict(list)
+        self.colspans: Colspans = defaultdict(list)
+
+        self.logger = logger or logging.getLogger(__name__)
 
     def create_blank_line(self):
         return ""
@@ -94,8 +105,7 @@ class ScreenBuffer:
             colspan = ColorSpan(
                 offset=len(before) + start_pos,
                 length=len(text),
-                fg_col=color.fg,
-                bg_col=color.bg,
+                color=color,
             )
             self.colspans[self.pos_y].append(colspan)
 
@@ -124,9 +134,11 @@ class ScreenBuffer:
         offset: Tuple[int, int] = (0, 0),
         border_horiz="",
         border_vert="",
-    ) -> str:
+        emit_ansi_codes: bool = True,
+    ) -> Tuple[str, Colspans]:
         dim_x, dim_y = dim
         offset_x, offset_y = offset
+        adj_colspans: Colspans = defaultdict(list)
 
         source_lines = self.lines
 
@@ -160,7 +172,16 @@ class ScreenBuffer:
                     end_index = dim_x
 
                 segment = line[begin_index:end_index]
-                segment = stylize(text=segment, styles=colspan.styles, reset=True)
+                if emit_ansi_codes:
+                    segment = colspan.stylize(text=segment, reset=True)
+
+                # calculate adjusted colspan for later rendering
+                length = end_index - begin_index
+                if length > 0:
+                    span = ColorSpan(
+                        offset=begin_index, length=length, color=colspan.color
+                    )
+                    adj_colspans[y - offset_y].append(span)
 
                 line = line[:begin_index] + segment + line[end_index:]
 
@@ -173,7 +194,7 @@ class ScreenBuffer:
             lines = [line] + lines + [line]
 
         block = "\n".join(lines)
-        return block
+        return block, adj_colspans
 
 
 if __name__ == "__main__":
@@ -211,4 +232,7 @@ if __name__ == "__main__":
 
     buf.write(text="cluster-two", color=Color(bg="indian_red_1a", fg="white"))
 
-    print(buf.assemble(dim=(80, 24), offset=(0, 0), border_horiz="-", border_vert="|"))
+    block, _ = buf.assemble(
+        dim=(80, 24), offset=(0, 0), border_horiz="-", border_vert="|"
+    )
+    print(block)

@@ -52,7 +52,7 @@ class Program:
         facade = SyncClusterFacade(async_loop=self.async_loop, context=context)
 
         namespace = None
-        if self.args.namespace:
+        if self.args.namespace not in (None, '', '*'):
             namespace = self.find_matching_namespace(self.args.namespace, context)
 
         selector = ObjectSelector(res=PodKind, namespace=namespace)

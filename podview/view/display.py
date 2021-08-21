@@ -3,6 +3,7 @@ import logging
 import os
 import signal
 import time
+from typing import Dict, Tuple
 
 import _curses
 
@@ -27,17 +28,16 @@ class CursesDisplay:
         self.buffer_offset_x = 0
         self.buffer_offset_y = 0
 
+        self.color_pairs: Dict[Color, int] = {}
+
     def initialize(self):
         self.window = curses.initscr()
         curses.start_color()
         curses.use_default_colors()
 
-        self.logger.info("has_colors: %r", curses.has_colors())
-        self.logger.info("can_change_color: %r", curses.can_change_color())
-        self.logger.info("curses.COLORS: %r", curses.COLORS)
-
-        # for i in range(0, curses.COLORS):
-        #     curses.init_pair(i + 1, i, -1)
+        # self.logger.info("has_colors: %r", curses.has_colors())
+        # self.logger.info("can_change_color: %r", curses.can_change_color())
+        # self.logger.info("curses.COLORS: %r", curses.COLORS)
 
         # don't display cursor
         curses.curs_set(False)
@@ -108,11 +108,31 @@ class CursesDisplay:
 
         dim = (self.dim_x - 1, self.dim_y)
         offset = (self.buffer_offset_x, self.buffer_offset_y)
-        block = self.buffer.assemble(dim=dim, offset=offset)
+        block, colspans = self.buffer.assemble(
+            dim=dim, offset=offset, emit_ansi_codes=False
+        )
 
         try:
+            # in black and white
             self.window.addstr(block)
-            self.window.chgat(0, 3, 2, curses.color_pair(1))
+
+            # colorize the text using the colspans (because the curses color
+            # system cannot just use ansi escapes)
+            for y, colspans in colspans.items():
+                for colspan in colspans:
+                    color = colspan.color
+                    attid = self.color_pairs.get(color)
+
+                    if not attid:
+                        # initialize a curses color pair on demand the first
+                        # time we see this color
+                        pair_no = len(self.color_pairs) + 1  # <= 256
+                        curses.init_pair(pair_no, color.fg_id, color.bg_id)
+                        attid = curses.color_pair(pair_no)
+                        self.color_pairs[color] = attid
+
+                    self.window.chgat(y, colspan.offset, colspan.length, attid)
+
         except curses.error as exc:
             self.logger.exception("Failed to redraw screen: %r", exc)
             raise CursesDisplayError()
@@ -153,11 +173,16 @@ if __name__ == "__main__":
     try:
         while True:
             color = Color(fg="white", bg="dodger_blue_1")
-            display.logger.info("color fg: %r bg: %r", color.fg_id, color.bg_id)
-            curses.init_pair(1, color.fg_id, color.bg_id)
 
             buffer = ScreenBuffer()
-            buffer.write(text="hi mom")
+            buffer.write(text="hi ")
+            buffer.write(text="mom", color=color)
+            buffer.write(text="!")
+            buffer.end_line()
+            buffer.end_line()
+            buffer.write(text="  guess what ")
+            buffer.write(text="happened", color=color)
+            buffer.write(text=" today!")
 
             if display.interact(buffer, timeout=0.5):
                 break

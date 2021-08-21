@@ -11,6 +11,12 @@ class Color:
         self.fg = fg
         self.bg = bg
 
+    def __eq__(self, other) -> bool:
+        return all((self.fg == other.fg, self.bg == other.bg))
+
+    def __hash__(self) -> int:
+        return hash(self.fg) + hash(self.bg)
+
     @property
     def bg_id(self) -> int:
         return colored.colors.names.index(self.bg.upper())
