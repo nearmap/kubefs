@@ -1,4 +1,5 @@
 import time
+from typing import Optional
 
 import dateutil.parser
 
@@ -35,12 +36,20 @@ def mkpayload(*, obj):
 
 class KubeClusterGenericResourceDir(Directory):
     @classmethod
-    def create(cls, *, payload: Payload, context: Context, api_resource: ApiResource):
+    def create(
+        cls,
+        *,
+        payload: Payload,
+        context: Context,
+        api_resource: ApiResource,
+        namespace: Optional[str] = None
+    ):
         self = cls(payload=payload)
         self.context = context
-        self.facade = SyncClusterFacade(async_loop=get_loop(), context=self.context)
         self.api_resource = api_resource
-        self.selector = ObjectSelector(res=self.api_resource)
+        self.namespace = namespace
+        self.facade = SyncClusterFacade(async_loop=get_loop(), context=self.context)
+        self.selector = ObjectSelector(res=self.api_resource, namespace=self.namespace)
         return self
 
     def get_entries(self):
@@ -59,9 +68,10 @@ class KubeClusterGenericResourceDir(Directory):
 
 class KubeClusterNamespaceDir(Directory):
     @classmethod
-    def create(cls, *, payload: Payload, context: Context):
+    def create(cls, *, payload: Payload, context: Context, namespace: str):
         self = cls(payload=payload)
         self.context = context
+        self.namespace = namespace
         self.facade = SyncClusterFacade(async_loop=get_loop(), context=self.context)
         return self
 
@@ -79,6 +89,7 @@ class KubeClusterNamespaceDir(Directory):
                     payload=payload,
                     context=self.context,
                     api_resource=api_resource,
+                    namespace=self.namespace,
                 )
                 dirs.append(dir)
 
@@ -102,10 +113,13 @@ class KubeClusterNamespacesDir(Directory):
 
             dirs = []
             for item in items:
-                payload = Payload(name=item["metadata"]["name"])
+                name = item["metadata"]["name"]
+                payload = Payload(name=name)
+
                 dir = KubeClusterNamespaceDir.create(
                     payload=payload,
                     context=self.context,
+                    namespace=name,
                 )
                 dirs.append(dir)
 

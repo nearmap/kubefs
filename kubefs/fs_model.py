@@ -54,6 +54,7 @@ class AbstractEntry:
         self.facade: Optional[SyncClusterFacade] = None
         self.selector: Optional[ObjectSelector] = None
         self.api_resource: Optional[ApiResource] = None
+        self.namespace: Optional[str] = None
 
     def get_attributes(self) -> Dict[str, Union[int, float]]:
         raise NotImplemented
