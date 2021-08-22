@@ -53,22 +53,28 @@ class BufferRenderer:
 
         with self.buffer.indent(width=3):
             name_color = self.color_picker.get_for_container_name()
-            self.buffer.write(text=f"{container.name}:", color=name_color)
+            self.buffer.write(text=f"{container.name}", color=name_color)
 
-            wid = self.cont_name_width + 8  # hash
+            wid = self.cont_name_width + 1 + (1+8) + 1 + (1+6) # :tag @hash
             name_len = len(container.name)
 
-            with self.buffer.indent(width=0):
-                hash = container.image_hash.current_value
-                color = self.color_picker.get_for_image_hash(hash)
-                if hash:
-                    rem = wid - name_len
-                    self.buffer.write(text=f"{hash[:8]}", width=rem, color=color)
+            with self.buffer.indent(width=1):
+                tag = container.image_tag.current_value
+                color = self.color_picker.get_for_image_hash(tag)
+                if tag:
+                    self.buffer.write(text=f':{tag[:8]}', color=color)
 
-                with self.buffer.indent(width=2):
-                    if container.restart_count.current_value > 0:
-                        val = f"[restarts: {container.restart_count.current_value}]"
-                        self.buffer.write(text=val, color=name_color)
+                with self.buffer.indent(width=1):
+                    hash = container.image_hash.current_value
+                    color = self.color_picker.get_for_image_hash(hash)
+                    if hash:
+                        rem = wid - name_len - 10
+                        self.buffer.write(text=f"@{hash[:6]}", width=rem, color=color)
+
+                    with self.buffer.indent(width=2):
+                        if container.restart_count.current_value > 0:
+                            val = f"[restarts: {container.restart_count.current_value}]"
+                            self.buffer.write(text=val, color=name_color)
 
             with self.buffer.indent(width=2):
                 # skipping 'started' and 'ready' because they are booleans and

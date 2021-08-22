@@ -35,7 +35,11 @@ class ModelUpdater:
 
         self.color_picker = ColorPicker.get_instance()
 
-    def parse_image(self, image_url) -> Tuple[str, str]:
+    def parse_image(self, image_url) -> str:
+        _, _, digest = image_url.partition(":")
+        return digest
+
+    def parse_imageID(self, image_url) -> Tuple[str, str]:
         st = urlparse(image_url)
 
         path, _, hash = st.path.partition("@")
@@ -144,12 +148,14 @@ class ModelUpdater:
         self.update_pod_phase(event, pod, pod_model)
 
         for cont in pod.status.containerStatuses:
-            cont_image_name, cont_image_hash = self.parse_image(cont.imageID)
+            cont_image_name, cont_image_hash = self.parse_imageID(cont.imageID)
+            cont_image_tag = self.parse_image(cont.image)
 
             container_model = pod_model.get_container(cont.name)
             container_model.ready.set(value=cont.ready, ts=ts)
             container_model.started.set(value=cont.started, ts=ts)
             container_model.image_hash.set(value=cont_image_hash, ts=ts)
+            container_model.image_tag.set(value=cont_image_tag, ts=ts)
             container_model.restart_count.set(value=cont.restartCount, ts=ts)
             self.update_container_state(event, cont, container_model)
 
