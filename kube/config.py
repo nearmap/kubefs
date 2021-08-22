@@ -31,6 +31,9 @@ class User:
         self.client_cert_data = client_cert_data
         self.client_key_data = client_key_data
 
+        # host.company.com -> host
+        self.short_name = name.split(".")[0]
+
     def __repr__(self) -> str:
         return (
             "<%s name=%r, username=%r, password=%s, "
@@ -47,12 +50,34 @@ class User:
             disp_secret_blob(self.client_key_data),
         )
 
+    def get_attribute_names(self) -> List[str]:
+        "Returns names of all attributes that are set"
+
+        names = []
+        attnames = dir(self)
+
+        for attname in attnames:
+            value = getattr(self, attname)
+
+            if attname.startswith("_") or callable(value):
+                continue
+
+            if not value:
+                continue
+
+            names.append(attname)
+
+        return names
+
 
 class Cluster:
     def __init__(self, *, name: str, server: str, ca_cert_path: Optional[str]) -> None:
         self.name = name
         self.server = server
         self.ca_cert_path = ca_cert_path
+
+        # host.company.com -> host
+        self.short_name = name.split(".")[0]
 
     def __repr__(self) -> str:
         return "<%s name=%r, server=%r, ca_cert_path=%r>" % (
@@ -135,11 +160,17 @@ class KubeConfigFile:
         contexts: Sequence[Context],
         users: Sequence[User],
         clusters: Sequence[Cluster],
+        ctime: float,
+        mtime: float,
+        atime: float,
     ) -> None:
         self.filepath = filepath
         self.contexts = contexts or []
         self.users = users or []
         self.clusters = clusters or []
+        self.ctime = ctime
+        self.mtime = mtime
+        self.atime = atime
 
     def __repr__(self) -> str:
         return "<%s filepath=%r, contexts=%r, users=%r, clusters=%r>" % (
@@ -321,11 +352,19 @@ class KubeConfigLoader:
         ]
         contexts = [ctx for ctx in ctx_list if ctx]
 
+        st = os.stat(filepath)
+
         # The context is the organizing principle of a kube config so if we
         # didn't find any we failed to parse the file
         if contexts:
             config_file = KubeConfigFile(
-                filepath=filepath, contexts=contexts, users=users, clusters=clusters
+                filepath=filepath,
+                contexts=contexts,
+                users=users,
+                clusters=clusters,
+                ctime=st.st_ctime,
+                mtime=st.st_mtime,
+                atime=st.st_atime,
             )
 
             for context in contexts:

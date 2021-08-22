@@ -2,7 +2,9 @@ import logging
 import os
 import stat
 import time
-from typing import Dict, Iterable, List, Union
+from typing import Dict, Iterable, List, Optional, Union
+
+from kube.config import Context, KubeConfigCollection
 
 logger = logging.getLogger("fs_model")
 
@@ -38,6 +40,15 @@ class Payload:
 
 
 class AbstractEntry:
+    def __init__(self) -> None:
+
+        self.name: str = ''
+
+        # lazy attributes (different atts will be set depending on the derived
+        # class)
+        self.config: Optional[KubeConfigCollection] = None
+        self.context: Optional[Context] = None
+
     def get_attributes(self) -> Dict[str, Union[int, float]]:
         raise NotImplemented
 
@@ -49,7 +60,7 @@ class Directory(AbstractEntry):
         self.name = payload.name
         self._entries = entries or []
 
-        self._lazy_entries = []
+        self._lazy_entries: List[AbstractEntry] = []
         self._lazy_entries_loaded_time = 0
         self._lazy_entries_lifetime = 60  # in seconds
 

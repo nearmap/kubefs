@@ -7,13 +7,13 @@ import os
 import fuse
 
 from akube.async_loop import launch_in_background_thread
+from kube.config import KubeConfigLoader
 from kubefs.fs_kubeconfig import (
     KubeConfigClustersDir,
     KubeConfigContextsDir,
     KubeConfigUsersDir,
 )
 from kubefs.fs_model import Directory, Payload
-from kubefs.kubeconfig import KubeConfigLoader
 
 
 class KubernetesFs(fuse.LoggingMixIn, fuse.Operations):
@@ -25,17 +25,21 @@ class KubernetesFs(fuse.LoggingMixIn, fuse.Operations):
     def __init__(self):
         self.basepath = os.sep
 
-        loader = KubeConfigLoader.get_instance()
+        loader = KubeConfigLoader()
+        config = loader.create_collection()
+
         self.tree = Directory(
             payload=Payload(name=""),
             entries=[
                 KubeConfigClustersDir.create(
-                    payload=Payload(name="clusters"), loader=loader
+                    payload=Payload(name="clusters"),
+                    config=config,
                 ),
                 KubeConfigContextsDir.create(
-                    payload=Payload(name="contexts"), loader=loader
+                    payload=Payload(name="contexts"),
+                    config=config,
                 ),
-                KubeConfigUsersDir.create(payload=Payload(name="users"), loader=loader),
+                KubeConfigUsersDir.create(payload=Payload(name="users"), config=config),
             ],
         )
 

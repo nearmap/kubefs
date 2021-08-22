@@ -101,7 +101,7 @@ class ColorPicker:
             for idx in range(lower, upper + 1):
                 name = colored.colors.names[idx].lower()
 
-                if 'grey' in name:
+                if "grey" in name:
                     continue  # gray is not useful for highlighting
 
                 color = Color(fg=name)
