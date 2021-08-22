@@ -81,7 +81,7 @@ class BufferRenderer:
                     self.buffer.end_line()
 
                 # show reason and message if set and not trivial
-                if container.reason.current_value not in (None, "Completed"):
+                if container.reason.current_value not in (None, "Completed", "Error"):
                     code = f"reason: {container.reason.current_value}"
                     self.buffer.write(text=code, color=warn_color)
                     self.buffer.end_line()
@@ -110,7 +110,7 @@ class BufferRenderer:
         # TODO: bogus indent amount
         with self.buffer.indent(width=self.cluster_name_width + self.status_width + 8):
             # show reason and message if set and not trivial
-            if pod.reason.current_value not in (None, "Completed"):
+            if pod.reason.current_value not in (None, "Completed", "Error"):
                 code = f"reason: {pod.reason.current_value}"
                 self.buffer.write(text=code, color=warn_color)
                 self.buffer.end_line()

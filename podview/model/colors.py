@@ -98,8 +98,12 @@ class ColorPicker:
 
         for lower, upper in self._image_hash_color_index_ranges:
             for idx in range(lower, upper + 1):
-                name = colored.colors.names[idx]
-                color = Color(fg=name.lower())
+                name = colored.colors.names[idx].lower()
+
+                if 'grey' in name:
+                    continue  # gray is not useful for highlighting
+
+                color = Color(fg=name)
                 colors.append(color)
 
         self.image_hash_ring = HashRing(colors)
@@ -139,7 +143,7 @@ class ColorPicker:
 if __name__ == "__main__":
     import pprint
 
-    if 0:
+    if 1:
         for idx, name in enumerate(colored.colors.names):
             name = name.lower()
             fg = colored.stylize(name, [colored.fg(name)])
@@ -151,12 +155,8 @@ if __name__ == "__main__":
 
     elif 0:
         picker = ColorPicker()
-
-        for i in range(20):
-            image_hash = f"hash{i}"
-            color = picker.get_for_image_hash(image_hash)
-
-            print(f"image:{color.stylize(image_hash)}      {color.fg}")
+        for node in picker.image_hash_ring._nodes:
+            print(f"image:{node.stylize(node.fg)}")
 
     else:
         picker = ColorPicker()
