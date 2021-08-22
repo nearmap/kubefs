@@ -60,7 +60,8 @@ class ColorPicker:
     _dim_color = Color(fg="grey_70")
 
     _waiting_color = Color(fg="gold_3b")
-    _in_progress_color = Color(fg="sky_blue_3")
+    _in_progress_color = Color(fg="deep_sky_blue_1")
+    _dim_in_progress_color = Color(fg="light_sky_blue_3b")
     _stopped_color = Color(fg="dark_gray")
     _succeeded_color = Color(fg="cyan")
 
@@ -77,7 +78,7 @@ class ColorPicker:
 
     _container_state_colors = {
         "waiting": _waiting_color,
-        "running": _in_progress_color,
+        "running": _dim_in_progress_color,
         "terminated": _stopped_color,
     }
 
