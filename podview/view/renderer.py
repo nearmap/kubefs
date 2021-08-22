@@ -61,20 +61,20 @@ class BufferRenderer:
             with self.buffer.indent(width=1):
                 tag = container.image_tag.current_value
                 color = self.color_picker.get_for_image_hash(tag)
-                tag = tag and f':{tag[:10]}' or ''
+                tag = tag and f'{tag[:10]}' or ''
                 self.buffer.write(text=tag, color=color)
 
-                with self.buffer.indent(width=1):
-                    hash = container.image_hash.current_value or ''
-                    color = self.color_picker.get_for_image_hash(hash)
-                    hash = hash and f"@{hash[:6]}" or ''
-                    rem = wid - name_len - 12
-                    self.buffer.write(text=hash, width=rem, color=color)
+                # with self.buffer.indent(width=1):
+                #     hash = container.image_hash.current_value or ''
+                #     color = self.color_picker.get_for_image_hash(hash)
+                #     hash = hash and f"@{hash[:6]}" or ''
+                #     rem = wid - name_len - 12
+                #     self.buffer.write(text=hash, width=rem, color=color)
 
-                    with self.buffer.indent(width=2):
-                        if container.restart_count.current_value > 0:
-                            val = f"[restarts: {container.restart_count.current_value}]"
-                            self.buffer.write(text=val, color=name_color)
+                with self.buffer.indent(width=2):
+                    if container.restart_count.current_value > 0:
+                        val = f"[restarts: {container.restart_count.current_value}]"
+                        self.buffer.write(text=val, color=name_color)
 
             with self.buffer.indent(width=2):
                 # skipping 'started' and 'ready' because they are booleans and
