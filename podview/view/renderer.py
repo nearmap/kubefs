@@ -61,15 +61,15 @@ class BufferRenderer:
             with self.buffer.indent(width=1):
                 tag = container.image_tag.current_value
                 color = self.color_picker.get_for_image_hash(tag)
-                if tag:
-                    self.buffer.write(text=f':{tag[:8]}', color=color)
+                tag = tag and f':{tag[:8]}' or ''
+                self.buffer.write(text=tag, color=color)
 
                 with self.buffer.indent(width=1):
-                    hash = container.image_hash.current_value
+                    hash = container.image_hash.current_value or ''
                     color = self.color_picker.get_for_image_hash(hash)
-                    if hash:
-                        rem = wid - name_len - 10
-                        self.buffer.write(text=f"@{hash[:6]}", width=rem, color=color)
+                    hash = hash and f"@{hash[:6]}" or ''
+                    rem = wid - name_len - 10
+                    self.buffer.write(text=hash, width=rem, color=color)
 
                     with self.buffer.indent(width=2):
                         if container.restart_count.current_value > 0:
