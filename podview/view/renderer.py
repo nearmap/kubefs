@@ -55,20 +55,20 @@ class BufferRenderer:
             name_color = self.color_picker.get_for_container_name()
             self.buffer.write(text=f"{container.name}", color=name_color)
 
-            wid = self.cont_name_width + 1 + (1+8) + 1 + (1+6) # :tag @hash
+            wid = self.cont_name_width + 1 + (1+10) + 1 + (1+6) # :tag @hash
             name_len = len(container.name)
 
             with self.buffer.indent(width=1):
                 tag = container.image_tag.current_value
                 color = self.color_picker.get_for_image_hash(tag)
-                tag = tag and f':{tag[:8]}' or ''
+                tag = tag and f':{tag[:10]}' or ''
                 self.buffer.write(text=tag, color=color)
 
                 with self.buffer.indent(width=1):
                     hash = container.image_hash.current_value or ''
                     color = self.color_picker.get_for_image_hash(hash)
                     hash = hash and f"@{hash[:6]}" or ''
-                    rem = wid - name_len - 10
+                    rem = wid - name_len - 12
                     self.buffer.write(text=hash, width=rem, color=color)
 
                     with self.buffer.indent(width=2):
