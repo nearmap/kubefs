@@ -70,35 +70,29 @@ class BufferRenderer:
                         val = f"[restarts: {container.restart_count.current_value}]"
                         self.buffer.write(text=val, color=name_color)
 
-            with self.buffer.indent(width=0):
-                # for containers in waiting/running show started/ready is False
-                # if container.state.current_value not in ("terminated",):
-                #     if container.started.current_value not in (None, True):
-                #         code = f"- started: {container.started.current_value}"
-                #         self.buffer.write(text=code)
-                #         self.buffer.end_line()
-                #     if container.ready.current_value not in (None, True):
-                #         code = f"- ready: {container.ready.current_value}"
-                #         self.buffer.write(text=code)
-                #         self.buffer.end_line()
+            with self.buffer.indent(width=2):
+                # skipping 'started' and 'ready' because they are booleans and
+                # not really insightful at all
 
                 # show exitCode if not zero
                 if container.exit_code.current_value not in (None, 0):
-                    code = f"- exitCode: {container.exit_code.current_value}"
+                    code = f"exitCode: {container.exit_code.current_value}"
                     self.buffer.write(text=code, color=warn_color)
                     self.buffer.end_line()
 
                 # show reason and message if set and not trivial
                 if container.reason.current_value not in (None, "Completed"):
-                    code = f"- reason: {container.reason.current_value}"
+                    code = f"reason: {container.reason.current_value}"
                     self.buffer.write(text=code, color=warn_color)
                     self.buffer.end_line()
                 if container.message.current_value:
-                    code = f"- message: {container.message.current_value}"
+                    code = f"message: {container.message.current_value}"
                     self.buffer.write(text=code, color=warn_color)
                     self.buffer.end_line()
 
     def render_pod(self, pod: PodModel) -> None:
+        warn_color = self.color_picker.get_warn_color()
+
         phase = pod.phase.current_value and pod.phase.current_value.lower() or ""
         ela = pod.phase.current_elapsed_pretty
 
@@ -112,6 +106,18 @@ class BufferRenderer:
 
         with self.buffer.indent(width=3):
             self.buffer.write(text=pod.name, width=self.pod_name_width)
+
+        # TODO: bogus indent amount
+        with self.buffer.indent(width=self.cluster_name_width + self.status_width + 8):
+            # show reason and message if set and not trivial
+            if pod.reason.current_value not in (None, "Completed"):
+                code = f"reason: {pod.reason.current_value}"
+                self.buffer.write(text=code, color=warn_color)
+                self.buffer.end_line()
+            if pod.message.current_value:
+                code = f"message: {pod.message.current_value}"
+                self.buffer.write(text=code, color=warn_color)
+                self.buffer.end_line()
 
         containers = pod.iter_containers()
         cont_name_width = 0

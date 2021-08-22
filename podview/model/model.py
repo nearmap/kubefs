@@ -32,6 +32,8 @@ class PodModel:
         self.creation_timestamp: Value[datetime] = Value()
         self.deletion_timestamp: Value[datetime] = Value()
         self.phase: Value[str] = Value()
+        self.reason: Value[str] = Value()
+        self.message: Value[str] = Value()
         self.image_hash: Value[str] = Value()
 
     def get_container(self, name: str) -> ContainerModel:

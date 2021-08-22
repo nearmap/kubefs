@@ -82,6 +82,8 @@ class ModelUpdater:
             model.phase.set(
                 value=phase, ts=ts, is_terminal_state=is_terminal_state, color=color
             )
+            model.message.set(value=pod.status.message, ts=ts)
+            model.reason.set(value=pod.status.reason, ts=ts)
 
     def update_container_state(
         self, event: ObjectEvent, cont: ContainerStatus, model: ContainerModel
