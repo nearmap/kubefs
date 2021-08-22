@@ -1,9 +1,9 @@
 import logging
-import random
 from typing import List
 
 import colored
 import colored.colors
+from uhashring import HashRing
 
 from kube.config import Context
 
@@ -25,6 +25,10 @@ class Color:
             styles.append(colored.bg(self.bg))
 
         return styles
+
+    def __str__(self) -> str:
+        # needed for HashRing because it hashes based on __str__
+        return f"{self.__class__.__name__}(fg={self.fg}, bg={self.bg})"
 
     def __eq__(self, other) -> bool:
         return all((self.fg == other.fg, self.bg == other.bg))
@@ -77,8 +81,9 @@ class ColorPicker:
         "terminated": _stopped_color,
     }
 
-    # trying to pick colors that are not too saturated nor too dim
-    _image_hash_ranges = [
+    # indices into colored.colors.names
+    # trying to pick colors that are not too bring nor too dim
+    _image_hash_color_index_ranges = [
         (33, 39),
         (69, 75),
         (77, 80),
@@ -87,14 +92,17 @@ class ColorPicker:
         (166, 189),
         (209, 219),
     ]
-    _image_hash_indices = []
 
     def __init__(self, logger=None) -> None:
-        self.image_hash_colors = {}
+        colors = []
 
-        for lower, upper in self._image_hash_ranges:
-            series = list(range(lower, upper + 1))
-            self._image_hash_indices.extend(series)
+        for lower, upper in self._image_hash_color_index_ranges:
+            for idx in range(lower, upper + 1):
+                name = colored.colors.names[idx]
+                color = Color(fg=name.lower())
+                colors.append(color)
+
+        self.image_hash_ring = HashRing(colors)
 
         self.logger = logger or logging.getLogger(__name__)
 
@@ -124,30 +132,14 @@ class ColorPicker:
         return self._container_state_colors[state]
 
     def get_for_image_hash(self, image_hash: str) -> Color:
-        """Hash the image hash onto a color."""
-
-        color = self.image_hash_colors.get(image_hash)
-
-        if not color:
-            lookup_idx = hash(image_hash) % len(self._image_hash_indices)
-            # lookup_idx = random.randint(0, len(self._image_hash_indices) - 1)
-            idx = self._image_hash_indices[lookup_idx]
-            name = colored.colors.names[idx].lower()
-            color = Color(fg=name)
-            self.image_hash_colors[image_hash] = color
-            # self._image_hash_indices.pop(lookup_idx)  # consume this color for this hash
-
-        # self.logger.info(
-        #     "image hash color: %r %s for hash %r",
-        #     color.fg_id,
-        #     color.stylize(color.fg),
-        #     image_hash,
-        # )
-        return color
+        """Consistently hashes the image hash onto a color."""
+        return self.image_hash_ring.get_node(image_hash)
 
 
 if __name__ == "__main__":
-    if 1:
+    import pprint
+
+    if 0:
         for idx, name in enumerate(colored.colors.names):
             name = name.lower()
             fg = colored.stylize(name, [colored.fg(name)])
@@ -157,7 +149,7 @@ if __name__ == "__main__":
             # print(f'{idx}    {bg}')
             # print()
 
-    else:
+    elif 0:
         picker = ColorPicker()
 
         for i in range(20):
@@ -165,3 +157,7 @@ if __name__ == "__main__":
             color = picker.get_for_image_hash(image_hash)
 
             print(f"image:{color.stylize(image_hash)}      {color.fg}")
+
+    else:
+        picker = ColorPicker()
+        pprint.pprint(picker.image_hash_ring._nodes)

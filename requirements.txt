@@ -11,3 +11,4 @@ requests==2.25.1
 types-PyYAML==5.4.3
 types-python-dateutil==0.1.4
 types-requests==2.25.0
+uhashring==2.1
