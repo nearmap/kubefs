@@ -8,27 +8,7 @@ from akube.model.api_resource import ApiResource, NamespaceKind
 from akube.model.selector import ObjectSelector
 from kube.config import Context
 from kubefs.fs_model import Directory, File, Payload
-from kubefs.text import to_dict, to_json
-
-
-def mkpayload(*, api_version, kind, obj):
-    # set these on the object because they may not be set when the kube REST api
-    # returns collections of objects
-    obj.api_version = api_version
-    obj.kind = kind
-
-    block = to_json(to_dict(obj))
-
-    timestamp = obj.metadata.creation_timestamp.timestamp()
-
-    payload = Payload(
-        name=obj.metadata.name,
-        data=block.encode(),
-        ctime=timestamp,
-        mtime=timestamp,
-    )
-
-    return payload
+from kubefs.text import to_json
 
 
 def mkpayload2(*, obj):
