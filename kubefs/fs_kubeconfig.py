@@ -1,7 +1,7 @@
 from akube.async_loop import get_loop
 from akube.cluster_facade import SyncClusterFacade
 from kube.config import Context, KubeConfigCollection
-from kubefs.fs_kubecluster import KubeClusterResourceDir
+from kubefs.fs_kubecluster import KubeClusterNamespacesDir, KubeClusterGenericResourceDir
 from kubefs.fs_model import Directory, File, Payload
 
 
@@ -15,12 +15,22 @@ class KubeConfigClusterDir(Directory):
 
     def get_entries(self):
         if not self.lazy_entries:
-            api_resources = self.facade.list_api_resources()
+            # special handling for namespaces
+            payload = Payload(name="namespaces")
+            dir = KubeClusterNamespacesDir.create(
+                payload=payload,
+                context=self.context,
+            )
 
-            dirs = []
+            dirs = [dir]
+
+            api_resources = self.facade.list_api_resources()
             for api_resource in api_resources:
+                if api_resource.name == "namespaces":
+                    continue
+
                 payload = Payload(name=api_resource.name)
-                dir = KubeClusterResourceDir.create(
+                dir = KubeClusterGenericResourceDir.create(
                     payload=payload,
                     context=self.context,
                     api_resource=api_resource,
