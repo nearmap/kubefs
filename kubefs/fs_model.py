@@ -119,10 +119,12 @@ class Directory(AbstractEntry):
         names = [entry.name for entry in self.get_entries()]
         return names
 
-    def get_entry_by_name(self, entry_name: str) -> AbstractEntry:
+    def get_entry_by_name(self, entry_name: str) -> Optional[AbstractEntry]:
         for entry in self.get_entries():
             if entry.name == entry_name:
                 return entry
+
+        return None
 
 
 class File(AbstractEntry):
