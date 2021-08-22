@@ -11,7 +11,7 @@ from kubefs.fs_model import Directory, File, Payload
 from kubefs.text import to_json
 
 
-def mkpayload2(*, obj):
+def mkpayload(*, obj):
     block = to_json(obj)
 
     timestamp = None
@@ -49,7 +49,7 @@ class KubeClusterGenericResourceDir(Directory):
 
             files = []
             for item in items:
-                payload = mkpayload2(obj=item)
+                payload = mkpayload(obj=item)
                 files.append(File(payload=payload))
 
             self.lazy_entries = files
