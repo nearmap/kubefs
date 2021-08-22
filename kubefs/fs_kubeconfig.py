@@ -1,16 +1,7 @@
+from akube.async_loop import get_loop
+from akube.cluster_facade import SyncClusterFacade
 from kube.config import Context, KubeConfigCollection
-from kubefs.fs_kubecluster import (
-    KubeClusterConfigMapsDir,
-    KubeClusterDaemonSetsDir,
-    KubeClusterDeploymentsDir,
-    KubeClusterEndpointsDir,
-    KubeClusterNamespacesDir,
-    KubeClusterNodesDir,
-    KubeClusterPodsDir,
-    KubeClusterReplicaSetsDir,
-    KubeClusterSecretsDir,
-    KubeClusterServicesDir,
-)
+from kubefs.fs_kubecluster import KubeClusterResourceDir
 from kubefs.fs_model import Directory, File, Payload
 
 
@@ -19,28 +10,21 @@ class KubeConfigClusterDir(Directory):
     def create(cls, *, payload: Payload, context: Context):
         self = cls(payload=payload)
         self.context = context
+        self.facade = SyncClusterFacade(async_loop=get_loop(), context=self.context)
         return self
 
     def get_entries(self):
         if not self.lazy_entries:
+            api_resources = self.facade.list_api_resources()
+
             dirs = []
-
-            types = {
-                "configmaps": KubeClusterConfigMapsDir,
-                "daemonsets": KubeClusterDaemonSetsDir,
-                "deployments": KubeClusterDeploymentsDir,
-                "endpoints": KubeClusterEndpointsDir,
-                "namespaces": KubeClusterNamespacesDir,
-                "nodes": KubeClusterNodesDir,
-                "pods": KubeClusterPodsDir,
-                "replicasets": KubeClusterReplicaSetsDir,
-                "secrets": KubeClusterSecretsDir,
-                "services": KubeClusterServicesDir,
-            }
-
-            for name, cls in types.items():
-                payload = Payload(name=name)
-                dir = cls.create(payload=payload, context=self.context)
+            for api_resource in api_resources:
+                payload = Payload(name=api_resource.name)
+                dir = KubeClusterResourceDir.create(
+                    payload=payload,
+                    context=self.context,
+                    api_resource=api_resource,
+                )
                 dirs.append(dir)
 
             self.lazy_entries = dirs

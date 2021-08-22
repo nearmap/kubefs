@@ -5,6 +5,7 @@ import time
 from typing import Dict, Iterable, List, Optional, Union
 
 from akube.cluster_facade import SyncClusterFacade
+from akube.model.api_resource import ApiResource
 from akube.model.selector import ObjectSelector
 from kube.config import Context, KubeConfigCollection
 
@@ -52,6 +53,7 @@ class AbstractEntry:
         self.context: Optional[Context] = None
         self.facade: Optional[SyncClusterFacade] = None
         self.selector: Optional[ObjectSelector] = None
+        self.api_resource: Optional[ApiResource] = None
 
     def get_attributes(self) -> Dict[str, Union[int, float]]:
         raise NotImplemented

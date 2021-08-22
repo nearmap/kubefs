@@ -1,8 +1,10 @@
+import time
+
 import dateutil
 
 from akube.async_loop import get_loop
 from akube.cluster_facade import SyncClusterFacade
-from akube.model.api_resource import NamespaceKind
+from akube.model.api_resource import ApiResource, NamespaceKind
 from akube.model.selector import ObjectSelector
 from kube.config import Context
 from kubefs.fs_model import Directory, File, Payload
@@ -33,7 +35,14 @@ def mkpayload(*, api_version, kind, obj):
 def mkpayload2(*, obj):
     block = to_json(obj)
 
-    timestamp = dateutil.parser.parse(obj["metadata"]["creationTimestamp"]).timestamp()
+    timestamp = None
+
+    creationTimestamp = obj["metadata"].get("creationTimestamp")
+    if creationTimestamp:
+        timestamp = dateutil.parser.parse(creationTimestamp).timestamp()
+
+    if timestamp is None:
+        timestamp = time.time()
 
     payload = Payload(
         name=obj["metadata"]["name"],
@@ -43,6 +52,30 @@ def mkpayload2(*, obj):
     )
 
     return payload
+
+
+class KubeClusterResourceDir(Directory):
+    @classmethod
+    def create(cls, *, payload: Payload, context: Context, api_resource: ApiResource):
+        self = cls(payload=payload)
+        self.context = context
+        self.facade = SyncClusterFacade(async_loop=get_loop(), context=self.context)
+        self.api_resource = api_resource
+        self.selector = ObjectSelector(res=self.api_resource)
+        return self
+
+    def get_entries(self):
+        if not self.lazy_entries:
+            items = self.facade.list_objects(selector=self.selector)
+
+            files = []
+            for item in items:
+                payload = mkpayload2(obj=item)
+                files.append(File(payload=payload))
+
+            self.lazy_entries = files
+
+        return self.lazy_entries
 
 
 class KubeClusterConfigMapsDir(Directory):

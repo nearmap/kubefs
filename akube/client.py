@@ -19,6 +19,7 @@ from aiohttp.client_exceptions import (
     TooManyRedirects,
 )
 
+from akube.model.api_resource import ApiResource
 from akube.model.selector import ObjectSelector
 from kube.channels.objects import OEvSender
 from kube.config import Context
@@ -99,11 +100,17 @@ class AsyncClient:
 
     async def update_resource_version(self, *, dct=None, exc: ApiError = None) -> None:
         assert dct or exc
+        version = None
 
         if dct:
-            version = int(dct["metadata"]["resourceVersion"])
+            version_str = dct["metadata"].get("resourceVersion")
+            if version_str:
+                version = int(version_str)
         else:
             version = exc.extract_resource_version()
+
+        if version is None:
+            return
 
         async with self.resource_version_lock:
             if version > self.resource_version:
@@ -173,6 +180,56 @@ class AsyncClient:
             object=exc,
         )
         oev_sender.send(event)
+
+    async def list_api_resources(self) -> List[ApiResource]:
+        server = self.context.cluster.server
+        url = f"{server}/api/v1"
+
+        kwargs = dict(
+            url=url,
+            ssl_context=self.ssl_context,
+            auth=self.basic_auth,
+            timeout=ClientTimeout(
+                sock_connect=3,
+                total=15,
+            ),
+        )
+
+        self.logger.info("Listing api resources on %s", url)
+        async with self.session.get(**kwargs) as response:
+
+            self.logger.debug("Parsing api resource response as json")
+            js = await response.json()
+
+            # may raise
+            self.maybe_parse_error(js)
+
+            items = js["resources"]
+
+            api_resources = []
+            for item in items:
+                name = item["name"]
+                verbs = item["verbs"]
+
+                # skip nested resources like 'namespaces/status'
+                if "/" in name:
+                    continue
+
+                # skip resources that cannot be listed
+                # TODO: encode this in ApiResource instead
+                if "list" not in verbs:
+                    continue
+
+                api_resource = ApiResource(
+                    endpoint="/api/v1",
+                    kind=item["kind"],
+                    name=name,
+                    namespaced=item["namespaced"],
+                )
+                api_resources.append(api_resource)
+
+            self.logger.debug("Returning api resources")
+            return api_resources
 
     async def list_attempt(self, selector: ObjectSelector) -> List[Any]:
         log = self.get_ctx_logger(selector)

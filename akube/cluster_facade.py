@@ -14,7 +14,13 @@ class SyncClusterFacade:
         self.context = context
 
     def list_api_resources(self) -> List[ApiResource]:
-        pass
+        async def list_resources():
+            cluster_loop = await self.async_loop.get_cluster_loop(self.context)
+            client = await cluster_loop.get_client()
+            items = await client.list_api_resources()
+            return items
+
+        return self.async_loop.run_coro_until_completion(list_resources())
 
     def list_objects(self, *, selector: ObjectSelector) -> List[Any]:
         async def list_objects():
