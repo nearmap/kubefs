@@ -4,6 +4,8 @@ import stat
 import time
 from typing import Dict, Iterable, List, Optional, Union
 
+from akube.cluster_facade import SyncClusterFacade
+from akube.model.selector import ObjectSelector
 from kube.config import Context, KubeConfigCollection
 
 logger = logging.getLogger("fs_model")
@@ -42,12 +44,14 @@ class Payload:
 class AbstractEntry:
     def __init__(self) -> None:
 
-        self.name: str = ''
+        self.name: str = ""
 
         # lazy attributes (different atts will be set depending on the derived
         # class)
         self.config: Optional[KubeConfigCollection] = None
         self.context: Optional[Context] = None
+        self.facade: Optional[SyncClusterFacade] = None
+        self.selector: Optional[ObjectSelector] = None
 
     def get_attributes(self) -> Dict[str, Union[int, float]]:
         raise NotImplemented
