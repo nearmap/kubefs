@@ -12,6 +12,9 @@ from kube.config import Context, KubeConfigCollection
 logger = logging.getLogger("fs_model")
 
 
+ONE_DAY = 3600 * 24
+
+
 class Payload:
     """A simple wrapper type for all the attributes that a File / Directory
     needs to have. This avoids having to make all of these parameters to the
@@ -68,8 +71,8 @@ class Directory(AbstractEntry):
         self._entries = entries or []
 
         self._lazy_entries: List[AbstractEntry] = []
-        self._lazy_entries_loaded_time = 0
-        self._lazy_entries_lifetime = 60  # in seconds
+        self._lazy_entries_loaded_time: float = 0
+        self._lazy_entries_lifetime: int = 60  # in seconds
 
         self.atts = dict(
             st_mode=(stat.S_IFDIR | 0o755),
@@ -105,10 +108,10 @@ class Directory(AbstractEntry):
         )
         return self._lazy_entries
 
-    @lazy_entries.setter
-    def lazy_entries(self, entries):
+    def set_lazy_entries(self, entries, lifetime=60) -> None:
         self._lazy_entries = entries
         self._lazy_entries_loaded_time = time.time()
+        self._lazy_entries_lifetime = lifetime
 
     def get_entries(self) -> Iterable[AbstractEntry]:
         return self._entries

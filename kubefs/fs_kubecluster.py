@@ -8,7 +8,7 @@ from akube.cluster_facade import SyncClusterFacade
 from akube.model.api_resource import ApiResource, NamespaceKind
 from akube.model.selector import ObjectSelector
 from kube.config import Context
-from kubefs.fs_model import Directory, File, Payload
+from kubefs.fs_model import ONE_DAY, Directory, File, Payload
 from kubefs.text import to_json
 
 
@@ -61,7 +61,7 @@ class KubeClusterGenericResourceDir(Directory):
                 payload = mkpayload(obj=item)
                 files.append(File(payload=payload))
 
-            self.lazy_entries = files
+            self.set_lazy_entries(files)
 
         return self.lazy_entries
 
@@ -93,7 +93,8 @@ class KubeClusterNamespaceDir(Directory):
                 )
                 dirs.append(dir)
 
-            self.lazy_entries = dirs
+            # api resources almost never change
+            self.set_lazy_entries(dirs, lifetime=ONE_DAY)
 
         return self.lazy_entries
 
@@ -123,6 +124,7 @@ class KubeClusterNamespacesDir(Directory):
                 )
                 dirs.append(dir)
 
-            self.lazy_entries = dirs
+            # namespaces rarely change
+            self.set_lazy_entries(dirs, lifetime=ONE_DAY)
 
         return self.lazy_entries

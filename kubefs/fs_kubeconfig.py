@@ -5,7 +5,7 @@ from kubefs.fs_kubecluster import (
     KubeClusterGenericResourceDir,
     KubeClusterNamespacesDir,
 )
-from kubefs.fs_model import Directory, File, Payload
+from kubefs.fs_model import ONE_DAY, Directory, File, Payload
 
 
 class KubeConfigClusterDir(Directory):
@@ -40,7 +40,8 @@ class KubeConfigClusterDir(Directory):
                 )
                 dirs.append(dir)
 
-            self.lazy_entries = dirs
+            # api resources almost never change
+            self.set_lazy_entries(dirs, lifetime=ONE_DAY)
 
         return self.lazy_entries
 
@@ -65,7 +66,7 @@ class KubeConfigClustersDir(Directory):
                 dir = KubeConfigClusterDir.create(payload=payload, context=context)
                 dirs.append(dir)
 
-            self.lazy_entries = dirs
+            self.set_lazy_entries(dirs, lifetime=ONE_DAY)
 
         return self.lazy_entries
 
@@ -93,7 +94,7 @@ class KubeConfigContextDir(Directory):
                 dir = KubeConfigUserDir.create(payload=payload, context=self.context)
                 dirs.append(dir)
 
-            self.lazy_entries = dirs
+            self.set_lazy_entries(dirs, lifetime=ONE_DAY)
 
         return self.lazy_entries
 
@@ -118,7 +119,7 @@ class KubeConfigContextsDir(Directory):
                 dir = KubeConfigContextDir.create(payload=payload, context=context)
                 dirs.append(dir)
 
-            self.lazy_entries = dirs
+            self.set_lazy_entries(dirs, lifetime=ONE_DAY)
 
         return self.lazy_entries
 
@@ -152,7 +153,7 @@ class KubeConfigUserDir(Directory):
                 file = File(payload=payload)
                 files.append(file)
 
-            self.lazy_entries = files
+            self.set_lazy_entries(files, lifetime=ONE_DAY)
 
         return self.lazy_entries
 
@@ -180,6 +181,6 @@ class KubeConfigUsersDir(Directory):
                 dir = KubeConfigUserDir.create(payload=payload, context=context)
                 dirs.append(dir)
 
-            self.lazy_entries = dirs
+            self.set_lazy_entries(dirs, lifetime=ONE_DAY)
 
         return self.lazy_entries
