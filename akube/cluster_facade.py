@@ -19,12 +19,23 @@ class SyncClusterFacade:
             cluster_loop = await self.async_loop.get_cluster_loop(self.context)
             client = await cluster_loop.get_client()
 
+            # hamfisted solution to the problem of pods/nodes/events being used
+            # by more than one api group
+            names = set()
+
             all_resources = await client.list_api_resources(CoreV1)
+            for resource in all_resources:
+                names.add(resource.name)
 
             groups = await client.list_api_groups()
             for group in groups:
                 resources = await client.list_api_resources(group)
-                all_resources.extend(resources)
+                for resource in resources:
+                    if resource.name in names:
+                        continue
+
+                    names.add(resource.name)
+                    all_resources.append(resource)
 
             return all_resources
 
