@@ -1,6 +1,7 @@
 from typing import Any, List, Optional
 
 from akube.async_loop import AsyncLoop
+from akube.model.api_group import CoreV1
 from akube.model.api_resource import ApiResource
 from akube.model.selector import ObjectSelector
 from kube.channels.objects import OEvReceiver, create_oev_chan
@@ -18,7 +19,7 @@ class SyncClusterFacade:
             cluster_loop = await self.async_loop.get_cluster_loop(self.context)
             client = await cluster_loop.get_client()
 
-            all_resources = []
+            all_resources = await client.list_api_resources(CoreV1)
 
             groups = await client.list_api_groups()
             for group in groups:
