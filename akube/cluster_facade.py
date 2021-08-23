@@ -17,8 +17,15 @@ class SyncClusterFacade:
         async def list_resources():
             cluster_loop = await self.async_loop.get_cluster_loop(self.context)
             client = await cluster_loop.get_client()
-            items = await client.list_api_resources()
-            return items
+
+            all_resources = []
+
+            groups = await client.list_api_groups()
+            for group in groups:
+                resources = await client.list_api_resources(group)
+                all_resources.extend(resources)
+
+            return all_resources
 
         return self.async_loop.run_coro_until_completion(list_resources())
 

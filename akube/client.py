@@ -19,6 +19,7 @@ from aiohttp.client_exceptions import (
     TooManyRedirects,
 )
 
+from akube.model.api_group import ApiGroup
 from akube.model.api_resource import ApiResource
 from akube.model.selector import ObjectSelector
 from kube.channels.objects import OEvSender
@@ -181,9 +182,9 @@ class AsyncClient:
         )
         oev_sender.send(event)
 
-    async def list_api_resources(self) -> List[ApiResource]:
+    async def list_api_groups(self) -> List[ApiGroup]:
         server = self.context.cluster.server
-        url = f"{server}/api/v1"
+        url = f"{server}/apis"
 
         kwargs = dict(
             url=url,
@@ -195,10 +196,49 @@ class AsyncClient:
             ),
         )
 
-        self.logger.info("Listing api resources on %s", url)
+        self.logger.info("Listing api groups on %s", url)
         async with self.session.get(**kwargs) as response:
 
-            self.logger.debug("Parsing api resource response as json")
+            self.logger.debug("Parsing api group response as json")
+            js = await response.json()
+
+            # may raise
+            self.maybe_parse_error(js)
+
+            items = js["groups"]
+
+            api_groups = []
+            for item in items:
+                name = item["name"]
+                endpoint = item["preferredVersion"]["groupVersion"]
+
+                api_group = ApiGroup(
+                    name=name,
+                    endpoint=f"/apis/{endpoint}",
+                )
+                api_groups.append(api_group)
+
+            self.logger.debug("Returning api groups")
+            return api_groups
+
+    async def list_api_resources(self, group: ApiGroup) -> List[ApiResource]:
+        server = self.context.cluster.server
+        url = f"{server}{group.endpoint}"
+
+        kwargs = dict(
+            url=url,
+            ssl_context=self.ssl_context,
+            auth=self.basic_auth,
+            timeout=ClientTimeout(
+                sock_connect=3,
+                total=15,
+            ),
+        )
+
+        self.logger.info("Listing %s api resources on %s", group.name, url)
+        async with self.session.get(**kwargs) as response:
+
+            self.logger.debug("Parsing %s api resource response as json", group.name)
             js = await response.json()
 
             # may raise
@@ -221,14 +261,14 @@ class AsyncClient:
                     continue
 
                 api_resource = ApiResource(
-                    endpoint="/api/v1",
+                    endpoint=group.endpoint,
                     kind=item["kind"],
                     name=name,
                     namespaced=item["namespaced"],
                 )
                 api_resources.append(api_resource)
 
-            self.logger.debug("Returning api resources")
+            self.logger.debug("Returning %s api resources", group.name)
             return api_resources
 
     async def list_attempt(self, selector: ObjectSelector) -> List[Any]:
