@@ -167,14 +167,14 @@ def main(args: argparse.Namespace) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--context",
+        "-c", "--context",
         dest="context",
         action="store",
         required=True,
         help=(f"Kube contexts to select - matched like a filesystem wildcard"),
     )
     parser.add_argument(
-        "--namespace",
+        "-n", "--namespace",
         dest="namespace",
         action="store",
         help=(f"Kube namespace to select - matched like a filesystem wildcard"),
