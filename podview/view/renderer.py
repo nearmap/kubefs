@@ -55,13 +55,13 @@ class BufferRenderer:
             name_color = self.color_picker.get_for_container_name()
             self.buffer.write(text=f"{container.name}", color=name_color)
 
-            wid = self.cont_name_width + 1 + (10)  # ' ' tag
+            wid = self.cont_name_width + 1 + (20)  # ' ' tag
             name_len = len(container.name)
 
             with self.buffer.indent(width=1):
                 tag = container.image_tag.current_value
                 color = self.color_picker.get_for_image_hash(tag)
-                tag = tag and f"{tag[:10]}" or ""
+                tag = tag and f"{tag[:20]}" or ""
                 rem = wid - name_len
                 self.buffer.write(text=tag, width=rem, color=color)
 
