@@ -1,4 +1,4 @@
 #!/bin/sh
 
-isort bin/* akube/ kube/ kubefs/ podview/  # sort imports
-black bin/* akube/ kube/ kubefs/ podview/  # all other code formatting
+isort bin/* kube/ kubefs/ podview/  # sort imports
+black bin/* kube/ kubefs/ podview/  # all other code formatting

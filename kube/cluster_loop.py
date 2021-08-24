@@ -6,10 +6,10 @@ from typing import Dict
 
 import aiohttp
 
-from akube.client import AsyncClient
-from akube.model.selector import ObjectSelector
 from kube.channels.objects import OEvSender
+from kube.client import AsyncClient
 from kube.config import Context
+from kube.model.selector import ObjectSelector
 from kube.tools.logs import get_silent_logger
 
 

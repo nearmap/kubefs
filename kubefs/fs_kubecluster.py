@@ -3,11 +3,11 @@ from typing import Optional
 
 import dateutil.parser
 
-from akube.async_loop import get_loop
-from akube.cluster_facade import SyncClusterFacade
-from akube.model.api_resource import ApiResource, NamespaceKind
-from akube.model.selector import ObjectSelector
+from kube.async_loop import get_loop
+from kube.cluster_facade import SyncClusterFacade
 from kube.config import Context
+from kube.model.api_resource import ApiResource, NamespaceKind
+from kube.model.selector import ObjectSelector
 from kubefs.fs_model import ONE_DAY, Directory, File, Payload
 from kubefs.text import to_json
 

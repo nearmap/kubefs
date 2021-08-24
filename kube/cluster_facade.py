@@ -1,12 +1,12 @@
 from typing import Any, List, Optional
 
-from akube.async_loop import AsyncLoop
-from akube.model.api_group import CoreV1
-from akube.model.api_resource import ApiResource
-from akube.model.selector import ObjectSelector
+from kube.async_loop import AsyncLoop
 from kube.channels.objects import OEvReceiver, create_oev_chan
 from kube.config import Context
 from kube.events.objects import Action, ObjectEvent
+from kube.model.api_group import CoreV1
+from kube.model.api_resource import ApiResource
+from kube.model.selector import ObjectSelector
 
 
 class SyncClusterFacade:

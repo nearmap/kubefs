@@ -1,6 +1,6 @@
 from typing import Optional
 
-from akube.model.api_resource import ApiResource
+from kube.model.api_resource import ApiResource
 
 
 class ObjectSelector:

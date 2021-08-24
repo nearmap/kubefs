@@ -1,7 +1,7 @@
-from akube.model.object_model.base import ObjectWrapper
-from akube.model.object_model.meta import NamespacedMeta, ObjectMeta
-from akube.model.object_model.status import ObjectStatus, PodStatus
-from akube.model.object_model.types import RawObject
+from kube.model.object_model.base import ObjectWrapper
+from kube.model.object_model.meta import NamespacedMeta, ObjectMeta
+from kube.model.object_model.status import ObjectStatus, PodStatus
+from kube.model.object_model.types import RawObject
 
 
 class Namespace(ObjectWrapper):

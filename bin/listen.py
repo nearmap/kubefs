@@ -16,13 +16,13 @@ import deepdiff
 from colored import bg, fg
 from colored.colored import stylize
 
-from akube.async_loop import get_loop, launch_in_background_thread
-from akube.cluster_facade import SyncClusterFacade
-from akube.model.api_resource import NamespaceKind, PodKind
-from akube.model.selector import ObjectSelector
+from kube.async_loop import get_loop, launch_in_background_thread
 from kube.channels.objects import OEvReceiver
+from kube.cluster_facade import SyncClusterFacade
 from kube.config import Context, get_selector
 from kube.events.objects import Action
+from kube.model.api_resource import NamespaceKind, PodKind
+from kube.model.selector import ObjectSelector
 from kube.tools.logs import configure_logging
 from kube.tools.terminal import TerminalPrinter
 
@@ -167,14 +167,16 @@ def main(args: argparse.Namespace) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-c", "--context",
+        "-c",
+        "--context",
         dest="context",
         action="store",
         required=True,
         help=(f"Kube contexts to select - matched like a filesystem wildcard"),
     )
     parser.add_argument(
-        "-n", "--namespace",
+        "-n",
+        "--namespace",
         dest="namespace",
         action="store",
         help=(f"Kube namespace to select - matched like a filesystem wildcard"),

@@ -19,12 +19,12 @@ from aiohttp.client_exceptions import (
     TooManyRedirects,
 )
 
-from akube.model.api_group import ApiGroup
-from akube.model.api_resource import ApiResource
-from akube.model.selector import ObjectSelector
 from kube.channels.objects import OEvSender
 from kube.config import Context
 from kube.events.objects import Action, ObjectEvent
+from kube.model.api_group import ApiGroup
+from kube.model.api_resource import ApiResource
+from kube.model.selector import ObjectSelector
 from kube.tools.logs import CtxLogger
 
 
@@ -68,7 +68,7 @@ class AsyncClient:
     ) -> None:
         self.session = session
         self.context = context
-        self.logger = logger or logging.getLogger("aclient")
+        self.logger = logger or logging.getLogger("client")
 
         self.ssl_context = self.context.create_ssl_context()
         self.basic_auth = self.create_basic_auth(context)

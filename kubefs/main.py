@@ -6,7 +6,7 @@ import os
 
 import fuse
 
-from akube.async_loop import launch_in_background_thread
+from kube.async_loop import launch_in_background_thread
 from kube.config import KubeConfigLoader
 from kubefs.fs_kubeconfig import (
     KubeConfigClustersDir,

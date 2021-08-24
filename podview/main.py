@@ -4,13 +4,13 @@ import logging
 from threading import current_thread
 from typing import Optional
 
-from akube.async_loop import AsyncLoop, launch_in_background_thread
-from akube.cluster_facade import SyncClusterFacade
-from akube.model.api_resource import NamespaceKind, PodKind
-from akube.model.object_model.kinds import Namespace
-from akube.model.selector import ObjectSelector
+from kube.async_loop import AsyncLoop, launch_in_background_thread
 from kube.channels.objects import OEvReceiver
+from kube.cluster_facade import SyncClusterFacade
 from kube.config import Context, get_selector
+from kube.model.api_resource import NamespaceKind, PodKind
+from kube.model.object_model.kinds import Namespace
+from kube.model.selector import ObjectSelector
 from kube.tools.logs import configure_logging
 from podview.model.model import ScreenModel
 from podview.model.updater import ModelUpdater

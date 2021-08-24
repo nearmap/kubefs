@@ -1,8 +1,8 @@
 from typing import Any, Dict, Optional
 
-from akube.model.object_model.meta import ObjectMeta
-from akube.model.object_model.status import ObjectStatus
-from akube.model.object_model.types import RawObject
+from kube.model.object_model.meta import ObjectMeta
+from kube.model.object_model.status import ObjectStatus
+from kube.model.object_model.types import RawObject
 
 
 class ObjectWrapper:

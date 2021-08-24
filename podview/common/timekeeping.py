@@ -41,8 +41,12 @@ def humanize_delta(td: timedelta) -> str:
         days = td.days
         fmt = f"{days}d"
 
-    else:
+    elif td.days < 365:
         months = int(td.days / 30)
         fmt = f"{months}mo"
+
+    else:
+        years = int(td.days / 365)
+        fmt = f"{years}y"
 
     return fmt

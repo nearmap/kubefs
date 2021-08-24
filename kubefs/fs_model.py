@@ -4,10 +4,10 @@ import stat
 import time
 from typing import Dict, Iterable, List, Optional, Union
 
-from akube.cluster_facade import SyncClusterFacade
-from akube.model.api_resource import ApiResource
-from akube.model.selector import ObjectSelector
+from kube.cluster_facade import SyncClusterFacade
 from kube.config import Context, KubeConfigCollection
+from kube.model.api_resource import ApiResource
+from kube.model.selector import ObjectSelector
 
 logger = logging.getLogger("fs_model")
 

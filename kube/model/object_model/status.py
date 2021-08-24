@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import List, Optional
 
-from akube.model.object_model.helpers import maybe_parse_date
-from akube.model.object_model.types import RawObject
+from kube.model.object_model.helpers import maybe_parse_date
+from kube.model.object_model.types import RawObject
 
 
 class ContainerState:

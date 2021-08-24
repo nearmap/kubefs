@@ -6,16 +6,16 @@ import time
 from typing import List, Tuple
 from urllib.parse import urlparse
 
-from akube.model.object_model.kinds import Pod
-from akube.model.object_model.status import (
+from kube.channels.objects import OEvReceiver
+from kube.config import Context
+from kube.events.objects import Action, ObjectEvent
+from kube.model.object_model.kinds import Pod
+from kube.model.object_model.status import (
     ContainerStateRunning,
     ContainerStateTerminated,
     ContainerStateWaiting,
     ContainerStatus,
 )
-from kube.channels.objects import OEvReceiver
-from kube.config import Context
-from kube.events.objects import Action, ObjectEvent
 from podview.model.colors import ColorPicker
 from podview.model.model import ContainerModel, PodModel, ScreenModel
 

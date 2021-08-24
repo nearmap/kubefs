@@ -1,5 +1,5 @@
-from akube.async_loop import get_loop
-from akube.cluster_facade import SyncClusterFacade
+from kube.async_loop import get_loop
+from kube.cluster_facade import SyncClusterFacade
 from kube.config import Context, KubeConfigCollection
 from kubefs.fs_kubecluster import (
     KubeClusterGenericResourceDir,

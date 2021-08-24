@@ -5,7 +5,7 @@ from asyncio.exceptions import CancelledError
 from threading import Event, Thread
 from typing import Any, Dict
 
-from akube.cluster_loop import AsyncClusterLoop
+from kube.cluster_loop import AsyncClusterLoop
 from kube.config import Context
 
 
