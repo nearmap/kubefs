@@ -2,7 +2,7 @@ import asyncio
 import logging
 from asyncio import Event, Lock, Task
 from asyncio.exceptions import CancelledError
-from typing import Dict
+from typing import Dict, Optional
 
 import aiohttp
 
@@ -10,19 +10,20 @@ from kube.channels.objects import OEvSender
 from kube.client import AsyncClient
 from kube.config import Context
 from kube.model.selector import ObjectSelector
-from kube.tools.logs import get_silent_logger
 
 
 class AsyncClusterLoop:
     def __init__(
         self, *, async_loop: "AsyncLoop", context: Context, logger=None
     ) -> None:
-        self.async_loop = async_loop
+        from kube.async_loop import AsyncLoop
+
+        self.async_loop: AsyncLoop = async_loop
         self.context = context
         self.logger = logger or logging.getLogger("cluster_loop")
 
         self.initialized_event = Event()
-        self.client = None
+        self.client: Optional[AsyncClient] = None
 
         self.watches_lock = Lock()
         self.watches: Dict[ObjectSelector, Task] = {}
@@ -39,6 +40,8 @@ class AsyncClusterLoop:
     async def start_watch(
         self, selector: ObjectSelector, oev_sender: OEvSender
     ) -> None:
+        assert self.client is not None  # help mypy
+
         loop = self.async_loop.get_loop()
         coro = self.client.watch_objects(selector=selector, oev_sender=oev_sender)
         task = loop.create_task(coro)
@@ -79,9 +82,7 @@ class AsyncClusterLoop:
     async def mainloop(self):
         async with aiohttp.ClientSession() as session:
             logger = logging.getLogger("aclient")
-            # logger.setLevel(logging.WARN)
             logger.setLevel(logging.INFO)
-            # logger = get_silent_logger()
 
             self.client = AsyncClient(
                 session=session, context=self.context, logger=logger
