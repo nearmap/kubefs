@@ -434,7 +434,7 @@ class AsyncClient:
                 # the server timed out the watch - we expect this to happen
                 # after the normal server timeout interval (5-15min)
                 # (this could also happen if the server is unreachable....)
-                log.info("Watch request completed - restarting")
+                log.info("Watch request completed - restarting: %r", exc)
                 await asyncio.sleep(1)  # don't retry aggressively
 
             except retriable_connection_errors as exc:
@@ -468,7 +468,7 @@ class AsyncClient:
                 self.send_error(exc, oev_sender)
                 break
 
-            except Exception:
+            except Exception as exc:
                 # we don't know what the error is so log a traceback and exit
                 log.exception("Watch request failed with unexpected error - giving up")
                 self.send_error(exc, oev_sender)
