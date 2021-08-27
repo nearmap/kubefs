@@ -87,7 +87,7 @@ class Program:
                 buffer = renderer.render()
 
                 # print(buffer.assemble(dim=(120, 24), border_horiz="-", border_vert="|"))
-                if self.display.interact(buffer, timeout=0.5):
+                if self.display.stop_interacting(buffer, timeout=0.5):
                     break
 
         except (KeyboardInterrupt, CursesDisplayError):

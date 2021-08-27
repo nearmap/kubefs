@@ -143,7 +143,7 @@ class CursesDisplay:
 
         self.redraw()
 
-    def interact(self, buffer: ScreenBuffer, timeout: int) -> bool:
+    def stop_interacting(self, buffer: ScreenBuffer, timeout: float) -> bool:
         self.buffer = buffer
 
         start_time = time.time()
@@ -184,7 +184,7 @@ if __name__ == "__main__":
             buffer.write(text="happened", color=color)
             buffer.write(text=" today!")
 
-            if display.interact(buffer, timeout=0.5):
+            if display.stop_interacting(buffer, timeout=0.5):
                 break
 
     except (KeyboardInterrupt, Exception) as ex:
