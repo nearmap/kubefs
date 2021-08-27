@@ -2,7 +2,7 @@ import asyncio
 import logging
 from asyncio import Event, Lock, Task
 from asyncio.exceptions import CancelledError
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import aiohttp
 
@@ -14,7 +14,7 @@ from kube.model.selector import ObjectSelector
 
 class AsyncClusterLoop:
     def __init__(
-        self, *, async_loop: "AsyncLoop", context: Context, logger=None
+        self, *, async_loop: Any, context: Context, logger=None
     ) -> None:
         from kube.async_loop import AsyncLoop
 
