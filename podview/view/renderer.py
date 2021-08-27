@@ -59,7 +59,7 @@ class BufferRenderer:
             name_len = len(container.name)
 
             with self.buffer.indent(width=1):
-                tag = container.image_tag.current_value
+                tag = container.image_tag.current_value or ""
                 color = self.color_picker.get_for_image_hash(tag)
                 tag = tag and f"{tag[:20]}" or ""
                 rem = wid - name_len
@@ -73,7 +73,7 @@ class BufferRenderer:
                 #     self.buffer.write(text=hash, width=rem, color=color)
 
                 with self.buffer.indent(width=2):
-                    if container.restart_count.current_value > 0:
+                    if (container.restart_count.current_value or 0) > 0:
                         val = f"[restarts: {container.restart_count.current_value}]"
                         self.buffer.write(text=val, color=name_color)
 
@@ -139,10 +139,10 @@ class BufferRenderer:
         self.buffer.write(text="podview")
 
         with self.buffer.indent(width=2):
-            cluster = self.model.cluster.current_value or "*"
+            cluster_name = self.model.cluster.current_value or "*"
             namespace = self.model.namespace.current_value or "*"
-            pod = self.model.pod.current_value or "*"
-            fmt = f"cluster:{cluster}  namespace:{namespace}  pod:{pod}"
+            pod_name = self.model.pod.current_value or "*"
+            fmt = f"cluster:{cluster_name}  namespace:{namespace}  pod:{pod_name}"
             self.buffer.write(text=fmt, width=60, align=TextAlign.CENTER)
 
             with self.buffer.indent(width=2):
@@ -158,7 +158,7 @@ class BufferRenderer:
 
         for cluster in clusters:
             self.buffer.write(
-                text=cluster.name.current_value,
+                text=cluster.name.current_value or "",
                 width=self.cluster_name_width,
                 color=cluster.name.current_color,
             )

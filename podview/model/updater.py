@@ -67,7 +67,9 @@ class ModelUpdater:
                 # reach into the container statuses for the most recent finishedAt
                 for cont in pod.status.containerStatuses:
                     if isinstance(cont.state, ContainerStateTerminated):
-                        if dt is None or cont.state.finishedAt > dt:
+                        if dt is None:
+                            dt = cont.state.finishedAt
+                        elif cont.state.finishedAt and cont.state.finishedAt > dt:
                             dt = cont.state.finishedAt
 
                 is_terminal_state = True
@@ -86,8 +88,10 @@ class ModelUpdater:
             model.phase.set(
                 value=phase, ts=ts, is_terminal_state=is_terminal_state, color=color
             )
-            model.message.set(value=pod.status.message, ts=ts)
-            model.reason.set(value=pod.status.reason, ts=ts)
+            if pod.status.message:
+                model.message.set(value=pod.status.message, ts=ts)
+            if pod.status.reason:
+                model.reason.set(value=pod.status.reason, ts=ts)
 
     def update_container_state(
         self, event: ObjectEvent, cont: ContainerStatus, model: ContainerModel
@@ -124,9 +128,12 @@ class ModelUpdater:
             model.state.set(
                 value=state.key, ts=ts, is_terminal_state=is_terminal_state, color=color
             )
-            model.exit_code.set(value=exit_code, ts=ts)
-            model.message.set(value=message, ts=ts)
-            model.reason.set(value=reason, ts=ts)
+            if exit_code is not None:
+                model.exit_code.set(value=exit_code, ts=ts)
+            if message is not None:
+                model.message.set(value=message, ts=ts)
+            if reason is not None:
+                model.reason.set(value=reason, ts=ts)
 
     def update_model(self, model: ScreenModel, event: ObjectEvent) -> None:
         context = event.context
@@ -144,7 +151,8 @@ class ModelUpdater:
 
         pod_model = cluster_model.get_pod(pod.meta.name)
         pod_model.creation_timestamp.set(value=pod.meta.creationTimestamp, ts=ts)
-        pod_model.deletion_timestamp.set(value=pod.meta.deletionTimestamp, ts=ts)
+        if pod.meta.deletionTimestamp is not None:
+            pod_model.deletion_timestamp.set(value=pod.meta.deletionTimestamp, ts=ts)
         self.update_pod_phase(event, pod, pod_model)
 
         for cont in pod.status.containerStatuses:
@@ -153,7 +161,8 @@ class ModelUpdater:
 
             container_model = pod_model.get_container(cont.name)
             container_model.ready.set(value=cont.ready, ts=ts)
-            container_model.started.set(value=cont.started, ts=ts)
+            if cont.started is not None:
+                container_model.started.set(value=cont.started, ts=ts)
             container_model.image_hash.set(value=cont_image_hash, ts=ts)
             container_model.image_tag.set(value=cont_image_tag, ts=ts)
             container_model.restart_count.set(value=cont.restartCount, ts=ts)

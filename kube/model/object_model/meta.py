@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Optional
 
 from dateutil.parser import parse as parse_date
 
@@ -12,7 +12,7 @@ class ObjectMeta:
         self._meta = obj["metadata"]
 
         self.creationTimestamp: datetime = parse_date(self._meta["creationTimestamp"])
-        self.deletionTimestamp: datetime = maybe_parse_date(
+        self.deletionTimestamp: Optional[datetime] = maybe_parse_date(
             self._meta.get("deletionTimestamp")
         )
         self.name: str = self._meta["name"]

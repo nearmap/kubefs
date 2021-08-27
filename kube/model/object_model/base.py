@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
 
 from kube.model.object_model.meta import ObjectMeta
 from kube.model.object_model.status import ObjectStatus
@@ -7,7 +7,7 @@ from kube.model.object_model.types import RawObject
 
 class ObjectWrapper:
     _meta_cls = ObjectMeta
-    _status_cls = None
+    _status_cls: Optional[Type[ObjectStatus]] = None
 
     def __init__(self, obj: RawObject) -> None:
         self.apiVersion: str = obj["apiVersion"]

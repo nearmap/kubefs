@@ -82,7 +82,7 @@ class PodStatus(ObjectStatus):
         self.startTime: Optional[datetime] = None
         self.reason: Optional[str] = None
         self.message: Optional[str] = None
-        self.containerStatuses: List[ContainerStatus] = None
+        self.containerStatuses: List[ContainerStatus] = []
 
         self.startTime = maybe_parse_date(self._status.get("startTime"))
         self.message = self._status.get("message")
