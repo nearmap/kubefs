@@ -107,7 +107,7 @@ class AsyncClient:
             version_str = dct["metadata"].get("resourceVersion")
             if version_str:
                 version = int(version_str)
-        else:
+        elif exc is not None:
             version = exc.extract_resource_version()
 
         if version is None:
@@ -187,7 +187,6 @@ class AsyncClient:
         url = f"{server}/apis"
 
         kwargs = dict(
-            url=url,
             ssl_context=self.ssl_context,
             auth=self.basic_auth,
             timeout=ClientTimeout(
@@ -197,7 +196,7 @@ class AsyncClient:
         )
 
         self.logger.info("Listing api groups on %s", url)
-        async with self.session.get(**kwargs) as response:
+        async with self.session.get(url, allow_redirects=True, **kwargs) as response:
 
             self.logger.debug("Parsing api group response as json")
             js = await response.json()
@@ -226,7 +225,6 @@ class AsyncClient:
         url = f"{server}{group.endpoint}"
 
         kwargs = dict(
-            url=url,
             ssl_context=self.ssl_context,
             auth=self.basic_auth,
             timeout=ClientTimeout(
@@ -236,7 +234,7 @@ class AsyncClient:
         )
 
         self.logger.info("Listing %s api resources on %s", group.name, url)
-        async with self.session.get(**kwargs) as response:
+        async with self.session.get(url, allow_redirects=True, **kwargs) as response:
 
             self.logger.debug("Parsing %s api resource response as json", group.name)
             js = await response.json()
@@ -278,7 +276,6 @@ class AsyncClient:
         url = await self.construct_url(selector)
 
         kwargs = dict(
-            url=url,
             ssl_context=self.ssl_context,
             auth=self.basic_auth,
             timeout=ClientTimeout(
@@ -288,7 +285,7 @@ class AsyncClient:
         )
 
         log.info("Listing %s objects on %s", kind, url)
-        async with self.session.get(**kwargs) as response:
+        async with self.session.get(url, allow_redirects=True, **kwargs) as response:
 
             log.debug("Parsing %s response as json", kind)
             js = await response.json()
@@ -371,7 +368,6 @@ class AsyncClient:
         url = await self.construct_url(selector, watch=True)
 
         kwargs = dict(
-            url=url,
             ssl_context=self.ssl_context,
             auth=self.basic_auth,
             timeout=ClientTimeout(
@@ -381,7 +377,7 @@ class AsyncClient:
         )
 
         log.info("Watching %s objects on %s", kind, url)
-        async with self.session.get(**kwargs) as response:
+        async with self.session.get(url, allow_redirects=True, **kwargs) as response:
 
             # read one line at a time, b'\n' terminated
             while True:
