@@ -89,8 +89,8 @@ class AsyncClient:
     def get_ctx_logger(self, selector: ObjectSelector) -> CtxLogger:
         return CtxLogger(
             logger=self.logger,
-            extra=(self.context.short_name, selector.pretty()),
-            prefix="[%s] [%s] ",
+            extra={"context": self.context.short_name, "selector": selector.pretty()},
+            prefix="[%(context)s] [%(selector)s] ",
         )
 
     # Manage resourceVersion

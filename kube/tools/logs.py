@@ -1,6 +1,6 @@
 import os
 from logging import CRITICAL, DEBUG, Logger, LoggerAdapter, basicConfig, getLogger
-from typing import Any, Optional, Tuple
+from typing import Any, Mapping, Optional
 
 
 def configure_logging(filename: Optional[str] = None) -> None:
@@ -26,7 +26,7 @@ def get_silent_logger() -> Logger:
 
 
 class CtxLogger(LoggerAdapter):
-    def __init__(self, logger: Logger, extra: Tuple[Any], prefix: str) -> None:
+    def __init__(self, logger: Logger, extra: Mapping[str, Any], prefix: str) -> None:
         super().__init__(logger, extra)
 
         self.prefix = prefix
