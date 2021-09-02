@@ -2,7 +2,7 @@ import argparse
 import fnmatch
 import logging
 from threading import current_thread
-from typing import Optional
+from typing import List, Optional
 
 from kube.async_loop import AsyncLoop, launch_in_background_thread
 from kube.channels.objects import OEvReceiver
@@ -31,9 +31,9 @@ class Program:
         self.async_loop: Optional[AsyncLoop] = None
         self.updater = None
 
-    def find_matching_namespace(
+    def find_matching_namespaces(
         self, namespace_pat: str, context: Context
-    ) -> Optional[str]:
+    ) -> List[str]:
         assert self.async_loop is not None  # help mypy
 
         facade = SyncClusterFacade(async_loop=self.async_loop, context=context)
@@ -41,23 +41,27 @@ class Program:
         namespace_objs = facade.list_objects(selector=selector)
         namespaces = [Namespace(namespace).meta.name for namespace in namespace_objs]
 
-        namespaces = fnmatch.filter(namespaces, namespace_pat)
-        assert len(namespaces) == 1
+        return fnmatch.filter(namespaces, namespace_pat)
 
-        return namespaces[0]
-
-    def launch_watcher(self, context: Context) -> OEvReceiver:
+    def launch_watcher(self, context: Context) -> List[OEvReceiver]:
         assert self.async_loop is not None  # help mypy
 
         facade = SyncClusterFacade(async_loop=self.async_loop, context=context)
 
-        namespace = None
+        oev_receivers = []
         if self.args.namespace not in (None, "", "*"):
-            namespace = self.find_matching_namespace(self.args.namespace, context)
+            namespaces = self.find_matching_namespaces(self.args.namespace, context)
+            for namespace in namespaces:
+                selector = ObjectSelector(res=PodKind, namespace=namespace)
+                oev_receiver = facade.list_then_watch(selector=selector)
+                oev_receivers.append(oev_receiver)
 
-        selector = ObjectSelector(res=PodKind, namespace=namespace)
+        else:
+            selector = ObjectSelector(res=PodKind, namespace=None)
+            oev_receiver = facade.list_then_watch(selector=selector)
+            oev_receivers.append(oev_receiver)
 
-        return facade.list_then_watch(selector=selector)
+        return oev_receivers
 
     def initialize(self):
         main_thread = current_thread()
@@ -69,7 +73,8 @@ class Program:
         selector = get_selector()
         contexts = selector.fnmatch_context(self.args.cluster_context)
 
-        oev_receivers = [self.launch_watcher(ctx) for ctx in contexts]
+        oev_receivers_lists = [self.launch_watcher(ctx) for ctx in contexts]
+        oev_receivers = [recv for lst in oev_receivers_lists for recv in lst]
 
         self.updater = ModelUpdater(
             contexts=contexts, receivers=oev_receivers, args=self.args

@@ -89,7 +89,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("mount")
+    parser.add_argument("mount_point")
     args = parser.parse_args()
 
     async_loop = launch_in_background_thread()
@@ -98,4 +98,4 @@ if __name__ == "__main__":
         level=logging.DEBUG,
         format="%(asctime)s %(threadName)s %(levelname)s %(name)s %(message)s)",
     )
-    fuse = fuse.FUSE(KubernetesFs(), args.mount, foreground=True)
+    fuse = fuse.FUSE(KubernetesFs(), args.mount_point, foreground=True)
