@@ -25,10 +25,10 @@ def mkpayload(*, obj):
         timestamp = time.time()
 
     fn = obj["metadata"]["name"]
-    if fn.endswith('.'):
-        fn = f'{fn}json'
+    if fn.endswith("."):
+        fn = f"{fn}json"
     else:
-        fn = f'{fn}.json'
+        fn = f"{fn}.json"
 
     payload = Payload(
         name=fn,
@@ -48,7 +48,7 @@ class KubeClusterGenericResourceDir(Directory):
         payload: Payload,
         context: Context,
         api_resource: ApiResource,
-        namespace: Optional[str] = None
+        namespace: Optional[str] = None,
     ):
         self = cls(payload=payload)
         self.context = context

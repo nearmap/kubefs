@@ -1,6 +1,6 @@
 #!/bin/bash
 
 PROJ_PATH=$(cd $(dirname $0); pwd)
-. ${PROJ_PATH}/bin/shell_common.sh
+. ${PROJ_PATH}/scripts/shell_common.sh
 
 ${VENV_PYTHON} -m kubefs.main $@

@@ -13,9 +13,7 @@ from kube.model.selector import ObjectSelector
 
 
 class AsyncClusterLoop:
-    def __init__(
-        self, *, async_loop: Any, context: Context, logger=None
-    ) -> None:
+    def __init__(self, *, async_loop: Any, context: Context, logger=None) -> None:
         from kube.async_loop import AsyncLoop
 
         self.async_loop: AsyncLoop = async_loop

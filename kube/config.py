@@ -71,20 +71,29 @@ class User:
 
 
 class Cluster:
-    def __init__(self, *, name: str, server: str, ca_cert_path: Optional[str]) -> None:
+    def __init__(
+        self,
+        *,
+        name: str,
+        server: str,
+        ca_cert_path: Optional[str],
+        ca_cert_data: Optional[str],
+    ) -> None:
         self.name = name
         self.server = server
         self.ca_cert_path = ca_cert_path
+        self.ca_cert_data = ca_cert_data
 
         # host.company.com -> host
         self.short_name = name.split(".")[0]
 
     def __repr__(self) -> str:
-        return "<%s name=%r, server=%r, ca_cert_path=%r>" % (
+        return "<%s name=%r, server=%r, ca_cert_path=%r, ca_cert_data=%r>" % (
             self.__class__.__name__,
             self.name,
             self.server,
             self.ca_cert_path,
+            disp_secret_blob(self.ca_cert_data),
         )
 
 
@@ -120,7 +129,17 @@ class Context:
         self.file = file
 
     def create_ssl_context(self) -> SSLContext:
-        ssl_context = create_default_context(cafile=self.cluster.ca_cert_path)
+        kwargs = {}
+
+        if self.cluster.ca_cert_path:
+            kwargs["cafile"] = self.cluster.ca_cert_path
+
+        elif self.cluster.ca_cert_data:
+            value = base64.b64decode(self.cluster.ca_cert_data)
+            cert_data = value.decode()
+            kwargs["cadata"] = cert_data
+
+        ssl_context = create_default_context(**kwargs)
 
         # If the cert and key are in the form of blobs then we need to create
         # temporary files for them because the ssl lib only accepts file paths.
@@ -251,15 +270,26 @@ class KubeConfigLoader:
 
         return filepaths
 
+    def take_after_last_slash(self, name: str) -> str:
+        # arn:aws:iam::123:role/myrole -> myrole
+        if "/" in name:
+            name = name.rsplit("/")[1]
+
+        return name
+
     def parse_context(
         self, clusters: Sequence[Cluster], users: Sequence[User], dct
     ) -> Optional[Context]:
         name = dct.get("name")
+        name = self.take_after_last_slash(name)
 
         obj = dct.get("context")
         cluster_id = obj.get("cluster")
         namespace = obj.get("namespace")
         user_id = obj.get("user")
+
+        cluster_id = self.take_after_last_slash(cluster_id)
+        user_id = self.take_after_last_slash(user_id)
 
         # 'name', 'cluster' and 'user' are required attributes
         if all((name, cluster_id, user_id)):
@@ -291,19 +321,27 @@ class KubeConfigLoader:
 
     def parse_cluster(self, dct) -> Optional[Cluster]:
         name = dct.get("name")
+        name = self.take_after_last_slash(name)
 
         obj = dct.get("cluster")
         server = obj.get("server")
         ca_cert_path = obj.get("certificate-authority")
+        ca_cert_data = obj.get("certificate-authority-data")
 
         # 'name' and 'server' are required attributes
         if name and server:
-            return Cluster(name=name, server=server, ca_cert_path=ca_cert_path)
+            return Cluster(
+                name=name,
+                server=server,
+                ca_cert_path=ca_cert_path,
+                ca_cert_data=ca_cert_data,
+            )
 
         return None
 
     def parse_user(self, dct) -> Optional[User]:
         name = dct.get("name")
+        name = self.take_after_last_slash(name)
 
         obj = dct.get("user")
         password = obj.get("password")
