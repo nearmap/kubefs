@@ -24,8 +24,14 @@ def mkpayload(*, obj):
     if timestamp is None:
         timestamp = time.time()
 
+    fn = obj["metadata"]["name"]
+    if fn.endswith('.'):
+        fn = f'{fn}json'
+    else:
+        fn = f'{fn}.json'
+
     payload = Payload(
-        name=obj["metadata"]["name"],
+        name=fn,
         data=block.encode(),
         ctime=timestamp,
         mtime=timestamp,
