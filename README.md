@@ -74,3 +74,9 @@ If you see errors try 'rm -rf .ve/' and re-run this script.
 DEBUG:fuse.log-mixin:-> init / ()
 DEBUG:fuse.log-mixin:<- init None
 ```
+
+
+
+## podview
+
+![podview screenshot](docs/assets/podview-shot.png)
