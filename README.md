@@ -1,15 +1,19 @@
 # 
 
-`kubefs` is a collection of tools created to demystify your kubernetes clusters and make them more accessible to non-expert users.
+This project is a collection of tools created to demystify your kubernetes
+clusters and make them more accessible to non-expert users.
 
-* `kubefs` is a filesystem that allows you to browse the kubernetes objects in your cluster in a familiar way, as files and directories.
-* `podview` is a curses based terminal ui which gives you a real time view of pods that interest you, across clusters.
+* `kubefs` is a filesystem that allows you to browse the kubernetes objects in
+  your cluster in a familiar way, as files and directories.
+* `podview` is a terminal program which gives you a real time view of pods that
+  interest you, across clusters. You can use it to watch code deployments in
+  real time, or check up on the health of your workloads.
 
 
 ## kubefs - a fuse filesystem for browsing k8s clusters
 
-`kubefs` is a read-only filesystem that runs in user space (you don't need to be
-`root` to mount it) that allows you to browse objects in your Kubernetes
+`kubefs` is a **read-only** filesystem that runs in user space (you don't need
+to be `root` to mount it) that allows you to browse objects in your Kubernetes
 clusters.
 
 ![kubefs screenshot](docs/assets/kubefs-shot.png)
@@ -88,5 +92,22 @@ DEBUG:fuse.log-mixin:<- init None
 
 
 ## podview
+
+`podview` is a curses based terminal program which gives you a real time view of the
+pods that you want to see.
+
+It loads your kube config(s) from `$KUBECONFIG` or `~/.kube` and uses that to
+detect all your clusters. You can then filter on:
+
+* cluster name using `-c` / `--cluster`
+* namespace name using `-n` / `--namespace`
+* pod name using `-p` / `--pod`
+
+A very common case is watching the state of pods for a particular
+workload/service across all your clusters:
+
+```bash
+$ ./pv --namespace 'istio*' --pod 'prom*'
+```
 
 ![podview screenshot](docs/assets/podview-shot.png)
