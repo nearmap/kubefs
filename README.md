@@ -1,4 +1,4 @@
-# 
+# User friendly kubernetes tools
 
 This project is a collection of tools created to demystify your kubernetes
 clusters and make them more accessible to non-expert users.
@@ -8,6 +8,7 @@ clusters and make them more accessible to non-expert users.
 * `podview` is a terminal program which gives you a real time view of pods that
   interest you, across clusters. You can use it to watch code deployments in
   real time, or check up on the health of your workloads.
+
 
 
 ## kubefs - a fuse filesystem for browsing k8s clusters
