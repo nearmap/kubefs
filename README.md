@@ -1,8 +1,18 @@
-# A fuse filesystem for browsing Kubernetes clusters
+# 
+
+`kubefs` is a collection of tools created to demystify your kubernetes clusters and make them more accessible to non-expert users.
+
+* `kubefs` is a read-only filesystem that runs in user space and allows you to browse the kubernetes objects in your cluster in a familiar way, as files and directories.
+* `podview` is a curses based terminal ui which gives you a real time view of pods that interest you, across clusters.
+
+
+## kubefs - a fuse filesystem for browsing k8s clusters
 
 `kubefs` is a read-only filesystem that runs in user space (don't need to be
 `root` to mount it) that allows you to browse objects in your Kubernetes
 clusters.
+
+![kubefs screenshot](docs/assets/kubefs-shot.png)
 
 It loads your kube config(s) from `$KUBECONFIG` or `~/.kube` and uses that to
 present a top level view for you to navigate:
@@ -51,10 +61,10 @@ $ head ~/kubeview/clusters/minikube/pods/etcd-minikube
 
 Behind the scenes, `kubefs` makes requests to the k8s API server to fetch all
 these objects and populate the filesystem. This can be slow, so directory
-entries are cached for 60 seconds.
+entries are cached.
 
 
-## Quickstart
+### Quickstart
 
 `kubefs` requires a few libraries to run. The script `kfs` sets all this up on
 the first run, so that's all you need. `kubefs` runs in the foreground, so once
