@@ -113,6 +113,9 @@ $ ./pv --pod 'prom*'
 
 ![podview screenshot](docs/assets/podview-shot.png)
 
+On startup `podview` first lists all the pods matching your filter, and then
+proceeds to watch them for updates.
+
 Pods are listed per cluster, and sorted by `creationTimestamp` so you will see
 the oldest pods at the top.
 
