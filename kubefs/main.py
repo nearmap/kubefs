@@ -95,7 +95,7 @@ if __name__ == "__main__":
     async_loop = launch_in_background_thread()
 
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format="%(asctime)s %(threadName)s %(levelname)s %(name)s %(message)s)",
     )
     fuse = fuse.FUSE(KubernetesFs(), args.mount_point, foreground=True)
