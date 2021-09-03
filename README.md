@@ -107,7 +107,15 @@ A very common case is watching the state of pods for a particular
 workload/service across all your clusters:
 
 ```bash
-$ ./pv --namespace 'istio*' --pod 'prom*'
+$ ./pv --pod 'prom*'
 ```
 
 ![podview screenshot](docs/assets/podview-shot.png)
+
+Pods are listed per cluster, and sorted by `creationTimestamp` so you will see
+the oldest pods at the top.
+
+Keyboard controls:
+
+* Arrow keys to scroll horizontally or vertically by one character.
+* PageUp/PageDown to scroll vertically by half a page.
