@@ -2,13 +2,13 @@
 
 `kubefs` is a collection of tools created to demystify your kubernetes clusters and make them more accessible to non-expert users.
 
-* `kubefs` is a read-only filesystem that runs in user space and allows you to browse the kubernetes objects in your cluster in a familiar way, as files and directories.
+* `kubefs` is a filesystem that allows you to browse the kubernetes objects in your cluster in a familiar way, as files and directories.
 * `podview` is a curses based terminal ui which gives you a real time view of pods that interest you, across clusters.
 
 
 ## kubefs - a fuse filesystem for browsing k8s clusters
 
-`kubefs` is a read-only filesystem that runs in user space (don't need to be
+`kubefs` is a read-only filesystem that runs in user space (you don't need to be
 `root` to mount it) that allows you to browse objects in your Kubernetes
 clusters.
 
