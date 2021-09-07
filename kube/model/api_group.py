@@ -23,16 +23,18 @@ class ApiGroup:
     We treat each version as an ApiGroup, where `groupVersion` becomes `endpoint`.
     """
 
-    def __init__(self, *, name: str, endpoint: str) -> None:
+    def __init__(self, *, name: str, endpoint: str, version: str) -> None:
         self.name = name
         self.endpoint = endpoint
+        self.version = version
 
     def __repr__(self) -> str:
-        return "<%s name=%r, endpoint=%r>" % (
+        return "<%s name=%r, endpoint=%r, version=%r>" % (
             self.__class__.__name__,
             self.name,
             self.endpoint,
+            self.version,
         )
 
 
-CoreV1 = ApiGroup(name="core", endpoint="/api/v1")
+CoreV1 = ApiGroup(name="core", endpoint="/api/v1", version="v1")

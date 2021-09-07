@@ -1,5 +1,5 @@
 import time
-from typing import Optional
+from typing import List, Optional, Tuple
 
 import dateutil.parser
 
@@ -38,6 +38,45 @@ def mkpayload(*, obj):
     )
 
     return payload
+
+
+def name_api_resources(
+    api_resources: List[ApiResource], want_namespaced_only=False
+) -> List[Tuple[str, ApiResource]]:
+    unique_names = set()
+    named = []
+
+    for api_resource in api_resources:
+        # we don't want to include namespaces because we use it for nesting
+        if api_resource.name == "namespaces":
+            continue
+
+        if want_namespaced_only and not api_resource.namespaced:
+            continue
+
+        # the resource represents a sub-resource, eg. namespaces/status
+        if "/" in api_resource.name:
+            continue
+
+        # the resoure does not support listing
+        if "list" not in api_resource.verbs:
+            continue
+
+        # pods
+        name = api_resource.name
+
+        # pods.metrics.k8s.io
+        if name in unique_names:
+            name = f"{name}.{api_resource.group.name}"
+
+        # pods.metrics.k8s.io.v1beta1
+        if name in unique_names:
+            name = f"{name}.{api_resource.group.version}"
+
+        unique_names.add(name)
+        named.append((name, api_resource))
+
+    return named
 
 
 class KubeClusterGenericResourceDir(Directory):
@@ -84,27 +123,11 @@ class KubeClusterNamespaceDir(Directory):
     def get_entries(self):
         if not self.lazy_entries:
             api_resources = self.facade.list_api_resources()
+            pairs = name_api_resources(api_resources, want_namespaced_only=True)
 
             dirs = []
-            unique_names = set()
 
-            for api_resource in api_resources:
-                if not api_resource.namespaced:
-                    continue
-
-                # the resource represents a sub-resource, eg. namespaces/status
-                if "/" in api_resource.name:
-                    continue
-
-                # the resoure does not support listing
-                if "list" not in api_resource.verbs:
-                    continue
-
-                name = api_resource.name
-                if name in unique_names:
-                    name = api_resource.qualified_name
-                unique_names.add(api_resource.name)
-
+            for name, api_resource in pairs:
                 payload = Payload(name=name)
                 dir = KubeClusterGenericResourceDir.create(
                     payload=payload,

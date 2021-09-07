@@ -215,6 +215,7 @@ class AsyncClient:
                     api_group = ApiGroup(
                         name=name,
                         endpoint=f"/apis/{endpoint}",
+                        version=version_dct["version"],
                     )
                     api_groups.append(api_group)
 

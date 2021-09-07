@@ -4,6 +4,7 @@ from kube.config import Context, KubeConfigCollection
 from kubefs.fs_kubecluster import (
     KubeClusterGenericResourceDir,
     KubeClusterNamespacesDir,
+    name_api_resources,
 )
 from kubefs.fs_model import ONE_DAY, Directory, File, Payload
 
@@ -26,27 +27,11 @@ class KubeConfigClusterDir(Directory):
             )
 
             dirs = [dir]
-            unique_names = set()
 
             api_resources = self.facade.list_api_resources()
-            for api_resource in api_resources:
-                # we don't want to include namespaces because we use it for nesting
-                if api_resource.name == "namespaces":
-                    continue
+            pairs = name_api_resources(api_resources)
 
-                # the resource represents a sub-resource, eg. namespaces/status
-                if "/" in api_resource.name:
-                    continue
-
-                # the resoure does not support listing
-                if "list" not in api_resource.verbs:
-                    continue
-
-                name = api_resource.name
-                if name in unique_names:
-                    name = api_resource.qualified_name
-                unique_names.add(api_resource.name)
-
+            for name, api_resource in pairs:
                 payload = Payload(name=name)
                 dir = KubeClusterGenericResourceDir.create(
                     payload=payload,

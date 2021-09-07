@@ -21,8 +21,6 @@ class ApiResource:
         self.namespaced = namespaced
         self.verbs = verbs
 
-        self.qualified_name = f"{self.name}.{self.group.name}"
-
     def __repr__(self) -> str:
         return "<%s group=%r, kind=%r, name=%r, namespaced=%r, verbs=%r>" % (
             self.__class__.__name__,
