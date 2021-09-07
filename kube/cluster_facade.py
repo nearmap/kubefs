@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Any, List, Optional
 
@@ -27,8 +28,10 @@ class SyncClusterFacade:
 
             all_resources = []
 
-            for group in groups:
-                resources = await client.list_api_resources(group)
+            coros = [client.list_api_resources(group) for group in groups]
+            resource_lists = await asyncio.gather(*coros)
+
+            for resources in resource_lists:
                 all_resources.extend(resources)
 
             return all_resources
