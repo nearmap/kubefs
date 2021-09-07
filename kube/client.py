@@ -248,22 +248,13 @@ class AsyncClient:
             api_resources = []
             for item in items:
                 name = item["name"]
-                verbs = item["verbs"]
-
-                # skip nested resources like 'namespaces/status'
-                if "/" in name:
-                    continue
-
-                # skip resources that cannot be listed
-                # TODO: encode this in ApiResource instead
-                if "list" not in verbs:
-                    continue
 
                 api_resource = ApiResource(
                     group=group,
                     kind=item["kind"],
                     name=name,
                     namespaced=item["namespaced"],
+                    verbs=item["verbs"],
                 )
                 api_resources.append(api_resource)
 

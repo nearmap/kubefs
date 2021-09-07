@@ -30,7 +30,16 @@ class KubeConfigClusterDir(Directory):
 
             api_resources = self.facade.list_api_resources()
             for api_resource in api_resources:
+                # we don't want to include namespaces because we use it for nesting
                 if api_resource.name == "namespaces":
+                    continue
+
+                # the resource represents a sub-resource, eg. namespaces/status
+                if "/" in api_resource.name:
+                    continue
+
+                # the resoure does not support listing
+                if "list" not in api_resource.verbs:
                     continue
 
                 name = api_resource.name

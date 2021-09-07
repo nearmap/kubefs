@@ -86,11 +86,26 @@ class KubeClusterNamespaceDir(Directory):
             api_resources = self.facade.list_api_resources()
 
             dirs = []
+            unique_names = set()
+
             for api_resource in api_resources:
                 if not api_resource.namespaced:
                     continue
 
-                payload = Payload(name=api_resource.name)
+                # the resource represents a sub-resource, eg. namespaces/status
+                if "/" in api_resource.name:
+                    continue
+
+                # the resoure does not support listing
+                if "list" not in api_resource.verbs:
+                    continue
+
+                name = api_resource.name
+                if name in unique_names:
+                    name = api_resource.qualified_name
+                unique_names.add(api_resource.name)
+
+                payload = Payload(name=name)
                 dir = KubeClusterGenericResourceDir.create(
                     payload=payload,
                     context=self.context,
