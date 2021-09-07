@@ -26,13 +26,19 @@ class KubeConfigClusterDir(Directory):
             )
 
             dirs = [dir]
+            unique_names = set()
 
             api_resources = self.facade.list_api_resources()
             for api_resource in api_resources:
                 if api_resource.name == "namespaces":
                     continue
 
-                payload = Payload(name=api_resource.name)
+                name = api_resource.name
+                if name in unique_names:
+                    name = api_resource.qualified_name
+                unique_names.add(api_resource.name)
+
+                payload = Payload(name=name)
                 dir = KubeClusterGenericResourceDir.create(
                     payload=payload,
                     context=self.context,

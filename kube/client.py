@@ -147,7 +147,7 @@ class AsyncClient:
         self, selector: ObjectSelector, watch: bool = False, timeout: int = None
     ) -> str:
         server = self.context.cluster.server
-        prefix = selector.res.endpoint
+        prefix = selector.res.group.endpoint
         name = selector.res.name
         url = f"{server}{prefix}/{name}"
 
@@ -209,13 +209,14 @@ class AsyncClient:
             api_groups = []
             for item in items:
                 name = item["name"]
-                endpoint = item["preferredVersion"]["groupVersion"]
+                for version_dct in item["versions"]:
+                    endpoint = version_dct["groupVersion"]
 
-                api_group = ApiGroup(
-                    name=name,
-                    endpoint=f"/apis/{endpoint}",
-                )
-                api_groups.append(api_group)
+                    api_group = ApiGroup(
+                        name=name,
+                        endpoint=f"/apis/{endpoint}",
+                    )
+                    api_groups.append(api_group)
 
             self.logger.debug("Returning api groups")
             return api_groups
@@ -259,7 +260,7 @@ class AsyncClient:
                     continue
 
                 api_resource = ApiResource(
-                    endpoint=group.endpoint,
+                    group=group,
                     kind=item["kind"],
                     name=name,
                     namespaced=item["namespaced"],

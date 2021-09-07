@@ -1,3 +1,4 @@
+import logging
 from typing import Any, List, Optional
 
 from kube.async_loop import AsyncLoop
@@ -10,32 +11,25 @@ from kube.model.selector import ObjectSelector
 
 
 class SyncClusterFacade:
-    def __init__(self, *, async_loop: AsyncLoop, context: Context) -> None:
+    def __init__(self, *, async_loop: AsyncLoop, context: Context, logger=None) -> None:
         self.async_loop = async_loop
         self.context = context
+        self.logger = logger or logging.getLogger("facade")
 
     def list_api_resources(self) -> List[ApiResource]:
         async def list_resources():
             cluster_loop = await self.async_loop.get_cluster_loop(self.context)
             client = await cluster_loop.get_client()
 
-            # hamfisted solution to the problem of pods/nodes/events being used
-            # by more than one api group
-            names = set()
+            groups = [CoreV1]
+            non_core_groups = await client.list_api_groups()
+            groups.extend(non_core_groups)
 
-            all_resources = await client.list_api_resources(CoreV1)
-            for resource in all_resources:
-                names.add(resource.name)
+            all_resources = []
 
-            groups = await client.list_api_groups()
             for group in groups:
                 resources = await client.list_api_resources(group)
-                for resource in resources:
-                    if resource.name in names:
-                        continue
-
-                    names.add(resource.name)
-                    all_resources.append(resource)
+                all_resources.extend(resources)
 
             return all_resources
 

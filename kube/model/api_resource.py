@@ -1,13 +1,18 @@
+from kube.model.api_group import ApiGroup, CoreV1
+
+
 class ApiResource:
     """Represents a REST resource available on the kube API server."""
 
     def __init__(
-        self, *, endpoint: str, kind: str, name: str, namespaced: bool
+        self, *, group: ApiGroup, kind: str, name: str, namespaced: bool
     ) -> None:
-        self.endpoint = endpoint
+        self.group = group
         self.kind = kind
         self.name = name
         self.namespaced = namespaced
+
+        self.qualified_name = f"{self.name}.{self.group.name}"
 
     def __repr__(self) -> str:
         return "<%s kind=%r, name=%r, namespaced=%r, endpoint=%r>" % (
@@ -15,11 +20,11 @@ class ApiResource:
             self.kind,
             self.name,
             self.namespaced,
-            self.endpoint,
+            self.group.endpoint,
         )
 
 
-PodKind = ApiResource(endpoint="/api/v1", kind="Pod", name="pods", namespaced=True)
+PodKind = ApiResource(group=CoreV1, kind="Pod", name="pods", namespaced=True)
 NamespaceKind = ApiResource(
-    endpoint="/api/v1", kind="Namespace", name="namespaces", namespaced=False
+    group=CoreV1, kind="Namespace", name="namespaces", namespaced=False
 )
