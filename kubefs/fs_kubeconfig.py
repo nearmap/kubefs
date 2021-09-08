@@ -4,6 +4,7 @@ from kube.config import Context, KubeConfigCollection
 from kubefs.fs_kubecluster import (
     KubeClusterGenericResourceDir,
     KubeClusterNamespacesDir,
+    name_api_resources,
 )
 from kubefs.fs_model import ONE_DAY, Directory, File, Payload
 
@@ -28,11 +29,10 @@ class KubeConfigClusterDir(Directory):
             dirs = [dir]
 
             api_resources = self.facade.list_api_resources()
-            for api_resource in api_resources:
-                if api_resource.name == "namespaces":
-                    continue
+            pairs = name_api_resources(api_resources)
 
-                payload = Payload(name=api_resource.name)
+            for name, api_resource in pairs:
+                payload = Payload(name=name)
                 dir = KubeClusterGenericResourceDir.create(
                     payload=payload,
                     context=self.context,
