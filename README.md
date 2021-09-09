@@ -9,6 +9,12 @@ clusters and make them more accessible to non-expert users.
   interest you, across clusters. You can use it to watch code deployments in
   real time, or check up on the health of your workloads.
 
+Requirements:
+
+* Python 3.8.
+* Additional dependencies for `kubefs`:
+  * `fuse` (available on Linux and Mac)
+
 
 
 ## kubefs - a fuse filesystem for browsing k8s clusters
