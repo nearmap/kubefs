@@ -128,12 +128,9 @@ class ModelUpdater:
             model.state.set(
                 value=state.key, ts=ts, is_terminal_state=is_terminal_state, color=color
             )
-            if exit_code is not None:
-                model.exit_code.set(value=exit_code, ts=ts)
-            if message is not None:
-                model.message.set(value=message, ts=ts)
-            if reason is not None:
-                model.reason.set(value=reason, ts=ts)
+            model.exit_code.set(value=exit_code, ts=ts)
+            model.message.set(value=message, ts=ts)
+            model.reason.set(value=reason, ts=ts)
 
     def update_model(self, model: ScreenModel, event: ObjectEvent) -> None:
         context = event.context
