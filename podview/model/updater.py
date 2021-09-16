@@ -3,6 +3,7 @@ import fnmatch
 import logging
 import os
 import time
+from datetime import timedelta
 from typing import List, Tuple
 from urllib.parse import urlparse
 
@@ -15,7 +16,9 @@ from kube.model.object_model.status import (
     ContainerStateTerminated,
     ContainerStateWaiting,
     ContainerStatus,
+    ContainerStatusVariant,
 )
+from podview.common.timekeeping import date_now
 from podview.model.colors import ColorPicker
 from podview.model.model import ContainerModel, PodModel, ScreenModel
 
@@ -128,9 +131,21 @@ class ModelUpdater:
             model.state.set(
                 value=state.key, ts=ts, is_terminal_state=is_terminal_state, color=color
             )
-            model.exit_code.set(value=exit_code, ts=ts)
-            model.message.set(value=message, ts=ts)
-            model.reason.set(value=reason, ts=ts)
+            model.exit_code.set(value=exit_code or 0, ts=ts)
+            model.message.set(value=message or "", ts=ts)
+            model.reason.set(value=reason or "", ts=ts)
+
+    def init_container_terminated_long_ago(self, cont: ContainerStatus) -> bool:
+        if (
+            cont.variant == ContainerStatusVariant.INIT_CONTAINER
+            and isinstance(cont.state, ContainerStateTerminated)
+            and cont.state.exitCode == 0
+            and cont.state.finishedAt is not None
+            and date_now() - cont.state.finishedAt > timedelta(hours=1)
+        ):
+            return True
+
+        return False
 
     def update_model(self, model: ScreenModel, event: ObjectEvent) -> None:
         context = event.context
@@ -152,11 +167,18 @@ class ModelUpdater:
             pod_model.deletion_timestamp.set(value=pod.meta.deletionTimestamp, ts=ts)
         self.update_pod_phase(event, pod, pod_model)
 
-        for cont in pod.status.containerStatuses:
+        conts = pod.status.initContainerStatuses + pod.status.containerStatuses
+        for cont in conts:
+            # hide init containers that terminated successfully >1h ago
+            if self.init_container_terminated_long_ago(cont):
+                pod_model.delete_container(cont.name)
+                continue
+
             cont_image_name, cont_image_hash = self.parse_imageID(cont.imageID)
             cont_image_tag = self.parse_image(cont.image)
 
             container_model = pod_model.get_container(cont.name)
+            container_model.variant.set(cont.variant, ts=ts)
             container_model.ready.set(value=cont.ready, ts=ts)
             if cont.started is not None:
                 container_model.started.set(value=cont.started, ts=ts)
