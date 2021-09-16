@@ -131,9 +131,9 @@ class ModelUpdater:
             model.state.set(
                 value=state.key, ts=ts, is_terminal_state=is_terminal_state, color=color
             )
-            model.exit_code.set(value=exit_code, ts=ts)
-            model.message.set(value=message, ts=ts)
-            model.reason.set(value=reason, ts=ts)
+            model.exit_code.set(value=exit_code or 0, ts=ts)
+            model.message.set(value=message or "", ts=ts)
+            model.reason.set(value=reason or "", ts=ts)
 
     def init_container_terminated_long_ago(self, cont: ContainerStatus) -> bool:
         if (
