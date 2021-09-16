@@ -1,3 +1,4 @@
+import enum
 from datetime import datetime
 from typing import List, Optional
 
@@ -47,8 +48,15 @@ def parse_container_state(obj: RawObject) -> Optional[ContainerState]:
     return None
 
 
+class ContainerStatusVariant(enum.Enum):
+    INIT_CONTAINER = 1
+    STANDARD_CONTAINER = 2
+
+
 class ContainerStatus:
-    def __init__(self, obj: RawObject) -> None:
+    def __init__(self, variant: ContainerStatusVariant, obj: RawObject) -> None:
+        self.variant = variant
+
         self.name: str = obj["name"]
         self.ready: bool = obj["ready"]
         self.restartCount: int = obj["restartCount"]
@@ -83,10 +91,16 @@ class PodStatus(ObjectStatus):
         self.reason: Optional[str] = None
         self.message: Optional[str] = None
         self.containerStatuses: List[ContainerStatus] = []
+        self.initContainerStatuses: List[ContainerStatus] = []
 
         self.startTime = maybe_parse_date(self._status.get("startTime"))
         self.message = self._status.get("message")
         self.reason = self._status.get("reason")
         self.containerStatuses = [
-            ContainerStatus(cont) for cont in self._status.get("containerStatuses", [])
+            ContainerStatus(ContainerStatusVariant.STANDARD_CONTAINER, cont)
+            for cont in self._status.get("containerStatuses", [])
+        ]
+        self.initContainerStatuses = [
+            ContainerStatus(ContainerStatusVariant.INIT_CONTAINER, cont)
+            for cont in self._status.get("initContainerStatuses", [])
         ]

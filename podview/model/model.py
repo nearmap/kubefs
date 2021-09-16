@@ -4,12 +4,15 @@ from datetime import datetime
 from typing import Dict, List
 
 from kube.config import Context
+from kube.model.object_model.status import ContainerStatusVariant
 from podview.model.value import Value
 
 
 class ContainerModel:
     def __init__(self, name: str) -> None:
         self.name = name
+
+        self.variant: Value[ContainerStatusVariant] = Value()
 
         self.ready: Value[bool] = Value()
         self.started: Value[bool] = Value()
@@ -48,8 +51,27 @@ class PodModel:
 
     def iter_containers(self) -> List[ContainerModel]:
         containers = list(self.containers.values())
-        containers.sort(key=lambda cont: cont.name)
+
+        init_conts = [
+            cont
+            for cont in containers
+            if cont.variant.current_value == ContainerStatusVariant.INIT_CONTAINER
+        ]
+        init_conts.sort(key=lambda cont: cont.name)
+
+        std_conts = [
+            cont
+            for cont in containers
+            if cont.variant.current_value == ContainerStatusVariant.STANDARD_CONTAINER
+        ]
+        std_conts.sort(key=lambda cont: cont.name)
+
+        # list init containers first
+        containers = init_conts + std_conts
         return containers
+
+    def delete_container(self, name: str) -> None:
+        self.containers.pop(name, None)
 
 
 class ClusterModel:
