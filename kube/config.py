@@ -11,6 +11,21 @@ import yaml
 from kube.tools.repr import disp_secret_blob, disp_secret_string
 
 
+class ExecCmd:
+    def __init__(self, *, command: str, args: List[str], env: Dict[str, str]) -> None:
+        self.command = command
+        self.args = args
+        self.env = env
+
+    def __repr__(self) -> str:
+        return "<%s command=%r, args=%r, env=%r>" % (
+            self.__class__.__name__,
+            self.command,
+            self.args,
+            self.env,
+        )
+
+
 class User:
     def __init__(
         self,
@@ -22,6 +37,7 @@ class User:
         client_key_path: Optional[str],
         client_cert_data: Optional[str],
         client_key_data: Optional[str],
+        exec: Optional[ExecCmd],
     ) -> None:
         self.name = name
         self.username = username
@@ -30,6 +46,7 @@ class User:
         self.client_key_path = client_key_path
         self.client_cert_data = client_cert_data
         self.client_key_data = client_key_data
+        self.exec = exec
 
         # host.company.com -> host
         self.short_name = name.split(".")[0]
@@ -38,7 +55,8 @@ class User:
         return (
             "<%s name=%r, username=%r, password=%s, "
             "client_cert_path=%r, client_key_path=%r, "
-            "client_cert_data=%s, client_key_data=%s>"
+            "client_cert_data=%s, client_key_data=%s, "
+            "exec=%r>"
         ) % (
             self.__class__.__name__,
             self.name,
@@ -48,6 +66,7 @@ class User:
             self.client_key_path,
             disp_secret_blob(self.client_cert_data),
             disp_secret_blob(self.client_key_data),
+            self.exec,
         )
 
     def get_attribute_names(self) -> List[str]:
@@ -350,9 +369,25 @@ class KubeConfigLoader:
         client_key_path = obj.get("client-key")
         client_cert_data = obj.get("client-certificate-data")
         client_key_data = obj.get("client-key-data")
+        exec_obj = obj.get("exec")
 
         # 'name' is the only required attribute
         if name:
+            exec = None
+            if exec_obj:
+                command = exec_obj.get("command")
+                args = exec_obj.get("args") or []
+                env_map = exec_obj.get("env") or {}
+
+                env = {}
+                for item_dct in env_map:
+                    key = item_dct.get("name")
+                    value = item_dct.get("value")
+                    if key and value:
+                        env[key] = value
+
+                exec = ExecCmd(command=command, args=args, env=env)
+
             return User(
                 name=name,
                 username=username,
@@ -361,6 +396,7 @@ class KubeConfigLoader:
                 client_key_path=client_key_path,
                 client_cert_data=client_cert_data,
                 client_key_data=client_key_data,
+                exec=exec,
             )
 
         return None
