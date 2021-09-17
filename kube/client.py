@@ -4,10 +4,10 @@ import logging
 import re
 from asyncio.exceptions import TimeoutError
 from asyncio.locks import Lock
-from typing import Any, List, Optional
+from typing import Any, List
 from urllib.parse import urlencode
 
-from aiohttp import BasicAuth, ClientSession
+from aiohttp import ClientSession
 from aiohttp.client import ClientTimeout
 from aiohttp.client_exceptions import (
     ClientConnectorCertificateError,
@@ -19,6 +19,7 @@ from aiohttp.client_exceptions import (
     TooManyRedirects,
 )
 
+from kube.auth import AuthProvider
 from kube.channels.objects import OEvSender
 from kube.config import Context
 from kube.events.objects import Action, ObjectEvent
@@ -71,18 +72,10 @@ class AsyncClient:
         self.logger = logger or logging.getLogger("client")
 
         self.ssl_context = self.context.create_ssl_context()
-        self.basic_auth = self.create_basic_auth(context)
+        self.auth_provider = AuthProvider(context)
 
         self.resource_version_lock = Lock()
         self.resource_version = 0
-
-    def create_basic_auth(self, context: Context) -> Optional[BasicAuth]:
-        if context.user.username and context.user.password:
-            return BasicAuth(
-                login=context.user.username, password=context.user.password
-            )
-
-        return None
 
     # Logging
 
@@ -188,7 +181,7 @@ class AsyncClient:
 
         kwargs = dict(
             ssl_context=self.ssl_context,
-            auth=self.basic_auth,
+            auth=self.auth_provider.get_auth(),
             timeout=ClientTimeout(
                 sock_connect=3,
                 total=15,
@@ -228,7 +221,7 @@ class AsyncClient:
 
         kwargs = dict(
             ssl_context=self.ssl_context,
-            auth=self.basic_auth,
+            auth=self.auth_provider.get_auth(),
             timeout=ClientTimeout(
                 sock_connect=3,
                 total=15,
@@ -270,7 +263,7 @@ class AsyncClient:
 
         kwargs = dict(
             ssl_context=self.ssl_context,
-            auth=self.basic_auth,
+            auth=self.auth_provider.get_auth(),
             timeout=ClientTimeout(
                 sock_connect=3,
                 total=15,
@@ -362,7 +355,7 @@ class AsyncClient:
 
         kwargs = dict(
             ssl_context=self.ssl_context,
-            auth=self.basic_auth,
+            auth=self.auth_provider.get_auth(),
             timeout=ClientTimeout(
                 sock_connect=3,
                 total=300,

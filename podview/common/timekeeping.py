@@ -1,12 +1,10 @@
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Union
 
 import humanize
 
-
-def date_now() -> datetime:
-    return datetime.now(timezone.utc)
+from kube.tools.timekeeping import date_now
 
 
 def elapsed_in_state(dt: Union[float, datetime]) -> str:

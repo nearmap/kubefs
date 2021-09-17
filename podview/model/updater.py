@@ -18,7 +18,7 @@ from kube.model.object_model.status import (
     ContainerStatus,
     ContainerStatusVariant,
 )
-from podview.common.timekeeping import date_now
+from kube.tools.timekeeping import date_now
 from podview.model.colors import ColorPicker
 from podview.model.model import ContainerModel, PodModel, ScreenModel
 
