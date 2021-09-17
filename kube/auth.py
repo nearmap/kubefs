@@ -1,3 +1,4 @@
+import humanize
 import json
 import logging
 import os
@@ -93,6 +94,15 @@ class AuthProvider:
                 expirationTimestamp = status.get("expirationTimestamp")
 
                 expiry_date = parse_date(expirationTimestamp)
+                time_left = humanize.naturaldelta(expiry_date - date_now())
+
+                self.logger.info(
+                    "[%s] Successfully obtained exec credentials valid until: %s, "
+                    "will expire in: %s",
+                    self.context.short_name,
+                    expiry_date,
+                    time_left,
+                )
 
                 auth = BearerAuth(token=token)
                 return AuthContainer(auth=auth, expiry_date=expiry_date)
