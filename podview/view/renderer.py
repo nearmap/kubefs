@@ -87,6 +87,13 @@ class BufferRenderer:
                     self.buffer.write(text=code, color=warn_color)
                     self.buffer.end_line()
 
+                # running but not ready is an anomaly
+                if state in ("running",):
+                    if container.ready.current_value not in (None, True):
+                        code = f"ready: {container.ready.current_value}"
+                        self.buffer.write(text=code, color=warn_color)
+                        self.buffer.end_line()
+
                 # show reason and message if set and not trivial
                 if container.reason.current_value not in (
                     None,
