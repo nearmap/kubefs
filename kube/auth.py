@@ -1,4 +1,3 @@
-import humanize
 import json
 import logging
 import os
@@ -6,6 +5,7 @@ import subprocess
 from datetime import datetime, timedelta
 from typing import Optional, Union
 
+import humanize
 from aiohttp import BasicAuth
 from dateutil.parser import parse as parse_date
 

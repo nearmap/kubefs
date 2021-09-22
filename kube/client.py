@@ -232,7 +232,11 @@ class AsyncClient:
         async with self.session.get(url, allow_redirects=True, **kwargs) as response:
 
             self.logger.debug("Parsing %s api resource response as json", group.name)
-            js = await response.json()
+            try:
+                js = await response.json()
+            except Exception:
+                self.logger.error("error: %s", response)
+                raise
 
             # may raise
             self.maybe_parse_error(js)
