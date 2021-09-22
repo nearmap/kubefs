@@ -58,6 +58,7 @@ class ColorPicker:
     _warn_color = Color(fg="dark_orange")
 
     _dim_color = Color(fg="grey_70")
+    _dimmer_color = Color(fg="grey_46")
 
     _waiting_color = Color(fg="gold_3b")
     _in_progress_color = Color(fg="deep_sky_blue_1")
@@ -74,7 +75,8 @@ class ColorPicker:
         "deleted": _stopped_color,
     }
 
-    _container_name_color = _dim_color
+    _init_container_name_color = _dimmer_color
+    _std_container_name_color = _dim_color
 
     _container_state_colors = {
         "waiting": _waiting_color,
@@ -130,8 +132,11 @@ class ColorPicker:
     def get_for_pod_phase(self, phase: str) -> Color:
         return self._pod_phase_colors[phase]
 
-    def get_for_container_name(self) -> Color:
-        return self._container_name_color
+    def get_for_container_name_init(self) -> Color:
+        return self._init_container_name_color
+
+    def get_for_container_name_std(self) -> Color:
+        return self._std_container_name_color
 
     def get_for_container_state(self, state: str) -> Color:
         return self._container_state_colors[state]

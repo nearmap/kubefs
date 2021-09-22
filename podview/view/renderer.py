@@ -1,3 +1,4 @@
+from kube.model.object_model.status import ContainerStatusVariant
 from podview.model.colors import ColorPicker
 from podview.model.model import ContainerModel, PodModel, ScreenModel
 from podview.view.buffer import ScreenBuffer, TextAlign
@@ -52,7 +53,10 @@ class BufferRenderer:
         self.buffer.write(text=label, width=self.status_width, color=color)
 
         with self.buffer.indent(width=3):
-            name_color = self.color_picker.get_for_container_name()
+            name_color = self.color_picker.get_for_container_name_std()
+            if container.variant.current_value is ContainerStatusVariant.INIT_CONTAINER:
+                name_color = self.color_picker.get_for_container_name_init()
+
             self.buffer.write(text=f"{container.name}", color=name_color)
 
             wid = self.cont_name_width + 1 + (20)  # ' ' tag
