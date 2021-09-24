@@ -17,6 +17,30 @@ Requirements:
 
 
 
+## Getting started
+
+### Ubuntu
+
+If you see errors related to some version of "ensurepip is not available" when
+running the scripts below you may need to do the following (the error message
+should tell you which version of Python you have installed):
+
+```bash
+$ sudo apt install python3.8-venv
+```
+
+That should be all you need for `podview`.
+
+For `kubefs` you also need the packages `fuse` and `libfuse2` but they are
+already pre-installed on a vanilla Ubuntu 20.04. If they are not you will need
+to do:
+
+```bash
+$ sudo apt install fuse libfuse2
+```
+
+
+
 ## kubefs - a fuse filesystem for browsing k8s clusters
 
 `kubefs` is a **read-only** filesystem that runs in user space (you don't need
