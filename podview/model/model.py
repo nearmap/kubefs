@@ -30,6 +30,8 @@ class ContainerModel:
 
         # self.last_state: Value[str] = Value()
 
+        self.is_visible: bool = True
+
 
 class PodModel:
     def __init__(self, name: str) -> None:
@@ -42,6 +44,8 @@ class PodModel:
         self.reason: Value[str] = Value()
         self.message: Value[str] = Value()
         self.image_hash: Value[str] = Value()
+
+        self.is_visible: bool = True
 
     def get_container(self, name: str) -> ContainerModel:
         container = self.containers.get(name)

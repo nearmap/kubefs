@@ -217,14 +217,12 @@ class ModelUpdater:
             for pod in cluster.iter_pods():
                 # hide pods that were deleted >1h ago
                 if self.pod_deleted_long_ago(pod):
-                    cluster.delete_pod(pod.name)
-                    continue
+                    pod.is_visible = False
 
                 for cont in pod.iter_containers():
                     # hide init containers that terminated successfully >1h ago
                     if self.init_container_terminated_long_ago(cont):
-                        pod.delete_container(cont.name)
-                        continue
+                        cont.is_visible = False
 
     # Event processing
 

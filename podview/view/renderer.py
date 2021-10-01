@@ -149,6 +149,9 @@ class BufferRenderer:
 
         with self.buffer.indent(width=2):
             for container in containers:
+                if not container.is_visible:
+                    continue
+
                 self.render_container(container, cont_name_width)
 
     def render(self) -> ScreenBuffer:
@@ -181,6 +184,9 @@ class BufferRenderer:
 
             with self.buffer.indent(width=3):
                 for pod in cluster.iter_pods():
+                    if not pod.is_visible:
+                        continue
+
                     self.render_pod(pod)
 
         return self.buffer
