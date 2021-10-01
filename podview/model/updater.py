@@ -38,6 +38,8 @@ class ModelUpdater:
 
         self.color_picker = ColorPicker.get_instance()
 
+    # Model updates
+
     def parse_image(self, image_url) -> str:
         _, _, digest = image_url.partition(":")
         return digest
@@ -110,6 +112,9 @@ class ModelUpdater:
             message = None
             reason = None
 
+            started_at = None
+            finished_at = None
+
             if isinstance(state, ContainerStateWaiting):
                 message = state.message
                 reason = state.reason
@@ -123,6 +128,9 @@ class ModelUpdater:
                 message = state.message
                 reason = state.reason
 
+                started_at = state.startedAt
+                finished_at = state.finishedAt
+
             if dt is not None:
                 ts = dt.timestamp()
 
@@ -135,17 +143,10 @@ class ModelUpdater:
             model.message.set(value=message or "", ts=ts)
             model.reason.set(value=reason or "", ts=ts)
 
-    def init_container_terminated_long_ago(self, cont: ContainerStatus) -> bool:
-        if (
-            cont.variant == ContainerStatusVariant.INIT_CONTAINER
-            and isinstance(cont.state, ContainerStateTerminated)
-            and cont.state.exitCode == 0
-            and cont.state.finishedAt is not None
-            and date_now() - cont.state.finishedAt > timedelta(hours=1)
-        ):
-            return True
-
-        return False
+            if started_at:
+                model.started_at.set(value=started_at, ts=ts)
+            if finished_at:
+                model.finished_at.set(value=finished_at, ts=ts)
 
     def update_model(self, model: ScreenModel, event: ObjectEvent) -> None:
         context = event.context
@@ -169,11 +170,6 @@ class ModelUpdater:
 
         conts = pod.status.initContainerStatuses + pod.status.containerStatuses
         for cont in conts:
-            # hide init containers that terminated successfully >1h ago
-            if self.init_container_terminated_long_ago(cont):
-                pod_model.delete_container(cont.name)
-                continue
-
             cont_image_name, cont_image_hash = self.parse_imageID(cont.imageID)
             cont_image_tag = self.parse_image(cont.image)
 
@@ -191,6 +187,46 @@ class ModelUpdater:
                 pod_model.image_hash.set(value=cont_image_hash, ts=ts)
             elif cont.name.startswith(pod.meta.name):
                 pod_model.image_hash.set(value=cont_image_hash, ts=ts)
+
+    # Garbage collection
+
+    def init_container_terminated_long_ago(self, cont: ContainerModel) -> bool:
+        if (
+            cont.variant.current_value == ContainerStatusVariant.INIT_CONTAINER
+            and cont.state.current_value == "terminated"
+            and cont.exit_code.current_value == 0
+            and cont.finished_at.current_value is not None
+            and date_now() - cont.finished_at.current_value > timedelta(hours=1)
+        ):
+            return True
+
+        return False
+
+    def pod_deleted_long_ago(self, pod: PodModel) -> bool:
+        if (
+            pod.phase.current_value == "deleted"
+            and pod.deletion_timestamp.current_value is not None
+            and date_now() - pod.deletion_timestamp.current_value > timedelta(hours=1)
+        ):
+            return True
+
+        return False
+
+    def garbage_collect(self, model: ScreenModel) -> None:
+        for cluster in model.iter_clusters():
+            for pod in cluster.iter_pods():
+                # hide pods that were deleted >1h ago
+                if self.pod_deleted_long_ago(pod):
+                    cluster.delete_pod(pod.name)
+                    continue
+
+                for cont in pod.iter_containers():
+                    # hide init containers that terminated successfully >1h ago
+                    if self.init_container_terminated_long_ago(cont):
+                        pod.delete_container(cont.name)
+                        continue
+
+    # Event processing
 
     def filter_event(self, event: ObjectEvent) -> bool:
         if isinstance(event.object, Exception):
@@ -221,3 +257,7 @@ class ModelUpdater:
                     self.update_model(model, event)
 
             time.sleep(pause)
+
+        # garbage collect in case anything in the model (either pre-existing or
+        # just added in the update) should not be displayed
+        self.garbage_collect(model)

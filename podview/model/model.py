@@ -25,6 +25,9 @@ class ContainerModel:
         self.reason: Value[str] = Value()
         self.message: Value[str] = Value()
 
+        self.started_at: Value[datetime] = Value()
+        self.finished_at: Value[datetime] = Value()
+
         # self.last_state: Value[str] = Value()
 
 
@@ -94,6 +97,9 @@ class ClusterModel:
         pods = list(self.pods.values())
         pods.sort(key=lambda pod: (pod.creation_timestamp.current_value, pod.name))
         return pods
+
+    def delete_pod(self, name: str) -> None:
+        self.pods.pop(name, None)
 
 
 class ScreenModel:
