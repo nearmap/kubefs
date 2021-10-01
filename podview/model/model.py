@@ -25,7 +25,12 @@ class ContainerModel:
         self.reason: Value[str] = Value()
         self.message: Value[str] = Value()
 
+        self.started_at: Value[datetime] = Value()
+        self.finished_at: Value[datetime] = Value()
+
         # self.last_state: Value[str] = Value()
+
+        self.is_visible: bool = True
 
 
 class PodModel:
@@ -39,6 +44,8 @@ class PodModel:
         self.reason: Value[str] = Value()
         self.message: Value[str] = Value()
         self.image_hash: Value[str] = Value()
+
+        self.is_visible: bool = True
 
     def get_container(self, name: str) -> ContainerModel:
         container = self.containers.get(name)
@@ -94,6 +101,9 @@ class ClusterModel:
         pods = list(self.pods.values())
         pods.sort(key=lambda pod: (pod.creation_timestamp.current_value, pod.name))
         return pods
+
+    def delete_pod(self, name: str) -> None:
+        self.pods.pop(name, None)
 
 
 class ScreenModel:
