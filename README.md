@@ -29,6 +29,13 @@ should tell you which version of Python you have installed):
 $ sudo apt install python3.8-venv
 ```
 
+If you have a partially created virtual env at this point, destroy it so it can
+be recreated:
+
+```bash
+$ rm -rf .ve/
+```
+
 That should be all you need for `podview`.
 
 For `kubefs` you also need the packages `fuse` and `libfuse2` but they are
@@ -119,6 +126,10 @@ If you see errors try 'rm -rf .ve/' and re-run this script.
 DEBUG:fuse.log-mixin:-> init / ()
 DEBUG:fuse.log-mixin:<- init None
 ```
+
+If during the virtualenv creation you see (red) error output containing
+something like `invalid command 'bdist_wheel'` this is not a fatal error and you
+can ignore it.
 
 
 
