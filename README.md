@@ -1,4 +1,10 @@
-## Quickstart
+## Getting started
+
+Requirements:
+​
+* Python 3.8.
+* Additional dependencies for `kubefs`:
+  * `fuse` (available on Linux and Mac)
 
 
 ### Ubuntu
@@ -27,15 +33,15 @@ These scripts automate the manual setup below:
 
 ```bash
 # kubefs
-$ mkdir ~/kubeview
+$ mkdir -p ~/kubeview
 $ ./kfs ~/kubeview
 
 # podview
 $ ./pv
 ```
 
-They basically manage the virtual environment for you, so they have to be run
-outside of the virtual environment.
+They basically manage the virtual environment for you, so they *have to be run
+outside of the virtual environment*.
 
 The scripts assume that you either:
 - Don't have a virtual environment in `.ve/` at all (it will setup it up for
@@ -87,7 +93,7 @@ Finally, make sure kubefs and podview can be started without errors:
 
 ```bash
 # kubefs
-(kubefs) $ mkdir ~/kubeview
+(kubefs) $ mkdir -p ~/kubeview
 (kubefs) $ bin/kubefs ~/kubeview
 
 # podview
