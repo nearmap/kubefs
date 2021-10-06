@@ -15,7 +15,7 @@ Requirements:
 Let's first check the version of your system Python:
 
 ```bash
-$ python -V
+$ python3 -V
 Python 3.8.10
 ```
 
@@ -28,6 +28,12 @@ $ sudo apt install fuse libfuse2 python3.8-venv
 
 
 ### Project setup (the scripted way)
+
+Clone the repository:
+
+```bash
+$ git clone https://github.com/nearmap/kubefs
+```
 
 These scripts automate the manual setup below:
 
@@ -53,6 +59,12 @@ re-run them.
 
 
 ### Project setup (the manual way)
+
+Clone the repository:
+
+```bash
+$ git clone https://github.com/nearmap/kubefs
+```
 
 If you are using `virtualenvwrapper` create the virtual environment - this will
 also activate it:
