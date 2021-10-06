@@ -55,8 +55,12 @@ The scripts assume that you either:
   you), or
 - You have a fully populated virtual environment in `.ve/`
 
-If you encounter errors when using these scripts it's best to `rm -rf .ve` and
-re-run them.
+If during the virtualenv creation you see (red) error output containing
+something like invalid command 'bdist_wheel' this is not a fatal error and you
+can ignore it.
+
+If you encounter (othr) errors when using these scripts it's best to `rm -rf
+.ve` and re-run them.
 
 
 ### Project setup (the manual way)
