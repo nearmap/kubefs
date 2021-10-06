@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 
 import errno
-import logging
 import os
 
 import fuse
 
-from kube.async_loop import launch_in_background_thread
 from kube.config import KubeConfigLoader
 from kubefs.fs_kubeconfig import (
     KubeConfigClustersDir,
@@ -83,19 +81,3 @@ class KubernetesFs(fuse.LoggingMixIn, fuse.Operations):
             raise fuse.FuseOSError(errno.EIO)
 
         return entry.read(size, offset)
-
-
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("mount_point")
-    args = parser.parse_args()
-
-    async_loop = launch_in_background_thread()
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(threadName)s %(levelname)s %(name)s %(message)s)",
-    )
-    fuse = fuse.FUSE(KubernetesFs(), args.mount_point, foreground=True)

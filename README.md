@@ -1,166 +1,68 @@
-# User friendly kubernetes tools
+## Quickstart
 
-This project is a collection of tools created to demystify your kubernetes
-clusters and make them more accessible to non-expert users.
-
-* `kubefs` is a filesystem that allows you to browse the kubernetes objects in
-  your cluster in a familiar way, as files and directories.
-* `podview` is a terminal program which gives you a real time view of pods that
-  interest you, across clusters. You can use it to watch code deployments in
-  real time, or check up on the health of your workloads.
-
-Requirements:
-
-* Python 3.8.
-* Additional dependencies for `kubefs`:
-  * `fuse` (available on Linux and Mac)
-
-
-
-## Getting started
 
 ### Ubuntu
 
-If you see errors related to some version of "ensurepip is not available" when
-running the scripts below you may need to do the following (the error message
-should tell you which version of Python you have installed):
+
+#### System packages
+
+Let's first check the version of your system Python:
 
 ```bash
-$ sudo apt install python3.8-venv
+$ python -V
+Python 3.8.10
 ```
 
-If you have a partially created virtual env at this point, destroy it so it can
-be recreated:
+Install the fuse packages and the python-venv package matching your installed
+version:
 
 ```bash
-$ rm -rf .ve/
-```
-
-That should be all you need for `podview`.
-
-For `kubefs` you also need the packages `fuse` and `libfuse2` but they are
-already pre-installed on a vanilla Ubuntu 20.04. If they are not you will need
-to do:
-
-```bash
-$ sudo apt install fuse libfuse2
+$ apt install fuse libfuse2 python3.8-venv
 ```
 
 
+#### Project setup (the manual way)
 
-## kubefs - a fuse filesystem for browsing k8s clusters
-
-`kubefs` is a **read-only** filesystem that runs in user space (you don't need
-to be `root` to mount it) that allows you to browse objects in your Kubernetes
-clusters.
-
-![kubefs screenshot](docs/assets/kubefs-shot.png)
-
-It loads your kube config(s) from `$KUBECONFIG` or `~/.kube` and uses that to
-present a top level view for you to navigate:
+If you are using `virtualenvwrapper` create the virtual environment - this will
+also activate it:
 
 ```bash
-$ ls -p ~/kubeview
-clusters/
-contexts/
-users/
+$ mkvirtualenv --python $(which python3) kubefs
+(kubefs) $
 ```
 
-You can use this to explore the cluster:
+When you come back to the project later on re-activate it by doing:
 
 ```bash
-$ ls -p ~/kubeview/clusters
-minikube/
-
-$ ls -p ~/kubeview/clusters/minikube
-configmaps/
-deployments/
-endpoints/
-namespaces/
-nodes/
-pods/
-replicasets/
-secrets/
-services/
-
-$ ls -p ~/kubeview/clusters/minikube/pods
-coredns-74ff55c5b-xd6nf
-etcd-minikube
-kube-apiserver-minikube
-kube-controller-manager-minikube
-kube-proxy-66s6j
-kube-scheduler-minikube
-storage-provisioner
-
-$ head ~/kubeview/clusters/minikube/pods/etcd-minikube
-{
-    "api_version": "v1",
-    "kind": "Pod",
-    "metadata": {
-        "annotations": {
-...
+$ workon kubefs
+(kubefs) $
 ```
 
-Behind the scenes, `kubefs` makes requests to the k8s API server to fetch all
-these objects and populate the filesystem. This can be slow, so directory
-entries are cached.
-
-
-### Quickstart
-
-`kubefs` requires a few libraries to run. The script `kfs` sets all this up on
-the first run, so that's all you need. `kubefs` runs in the foreground, so once
-you launch it it mounts the filesystem and keeps running until you stop it.
-When you stop it, the filesystem is umounted.
-
-Mounting the filesystem:
+If you prefer not to use `virtualenvwrapper` create the virtual environment by
+doing:
 
 ```bash
-# create a mount point
+$ python3 -m venv .ve
+```
+
+Activate it by doing:
+
+```bash
+$ . .ve/bin/activate
+(kubefs) $
+```
+
+Once you've activated the virtual environment install the dependencies into it:
+
+```bash
+$ pip install -r requirements.txt
+```
+
+Finally, make sure kubefs and podview can be started without errors:
+
+```bash
+$ bin/podview
+
 $ mkdir ~/kubeview
-
-# mount the filesystem there
-$ ./kfs ~/kubeview
-Re-using existing virtualenv at: .ve/ and assuming it's up to date.
-If you see errors try 'rm -rf .ve/' and re-run this script.
-DEBUG:fuse.log-mixin:-> init / ()
-DEBUG:fuse.log-mixin:<- init None
+$ bin/kubefs ~/kubeview
 ```
-
-If during the virtualenv creation you see (red) error output containing
-something like `invalid command 'bdist_wheel'` this is not a fatal error and you
-can ignore it.
-
-
-
-## podview
-
-`podview` is a curses based terminal program which gives you a real time view of the
-pods that you want to see.
-
-It loads your kube config(s) from `$KUBECONFIG` or `~/.kube` and uses that to
-detect all your clusters. You can then filter on:
-
-* cluster name using `-c` / `--cluster`
-* namespace name using `-n` / `--namespace`
-* pod name using `-p` / `--pod`
-
-A very common case is watching the state of pods for a particular
-workload/service across all your clusters:
-
-```bash
-$ ./pv --pod 'prom*'
-```
-
-![podview screenshot](docs/assets/podview-shot.png)
-
-On startup `podview` first lists all the pods matching your filter, and then
-proceeds to watch them for updates.
-
-Pods are listed per cluster, and sorted by `creationTimestamp` so you will see
-the oldest pods at the top.
-
-Keyboard controls:
-
-* Arrow keys to scroll horizontally or vertically by one character.
-* PageUp/PageDown to scroll vertically by half a page.
