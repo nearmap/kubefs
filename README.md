@@ -4,7 +4,7 @@ Requirements:
 ​
 * Python 3.8 or later.
 * Additional dependencies for `kubefs` (not required for `podview`):
-  * `fuse` (available on Linux and Mac)
+  * `fuse` (available on Linux and [Mac](https://osxfuse.github.io/))
 
 
 ### Ubuntu
