@@ -31,10 +31,13 @@ $ mkdir ~/kubeview
 $ ./kfs ~/kubeview
 
 # podview
-./pv
+$ ./pv
 ```
 
-Both of these scripts assume that you either:
+They basically manage the virtual environment for you, so they have to be run
+outside of the virtual environment.
+
+The scripts assume that you either:
 - Don't have a virtual environment in `.ve/` at all (it will setup it up for
   you), or
 - You have a fully populated virtual environment in `.ve/`
