@@ -117,7 +117,7 @@ Finally, make sure kubefs and podview can be started without errors:
 
 ### Troubleshooting
 
-Q. While creating/installing dependencies into a virtual environment I see
+### While creating/installing dependencies into a virtual environment I see
 errors in red, something about `Failed building wheel`. What do I do?
 
 These are not fatal errors and you can ignore them.
