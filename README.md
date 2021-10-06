@@ -55,9 +55,6 @@ The scripts assume that you either:
   you), or
 - You have a fully populated virtual environment in `.ve/`
 
-If you encounter errors when using these scripts it's best to `rm -rf
-.ve` and re-run them.
-
 
 ### Project setup (the manual way)
 
@@ -117,7 +114,23 @@ Finally, make sure kubefs and podview can be started without errors:
 
 ### Troubleshooting
 
-**Q. While creating/installing dependencies into a virtual environment I see
-errors in red, something about `Failed building wheel`. What do I do?**
+**While creating/installing dependencies into a virtual environment I see
+errors in red, something about `Failed building wheel`.**
 
 These are not fatal errors and you can ignore them.
+
+**When running `kubefs` or `podview` I get `FileNotFoundError: [Error 2] No such
+file or directory: '/home/user/.kube'`.**
+
+Your kube config files could not be detected.
+
+If you have `$KUBECONFIG` set make sure it's pointing at one or more valid kube
+config files, eg. `KUBECONFIG=~/.kube/cluster1;~/.kube/cluster2`.
+
+Otherwise, make sure that your `~/.kube` directory contains at least one valid
+kube config file.
+
+
+
+If you encounter errors when using these scripts it's best to `rm -rf
+.ve` and re-run them.
