@@ -33,6 +33,7 @@ Clone the repository:
 
 ```bash
 $ git clone https://github.com/nearmap/kubefs
+$ cd kubefs
 ```
 
 These scripts automate the manual setup below:
@@ -64,6 +65,7 @@ Clone the repository:
 
 ```bash
 $ git clone https://github.com/nearmap/kubefs
+$ cd kubefs
 ```
 
 If you are using `virtualenvwrapper` create the virtual environment - this will
