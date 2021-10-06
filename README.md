@@ -55,11 +55,7 @@ The scripts assume that you either:
   you), or
 - You have a fully populated virtual environment in `.ve/`
 
-If during the virtualenv creation you see (red) error output containing
-something like `invalid command 'bdist_wheel'` this is not a fatal error and you
-can ignore it.
-
-If you encounter (other) errors when using these scripts it's best to `rm -rf
+If you encounter errors when using these scripts it's best to `rm -rf
 .ve` and re-run them.
 
 
@@ -118,3 +114,10 @@ Finally, make sure kubefs and podview can be started without errors:
 (kubefs) $ bin/podview
 ```
 
+
+### Troubleshooting
+
+Q. While creating/installing dependencies into a virtual environment I see
+errors in red, something about `Failed building wheel`. What do I do?
+
+These are not fatal errors and you can ignore them.
