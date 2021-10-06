@@ -21,7 +21,29 @@ $ apt install fuse libfuse2 python3.8-venv
 ```
 
 
-#### Project setup (the manual way)
+### Project setup (the scripted way)
+
+These scripts automate the whole manual setup below:
+
+```bash
+# kubefs
+$ mkdir ~/kubeview
+$ ./kfs ~/kubeview
+
+# podview
+./pv
+```
+
+Both of these scripts assume that you either:
+- Don't havea virtual environment in `.ve/` at all (it will setup it up for
+  you), or
+- You have a fully populated virtual environment in `.ve/`
+
+If you encounter errors when using these scripts it's best to `rm -rf .ve` and
+re-run them.
+
+
+### Project setup (the manual way)
 
 If you are using `virtualenvwrapper` create the virtual environment - this will
 also activate it:
@@ -66,3 +88,4 @@ $ bin/podview
 $ mkdir ~/kubeview
 $ bin/kubefs ~/kubeview
 ```
+
