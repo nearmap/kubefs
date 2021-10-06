@@ -2,7 +2,7 @@
 
 Requirements:
 ​
-* Python 3.8.
+* Python 3.8 or later.
 * Additional dependencies for `kubefs`:
   * `fuse` (available on Linux and Mac)
 
