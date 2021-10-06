@@ -17,13 +17,13 @@ Install the fuse packages and the python-venv package matching your installed
 version:
 
 ```bash
-$ apt install fuse libfuse2 python3.8-venv
+$ sudo apt install fuse libfuse2 python3.8-venv
 ```
 
 
 ### Project setup (the scripted way)
 
-These scripts automate the whole manual setup below:
+These scripts automate the manual setup below:
 
 ```bash
 # kubefs
@@ -35,7 +35,7 @@ $ ./kfs ~/kubeview
 ```
 
 Both of these scripts assume that you either:
-- Don't havea virtual environment in `.ve/` at all (it will setup it up for
+- Don't have a virtual environment in `.ve/` at all (it will setup it up for
   you), or
 - You have a fully populated virtual environment in `.ve/`
 
@@ -77,15 +77,17 @@ $ . .ve/bin/activate
 Once you've activated the virtual environment install the dependencies into it:
 
 ```bash
-$ pip install -r requirements.txt
+(kubefs) $ pip install -r requirements.txt
 ```
 
 Finally, make sure kubefs and podview can be started without errors:
 
 ```bash
-$ bin/podview
+# kubefs
+(kubefs) $ mkdir ~/kubeview
+(kubefs) $ bin/kubefs ~/kubeview
 
-$ mkdir ~/kubeview
-$ bin/kubefs ~/kubeview
+# podview
+(kubefs) $ bin/podview
 ```
 
