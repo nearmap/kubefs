@@ -126,7 +126,7 @@ Your kube config files could not be detected.
 
 If you have `$KUBECONFIG` set make sure it's pointing at one or more valid kube
 config files, eg.
-`KUBECONFIG=/home/user/.kube/cluster1;/home/user/.kube/cluster2`.
+`KUBECONFIG=/home/user/.kube/cluster1:/home/user/.kube/cluster2`.
 
 Otherwise, make sure that your `~/.kube` directory contains at least one valid
 kube config file.
