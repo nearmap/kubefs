@@ -118,7 +118,7 @@ Finally, make sure kubefs and podview can be started without errors:
 'fuse'**
 
 Your virtual environment is missing one or more dependencies. Try re-creating
-it.
+it and re-installing the dependencies. See the 
 
 **While creating/installing dependencies into a virtual environment I see
 errors in red, something about `Failed building wheel`.**
