@@ -127,3 +127,9 @@ config files, eg.
 
 Otherwise, make sure that your `~/.kube` directory contains at least one valid
 kube config file.
+
+**Using logs to troubleshoot problems that occur at runtime.**
+
+`kubefs` runs in the foreground and logs to stdout/stderr.
+
+`podview` runs a curses ui in the foreground. It logs to `var/log/podview.log`.
