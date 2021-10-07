@@ -57,7 +57,7 @@ The scripts assume that you either:
   up to date to avoid running `pip install` every time).
 
 If your virtual environment isn't working try removing it by doing `rm -rf .ve`
-and re-running the scripts.
+and re-running the scripts. See also the `Troubleshooting` section below.
 
 
 ### Project setup (the manual way)
