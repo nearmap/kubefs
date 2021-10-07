@@ -50,7 +50,7 @@ $ ./kfs ~/kubeview
 $ ./pv
 ```
 
-They basically manage the virtual environment for you, so they *have to be run
+They basically manage the virtual environment for you, so *they have to be run
 outside of the virtual environment*.
 
 The scripts assume that you either:
