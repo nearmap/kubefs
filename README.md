@@ -20,7 +20,9 @@ clusters.
 ![kubefs screenshot](docs/assets/kubefs-shot.png)
 
 It loads your kube config(s) from `$KUBECONFIG` or `~/.kube` and uses that to
-present a top level view for you to navigate.
+present a top level view for you to navigate. The modification timestamps of the
+files and directories reflect the `creationTimestamp` of the kube objects
+themselves.
 
 Behind the scenes, `kubefs` makes requests to the k8s API server to fetch all
 these objects and populate the filesystem. This can be slow, so directory

@@ -17,7 +17,7 @@ def mkpayload(*, obj):
 
     timestamp = None
 
-    creationTimestamp = obj["metadata"].get("creationTimestamp")
+    creationTimestamp = obj["metadata"].get("creationtimestamp")
     if creationTimestamp:
         timestamp = dateutil.parser.parse(creationTimestamp).timestamp()
 
