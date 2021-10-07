@@ -3,6 +3,7 @@
 Requirements:
 ​
 * Python 3.8 or later.
+* A working kube config (make sure `kubectl` works).
 * Additional dependencies for `kubefs` (not required for `podview`):
   * `fuse` (available on Linux and [Mac](https://osxfuse.github.io/))
   * Somewhere to mount the filesystem. `~/kubeview` is the suggested mount
