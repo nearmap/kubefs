@@ -72,29 +72,13 @@ $ git clone https://github.com/nearmap/kubefs
 $ cd kubefs
 ```
 
-If you are using `virtualenvwrapper` create the virtual environment - this will
-also activate it:
-
-```bash
-$ mkvirtualenv --python $(which python3) kubefs
-(kubefs) $
-```
-
-When you come back to the project later on re-activate it by doing:
-
-```bash
-$ workon kubefs
-(kubefs) $
-```
-
-If you prefer not to use `virtualenvwrapper` create the virtual environment by
-doing:
+Create the virtual environment by doing:
 
 ```bash
 $ python3 -m venv .ve
 ```
 
-Activate it by doing (notice the prompt will say `(.ve)` instead of `(kubefs)`):
+Activate it by doing:
 
 ```bash
 $ . .ve/bin/activate
@@ -104,18 +88,18 @@ $ . .ve/bin/activate
 Once you've activated the virtual environment install the dependencies into it:
 
 ```bash
-(kubefs) $ pip install -r requirements.txt
+(.ve) $ pip install -r requirements.txt
 ```
 
 Finally, make sure kubefs and podview can be started without errors:
 
 ```bash
 # kubefs
-(kubefs) $ mkdir -p ~/kubeview
-(kubefs) $ bin/kubefs ~/kubeview
+(.ve) $ mkdir -p ~/kubeview
+(.ve) $ bin/kubefs ~/kubeview
 
 # podview
-(kubefs) $ bin/podview
+(.ve) $ bin/podview
 ```
 
 
