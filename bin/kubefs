@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+
+import sys
+
+sys.path.append(".")
+
+# isort: split
+
+import argparse
+import logging
+
+import fuse
+
+from kube.async_loop import launch_in_background_thread
+from kubefs.main import kubefs
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("mount_point")
+    args = parser.parse_args()
+
+    async_loop = launch_in_background_thread()
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(threadName)s %(levelname)s %(name)s %(message)s",
+    )
+
+    logging.info(f"Mounting kubefs on {args.mount_point}")
+    logging.info(
+        "kubefs will stay mounted as long as this process is running. Use Ctrl+C to exit."
+    )
+    fuse = fuse.FUSE(kubefs(), args.mount_point, foreground=True)

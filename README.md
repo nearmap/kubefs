@@ -9,46 +9,9 @@ clusters and make them more accessible to non-expert users.
   interest you, across clusters. You can use it to watch code deployments in
   real time, or check up on the health of your workloads.
 
-Requirements:
-
-* Python 3.8.
-* Additional dependencies for `kubefs`:
-  * `fuse` (available on Linux and Mac)
 
 
-
-## Getting started
-
-### Ubuntu
-
-If you see errors related to some version of "ensurepip is not available" when
-running the scripts below you may need to do the following (the error message
-should tell you which version of Python you have installed):
-
-```bash
-$ sudo apt install python3.8-venv
-```
-
-If you have a partially created virtual env at this point, destroy it so it can
-be recreated:
-
-```bash
-$ rm -rf .ve/
-```
-
-That should be all you need for `podview`.
-
-For `kubefs` you also need the packages `fuse` and `libfuse2` but they are
-already pre-installed on a vanilla Ubuntu 20.04. If they are not you will need
-to do:
-
-```bash
-$ sudo apt install fuse libfuse2
-```
-
-
-
-## kubefs - a fuse filesystem for browsing k8s clusters
+## kubefs - a fuse filesystem for browsing clusters
 
 `kubefs` is a **read-only** filesystem that runs in user space (you don't need
 to be `root` to mount it) that allows you to browse objects in your Kubernetes
@@ -57,83 +20,17 @@ clusters.
 ![kubefs screenshot](docs/assets/kubefs-shot.png)
 
 It loads your kube config(s) from `$KUBECONFIG` or `~/.kube` and uses that to
-present a top level view for you to navigate:
-
-```bash
-$ ls -p ~/kubeview
-clusters/
-contexts/
-users/
-```
-
-You can use this to explore the cluster:
-
-```bash
-$ ls -p ~/kubeview/clusters
-minikube/
-
-$ ls -p ~/kubeview/clusters/minikube
-configmaps/
-deployments/
-endpoints/
-namespaces/
-nodes/
-pods/
-replicasets/
-secrets/
-services/
-
-$ ls -p ~/kubeview/clusters/minikube/pods
-coredns-74ff55c5b-xd6nf
-etcd-minikube
-kube-apiserver-minikube
-kube-controller-manager-minikube
-kube-proxy-66s6j
-kube-scheduler-minikube
-storage-provisioner
-
-$ head ~/kubeview/clusters/minikube/pods/etcd-minikube
-{
-    "api_version": "v1",
-    "kind": "Pod",
-    "metadata": {
-        "annotations": {
-...
-```
+present a top level view for you to navigate. The modification timestamps of the
+files and directories reflect the `creationTimestamp` of the kube objects
+themselves.
 
 Behind the scenes, `kubefs` makes requests to the k8s API server to fetch all
 these objects and populate the filesystem. This can be slow, so directory
 entries are cached.
 
 
-### Quickstart
 
-`kubefs` requires a few libraries to run. The script `kfs` sets all this up on
-the first run, so that's all you need. `kubefs` runs in the foreground, so once
-you launch it it mounts the filesystem and keeps running until you stop it.
-When you stop it, the filesystem is umounted.
-
-Mounting the filesystem:
-
-```bash
-# create a mount point
-$ mkdir ~/kubeview
-
-# mount the filesystem there
-$ ./kfs ~/kubeview
-Re-using existing virtualenv at: .ve/ and assuming it's up to date.
-If you see errors try 'rm -rf .ve/' and re-run this script.
-DEBUG:fuse.log-mixin:-> init / ()
-DEBUG:fuse.log-mixin:<- init None
-```
-
-If during the virtualenv creation you see (red) error output containing
-something like `invalid command 'bdist_wheel'` this is not a fatal error and you
-can ignore it.
-
-
-
-## podview
+## podview - a real time dashboard for pods
 
 `podview` is a curses based terminal program which gives you a real time view of the
 pods that you want to see.
@@ -164,3 +61,141 @@ Keyboard controls:
 
 * Arrow keys to scroll horizontally or vertically by one character.
 * PageUp/PageDown to scroll vertically by half a page.
+
+
+
+## Getting started
+
+Requirements:
+​
+* Python 3.8 or later.
+* A working kube config (make sure `kubectl` works).
+* Additional dependencies for `kubefs` (not required for `podview`):
+  * `fuse` (available on Linux and [Mac](https://osxfuse.github.io/))
+  * Somewhere to mount the filesystem. `~/kubeview` is the suggested mount
+    point, but you can use any location you like.
+
+
+### Ubuntu
+
+
+#### System packages
+
+Let's first check the version of your system Python:
+
+```bash
+$ python3 -V
+Python 3.8.10
+```
+
+Install the fuse packages and the python-venv package matching your installed
+version:
+
+```bash
+$ sudo apt install fuse libfuse2 python3.8-venv
+```
+
+
+### Project setup (the scripted way)
+
+Clone the repository:
+
+```bash
+$ git clone https://github.com/nearmap/kubefs
+$ cd kubefs
+```
+
+These scripts automate the manual setup below:
+
+```bash
+# kubefs
+$ mkdir -p ~/kubeview
+$ ./kfs ~/kubeview
+
+# podview
+$ ./pv
+```
+
+They basically manage the virtual environment for you, so *they have to be run
+outside of the virtual environment*.
+
+The scripts assume that you either:
+- Don't have a virtual environment in `.ve/` at all (it will setup it up for
+  you), or
+- You have a fully populated virtual environment in `.ve/` (it will assume it's
+  up to date to avoid running `pip install` every time).
+
+If your virtual environment isn't working try removing it by doing `rm -rf .ve`
+and re-running the scripts. See also the `Troubleshooting` section below.
+
+
+### Project setup (the manual way)
+
+Clone the repository:
+
+```bash
+$ git clone https://github.com/nearmap/kubefs
+$ cd kubefs
+```
+
+Create the virtual environment by doing:
+
+```bash
+$ python3 -m venv .ve
+```
+
+Activate it by doing:
+
+```bash
+$ . .ve/bin/activate
+(.ve) $
+```
+
+Once you've activated the virtual environment install the dependencies into it:
+
+```bash
+(.ve) $ pip install -r requirements.txt
+```
+
+Finally, make sure kubefs and podview can be started without errors:
+
+```bash
+# kubefs
+(.ve) $ mkdir -p ~/kubeview
+(.ve) $ bin/kubefs ~/kubeview
+
+# podview
+(.ve) $ bin/podview
+```
+
+
+### Troubleshooting
+
+**When running `kubefs` or `podview` I get `ModuleNotFoundError: No module named
+'fuse'`**
+
+Your virtual environment is missing one or more dependencies. Try re-creating
+it and re-installing the dependencies. See the `Project setup` steps above.
+
+**While creating/installing dependencies into a virtual environment I see
+errors in red, something about `Failed building wheel`.**
+
+These are not fatal errors and you can ignore them.
+
+**When running `kubefs` or `podview` I get `FileNotFoundError: [Error 2] No such
+file or directory: '/home/user/.kube'`.**
+
+Your kube config files could not be detected. (Does `kubectl` work?)
+
+If you have `$KUBECONFIG` set make sure it's pointing at one or more valid kube
+config files, eg.
+`KUBECONFIG=/home/user/.kube/cluster1:/home/user/.kube/cluster2`.
+
+Otherwise, make sure that your `~/.kube` directory contains at least one valid
+kube config file.
+
+**Using logs to troubleshoot problems that occur at runtime.**
+
+`kubefs` runs in the foreground and logs to stdout/stderr.
+
+`podview` runs a curses ui in the foreground. It logs to `var/log/podview.log`.
