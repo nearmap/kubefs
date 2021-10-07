@@ -115,10 +115,10 @@ Finally, make sure kubefs and podview can be started without errors:
 ### Troubleshooting
 
 **When running `kubefs` or `podview` I get `ModuleNotFoundError: No module named
-'fuse'**
+'fuse'`**
 
 Your virtual environment is missing one or more dependencies. Try re-creating
-it and re-installing the dependencies. See the 
+it and re-installing the dependencies. See the Project setup steps above.
 
 **While creating/installing dependencies into a virtual environment I see
 errors in red, something about `Failed building wheel`.**
