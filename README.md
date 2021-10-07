@@ -11,7 +11,7 @@ clusters and make them more accessible to non-expert users.
 
 
 
-## kubefs - a fuse filesystem for browsing clusters
+## kubefs
 
 `kubefs` is a **read-only** filesystem that runs in user space (you don't need
 to be `root` to mount it) that allows you to browse objects in your Kubernetes
