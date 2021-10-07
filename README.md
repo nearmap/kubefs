@@ -135,7 +135,7 @@ These are not fatal errors and you can ignore them.
 **When running `kubefs` or `podview` I get `FileNotFoundError: [Error 2] No such
 file or directory: '/home/user/.kube'`.**
 
-Your kube config files could not be detected.
+Your kube config files could not be detected. (Does `kubectl` work?)
 
 If you have `$KUBECONFIG` set make sure it's pointing at one or more valid kube
 config files, eg.
