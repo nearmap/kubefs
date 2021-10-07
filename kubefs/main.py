@@ -14,7 +14,7 @@ from kubefs.fs_kubeconfig import (
 from kubefs.fs_model import Directory, Payload
 
 
-class KubernetesFs(fuse.LoggingMixIn, fuse.Operations):
+class kubefs(fuse.LoggingMixIn, fuse.Operations):
     constant_entries = [
         ".",
         "..",

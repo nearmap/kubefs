@@ -12,7 +12,7 @@ import logging
 import fuse
 
 from kube.async_loop import launch_in_background_thread
-from kubefs.main import KubernetesFs
+from kubefs.main import kubefs
 
 if __name__ == "__main__":
     import argparse
@@ -25,6 +25,11 @@ if __name__ == "__main__":
 
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s %(threadName)s %(levelname)s %(name)s %(message)s)",
+        format="%(asctime)s %(threadName)s %(levelname)s %(name)s %(message)s",
     )
-    fuse = fuse.FUSE(KubernetesFs(), args.mount_point, foreground=True)
+
+    logging.info(f"Mounting kubefs on {args.mount_point}")
+    logging.info(
+        "kubefs will stay mounted as long as this process is running. Use Ctrl+C to exit."
+    )
+    fuse = fuse.FUSE(kubefs(), args.mount_point, foreground=True)
