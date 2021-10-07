@@ -1,3 +1,67 @@
+# User friendly kubernetes tools
+
+This project is a collection of tools created to demystify your kubernetes
+clusters and make them more accessible to non-expert users.
+
+* `kubefs` is a filesystem that allows you to browse the kubernetes objects in
+  your cluster in a familiar way, as files and directories.
+* `podview` is a terminal program which gives you a real time view of pods that
+  interest you, across clusters. You can use it to watch code deployments in
+  real time, or check up on the health of your workloads.
+
+
+
+## kubefs - a fuse filesystem for browsing k8s clusters
+
+`kubefs` is a **read-only** filesystem that runs in user space (you don't need
+to be `root` to mount it) that allows you to browse objects in your Kubernetes
+clusters.
+
+![kubefs screenshot](docs/assets/kubefs-shot.png)
+
+It loads your kube config(s) from `$KUBECONFIG` or `~/.kube` and uses that to
+present a top level view for you to navigate.
+
+Behind the scenes, `kubefs` makes requests to the k8s API server to fetch all
+these objects and populate the filesystem. This can be slow, so directory
+entries are cached.
+
+
+
+## podview
+
+`podview` is a curses based terminal program which gives you a real time view of the
+pods that you want to see.
+
+It loads your kube config(s) from `$KUBECONFIG` or `~/.kube` and uses that to
+detect all your clusters. You can then filter on:
+
+* cluster name using `-c` / `--cluster`
+* namespace name using `-n` / `--namespace`
+* pod name using `-p` / `--pod`
+
+A very common case is watching the state of pods for a particular
+workload/service across all your clusters:
+
+```bash
+$ ./pv --pod 'prom*'
+```
+
+![podview screenshot](docs/assets/podview-shot.png)
+
+On startup `podview` first lists all the pods matching your filter, and then
+proceeds to watch them for updates.
+
+Pods are listed per cluster, and sorted by `creationTimestamp` so you will see
+the oldest pods at the top.
+
+Keyboard controls:
+
+* Arrow keys to scroll horizontally or vertically by one character.
+* PageUp/PageDown to scroll vertically by half a page.
+
+
+
 ## Getting started
 
 Requirements:
