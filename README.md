@@ -11,7 +11,7 @@ clusters and make them more accessible to non-expert users.
 
 
 
-## kubefs
+## kubefs - a fuse filesystem for browsing clusters
 
 `kubefs` is a **read-only** filesystem that runs in user space (you don't need
 to be `root` to mount it) that allows you to browse objects in your Kubernetes
@@ -30,7 +30,7 @@ entries are cached.
 
 
 
-## podview
+## podview - a real time dashboard for pods
 
 `podview` is a curses based terminal program which gives you a real time view of the
 pods that you want to see.
