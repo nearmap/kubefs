@@ -94,11 +94,11 @@ doing:
 $ python3 -m venv .ve
 ```
 
-Activate it by doing:
+Activate it by doing (notice the prompt will say `(.ve)` instead of `(kubefs)`):
 
 ```bash
 $ . .ve/bin/activate
-(kubefs) $
+(.ve) $
 ```
 
 Once you've activated the virtual environment install the dependencies into it:
