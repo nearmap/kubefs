@@ -53,7 +53,11 @@ outside of the virtual environment*.
 The scripts assume that you either:
 - Don't have a virtual environment in `.ve/` at all (it will setup it up for
   you), or
-- You have a fully populated virtual environment in `.ve/`
+- You have a fully populated virtual environment in `.ve/` (it will assume it's
+  up to date to avoid running `pip install` every time).
+
+If your virtual environment isn't working try removing it by doing `rm -rf .ve`
+and re-running the scripts.
 
 
 ### Project setup (the manual way)
