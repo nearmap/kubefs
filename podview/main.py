@@ -14,7 +14,6 @@ from kube.model.selector import ObjectSelector
 from kube.tools.logs import configure_logging
 from podview.model.model import ScreenModel
 from podview.model.updater import ModelUpdater
-from podview.view.buffer import ScreenBuffer
 from podview.view.display import CursesDisplay, CursesDisplayError
 from podview.view.renderer import BufferRenderer
 
