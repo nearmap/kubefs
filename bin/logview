@@ -1,0 +1,95 @@
+#!/usr/bin/env python
+
+import sys
+
+sys.path.append(".")
+
+# isort: split
+import argparse
+import json
+import time
+
+from kube.async_loop import AsyncLoop, launch_in_background_thread
+from kube.channels.objects import OEvReceiver
+from kube.cluster_facade import SyncClusterFacade
+from kube.config import Context, get_selector
+from kube.model.api_resource import PodKind
+from kube.model.selector import ObjectSelector
+from kube.tools.logs import configure_logging
+
+
+def launch(
+    loop: AsyncLoop, context: Context, namespace: str, podname: str, contname: str
+) -> OEvReceiver:
+    facade = SyncClusterFacade(async_loop=loop, context=context)
+
+    selector = ObjectSelector(
+        res=PodKind,
+        namespace=namespace,
+        podname=podname,
+        contname=contname,
+    )
+    oev_receiver = facade.stream_logs(selector=selector)
+
+    return oev_receiver
+
+
+def main(args: argparse.Namespace) -> None:
+    configure_logging(filename="var/log/logview.log")
+    async_loop = launch_in_background_thread()
+
+    selector = get_selector()
+    context = selector.fnmatch_context(args.cluster_context)[0]
+
+    oev_receiver = launch(async_loop, context, args.namespace, args.pod, args.container)
+
+    try:
+        while True:
+            event = oev_receiver.recv_nowait()
+            if event:
+                try:
+                    dct = json.loads(event.object)
+                    sev = dct.get("severity", "")
+                    print(sev.upper(), dct)
+                except ValueError:
+                    pass
+
+            else:
+                time.sleep(0.3)
+
+    except KeyboardInterrupt:
+        print("\nCtrl-C received")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-c",
+        "--cluster",
+        dest="cluster_context",
+        action="store",
+        required=True,
+    )
+    parser.add_argument(
+        "-n",
+        "--namespace",
+        dest="namespace",
+        action="store",
+        required=True,
+    )
+    parser.add_argument(
+        "-p",
+        "--pod",
+        dest="pod",
+        action="store",
+        required=True,
+    )
+    parser.add_argument(
+        "--container",
+        dest="container",
+        action="store",
+        required=True,
+    )
+    args = parser.parse_args()
+
+    main(args)

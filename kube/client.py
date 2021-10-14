@@ -459,3 +459,49 @@ class AsyncClient:
                 log.exception("Watch request failed with unexpected error - giving up")
                 self.send_error(exc, oev_sender)
                 break
+
+    async def stream_logs(
+        self, *, selector: ObjectSelector, oev_sender: OEvSender
+    ) -> None:
+        log = self.get_ctx_logger(selector)
+
+        server = self.context.cluster.server
+        prefix = selector.res.group.endpoint
+        name = selector.res.name
+        namespace = selector.namespace
+        podname = selector.podname
+        contname = selector.contname
+        url = f"{server}{prefix}/namespaces/{namespace}/{name}/{podname}/log?container={contname}&follow=1"
+
+        kwargs = dict(
+            ssl_context=self.ssl_context,
+            auth=self.auth_provider.get_auth(),
+            timeout=ClientTimeout(
+                sock_connect=3,
+                total=300,
+            ),
+        )
+
+        print(url)
+        log.info("Streaming logs")
+        async with self.session.get(url, allow_redirects=True, **kwargs) as response:
+
+            # read one line at a time, b'\n' terminated
+            while True:
+                log.debug("Waiting for %s response line")
+                line = await response.content.readline()
+
+                # print(line)
+
+                if not line:
+                    log.info("Received empty line, exiting")
+                    break
+
+                event = ObjectEvent(
+                    context=self.context,
+                    action=Action.LOG_LINE,
+                    object=line,
+                )
+
+                log.debug("Returning line")
+                oev_sender.send(event)

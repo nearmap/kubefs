@@ -10,6 +10,7 @@ class Action(enum.Enum):
     MODIFIED = "MODIFIED"
     DELETED = "DELETED"
     LISTED = "LISTED"
+    LOG_LINE = "LOG_LINE"
 
 
 class ObjectEvent:
