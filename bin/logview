@@ -20,6 +20,7 @@ from kube.model.api_resource import PodKind
 from kube.model.object_model.kinds import Pod
 from kube.model.selector import ObjectSelector
 from kube.tools.logs import configure_logging
+from podview.model.colors import ColorPicker
 
 
 class Program:
@@ -32,6 +33,8 @@ class Program:
         configure_logging(filename="var/log/logview.log")
         self.async_loop = launch_in_background_thread()
         self.facade = SyncClusterFacade(async_loop=self.async_loop, context=context)
+
+        self.color_picker = ColorPicker()
 
         self.pods: Dict[str, Pod] = {}
         self.oev_receivers: Dict[ObjectSelector, OEvReceiver] = {}
@@ -85,12 +88,18 @@ class Program:
                 event = oev_receiver.recv_nowait()
                 if event:
                     had_lines = True
+                    color = self.color_picker.get_for_image_hash(selector.podname)
+
+                    podname = color.stylize(selector.podname)
                     try:
                         dct = json.loads(event.object)
                         sev = dct.get("severity", "")
-                        print(selector.podname, sev.upper(), dct)
+                        block = f"{podname} {sev.upper()} {dct}"
+
                     except ValueError:
-                        pass
+                        block = f"{podname} {event.object}"
+
+                    print(block)
 
             if not had_lines:  # busy loop prevention
                 time.sleep(0.3)
@@ -102,7 +111,7 @@ class Program:
             pods = self.pods.values()
             for pod in itertools.cycle(pods):
                 self.start_streaming(pod.meta.name)
-                self.display_loop(timeout_s=60)
+                self.display_loop(timeout_s=10)
                 self.stop_streaming(pod.meta.name)
 
         except KeyboardInterrupt:
