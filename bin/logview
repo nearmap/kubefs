@@ -57,6 +57,9 @@ class Program:
             pod = Pod(dct)
             self.pods[name] = pod
 
+        fmt_names = '\n- '.join([name for name in self.pods])
+        print(f'Found {len(self.pods)} matching pods:\n- {fmt_names}')
+
     def start_streaming(self, podname: str) -> None:
         selector = ObjectSelector(
             res=PodKind,
