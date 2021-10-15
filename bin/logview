@@ -113,7 +113,7 @@ class Program:
                     print(block)
 
             if not had_lines:  # busy loop prevention
-                time.sleep(0.3)
+                time.sleep(0.05)
 
     def mainloop(self, concurrency_level=2, tick_time_s=10):
         try:
@@ -125,6 +125,9 @@ class Program:
                 pods = []
                 for _ in range(concurrency_level):
                     pods.append(next(pods_iterator))
+
+                fmt_names = ', '.join([pod.meta.name for pod in pods])
+                print(f"Switching log streaming to pods: {fmt_names}")
 
                 for pod in pods:
                     self.start_streaming(pod.meta.name)
