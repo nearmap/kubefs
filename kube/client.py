@@ -460,8 +460,8 @@ class AsyncClient:
                 self.send_error(exc, oev_sender)
                 break
 
-    async def stream_logs(
-        self, *, selector: ObjectSelector, oev_sender: OEvSender
+    async def stream_pod_logs_attempt(
+        self, selector: ObjectSelector, oev_sender: OEvSender
     ) -> None:
         log = self.get_ctx_logger(selector)
 
@@ -471,7 +471,15 @@ class AsyncClient:
         namespace = selector.namespace
         podname = selector.podname
         contname = selector.contname
-        url = f"{server}{prefix}/namespaces/{namespace}/{name}/{podname}/log?container={contname}&follow=1"
+
+        query_args = {
+            'container': contname,
+            'follow': 1,
+            'tailLines': 0,
+        }
+        query = urlencode(query_args)
+
+        url = f"{server}{prefix}/namespaces/{namespace}/{name}/{podname}/log?{query}"
 
         kwargs = dict(
             ssl_context=self.ssl_context,
@@ -482,16 +490,13 @@ class AsyncClient:
             ),
         )
 
-        print(url)
-        log.info("Streaming logs")
+        log.info("Streaming pod logs on %s", url)
         async with self.session.get(url, allow_redirects=True, **kwargs) as response:
 
             # read one line at a time, b'\n' terminated
             while True:
-                log.debug("Waiting for %s response line")
+                log.debug("Waiting for response line")
                 line = await response.content.readline()
-
-                # print(line)
 
                 if not line:
                     log.info("Received empty line, exiting")
@@ -503,5 +508,62 @@ class AsyncClient:
                     object=line,
                 )
 
-                log.debug("Returning line")
+                log.debug("Returning log line")
                 oev_sender.send(event)
+
+    async def stream_pod_logs(
+        self, *, selector: ObjectSelector, oev_sender: OEvSender
+    ) -> None:
+        log = self.get_ctx_logger(selector)
+
+        successful_completion_exceptions = (
+            TimeoutError,
+            ClientPayloadError,
+        )
+        retriable_connection_errors = (
+            ClientConnectorError,
+            ServerTimeoutError,
+            TooManyRedirects,
+            ClientOSError,
+            ClientConnectorCertificateError,
+            ClientConnectorSSLError,
+        )
+
+        while True:
+            try:
+                await self.stream_pod_logs_attempt(selector, oev_sender)
+
+            except successful_completion_exceptions as exc:
+                log.info("Stream pod logs request completed - restarting: %r", exc)
+                await asyncio.sleep(1)  # don't retry aggressively
+
+            except retriable_connection_errors as exc:
+                log.warn(
+                    "Stream pod logs request failed with retryable error: %r - retrying", exc
+                )
+
+                await asyncio.sleep(1)  # don't retry aggressively
+                continue
+
+            except ApiError as exc:
+                # if the http error looks transient - try again
+                if exc.is_retryable():
+                    log.warn(
+                        "Stream pod logs request failed with retryable error: %r - retrying", exc
+                    )
+
+                    await asyncio.sleep(1)  # don't retry aggressively
+                    continue
+
+                # if the http error seems permanet then log a traceback and exit
+                log.exception(
+                    "Stream pod logs request failed with non-retryable error - giving up"
+                )
+                self.send_error(exc, oev_sender)
+                break
+
+            except Exception as exc:
+                # we don't know what the error is so log a traceback and exit
+                log.exception("Stream pod logs request failed with unexpected error - giving up")
+                self.send_error(exc, oev_sender)
+                break

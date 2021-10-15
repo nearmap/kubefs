@@ -107,7 +107,7 @@ class SyncClusterFacade:
             client = await cluster_loop.get_client()
 
             loop = self.async_loop.get_loop()
-            coro = client.stream_logs(selector=selector, oev_sender=oev_chan.sender)
+            coro = client.stream_pod_logs(selector=selector, oev_sender=oev_chan.sender)
             await loop.create_task(coro)
 
         self.async_loop.launch_coro(stream_logs())
