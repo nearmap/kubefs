@@ -6,52 +6,112 @@ sys.path.append(".")
 
 # isort: split
 import argparse
+import fnmatch
+import itertools
 import json
 import time
+from typing import Dict
 
 from kube.async_loop import launch_in_background_thread
+from kube.channels.objects import OEvReceiver
 from kube.cluster_facade import SyncClusterFacade
 from kube.config import get_selector
 from kube.model.api_resource import PodKind
+from kube.model.object_model.kinds import Pod
 from kube.model.selector import ObjectSelector
 from kube.tools.logs import configure_logging
 
 
-def main(args: argparse.Namespace) -> None:
-    configure_logging(filename="var/log/logview.log")
-    async_loop = launch_in_background_thread()
+class Program:
+    def __init__(self, args: argparse.Namespace) -> None:
+        self.args = args
 
-    ctx_selector = get_selector()
-    context = ctx_selector.fnmatch_context(args.cluster_context)[0]
+        ctx_selector = get_selector()
+        context = ctx_selector.fnmatch_context(self.args.cluster_context)[0]
 
-    selector = ObjectSelector(
-        res=PodKind,
-        namespace=args.namespace,
-        podname=args.pod,
-        contname=args.container,
-    )
+        configure_logging(filename="var/log/logview.log")
+        self.async_loop = launch_in_background_thread()
+        self.facade = SyncClusterFacade(async_loop=self.async_loop, context=context)
 
-    facade = SyncClusterFacade(async_loop=async_loop, context=context)
-    oev_receiver = facade.start_stream_pod_logs(selector=selector)
+        self.pods: Dict[str, Pod] = {}
+        self.oev_receivers: Dict[ObjectSelector, OEvReceiver] = {}
 
-    try:
-        while True:
-            event = oev_receiver.recv_nowait()
-            if event:
-                try:
-                    dct = json.loads(event.object)
-                    sev = dct.get("severity", "")
-                    print(sev.upper(), dct)
-                except ValueError:
-                    pass
+    def pod_filter_matches(self, podname: str) -> bool:
+        return fnmatch.fnmatch(podname, self.args.pod)
 
-            else:
+    def discover_pods(self):
+        selector = ObjectSelector(
+            res=PodKind,
+            namespace=self.args.namespace,
+        )
+        dcts = self.facade.list_objects(selector=selector)
+
+        for dct in dcts:
+            name = dct["metadata"]["name"]
+            if not self.pod_filter_matches(name):
+                continue
+
+            pod = Pod(dct)
+            self.pods[name] = pod
+
+    def start_streaming(self, podname: str) -> None:
+        selector = ObjectSelector(
+            res=PodKind,
+            namespace=self.args.namespace,
+            podname=podname,
+            contname=self.args.container,
+        )
+
+        oev_receiver = self.facade.start_stream_pod_logs(selector=selector)
+        self.oev_receivers[selector] = oev_receiver
+
+    def stop_streaming(self, podname: str) -> None:
+        for selector in self.oev_receivers:
+            if selector.podname == podname:
+                break
+
+        if not selector:
+            raise RuntimeError("Could not find selector for podname: %s" % podname)
+
+        self.facade.stop_stream_pod_logs(selector=selector)
+        self.oev_receivers.pop(selector)
+
+    def display_loop(self, timeout_s=300):
+        start_s = time.time()
+
+        while time.time() - start_s < timeout_s:
+            had_lines = False
+            for selector, oev_receiver in self.oev_receivers.items():
+                event = oev_receiver.recv_nowait()
+                if event:
+                    had_lines = True
+                    try:
+                        dct = json.loads(event.object)
+                        sev = dct.get("severity", "")
+                        print(selector.podname, sev.upper(), dct)
+                    except ValueError:
+                        pass
+
+            if not had_lines:  # busy loop prevention
                 time.sleep(0.3)
 
-    except KeyboardInterrupt:
-        print("\nCtrl-C received")
-        facade.stop_stream_pod_logs(selector=selector)
-        async_loop.shutdown()
+    def mainloop(self):
+        try:
+            self.discover_pods()
+
+            pods = self.pods.values()
+            for pod in itertools.cycle(pods):
+                self.start_streaming(pod.meta.name)
+                self.display_loop(timeout_s=60)
+                self.stop_streaming(pod.meta.name)
+
+        except KeyboardInterrupt:
+            print("\nCtrl-C received")
+
+            for selector in self.oev_receivers:
+                self.facade.stop_stream_pod_logs(selector=selector)
+
+            self.async_loop.shutdown()
 
 
 if __name__ == "__main__":
@@ -85,4 +145,5 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    main(args)
+    program = Program(args)
+    program.mainloop()
