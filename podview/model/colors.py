@@ -84,6 +84,12 @@ class ColorPicker:
         "terminated": _stopped_color,
     }
 
+    _severity_colors = {
+        "error": _error_color,
+        "warning": _warn_color,
+        "info": _dim_color,
+    }
+
     # indices into colored.colors.names
     # trying to pick colors that are not too bring nor too dim
     _image_hash_color_index_ranges = [
@@ -144,6 +150,9 @@ class ColorPicker:
     def get_for_image_hash(self, image_hash: str) -> Color:
         """Consistently hashes the image hash onto a color."""
         return self.image_hash_ring.get_node(image_hash)
+
+    def get_for_severity(self, severity: str) -> Color:
+        return self._severity_colors[severity.lower()]
 
 
 if __name__ == "__main__":
