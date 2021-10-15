@@ -473,9 +473,9 @@ class AsyncClient:
         contname = selector.contname
 
         query_args = {
-            'container': contname,
-            'follow': 1,
-            'tailLines': 0,
+            "container": contname,
+            "follow": 1,
+            "tailLines": 0,
         }
         query = urlencode(query_args)
 
@@ -539,7 +539,8 @@ class AsyncClient:
 
             except retriable_connection_errors as exc:
                 log.warn(
-                    "Stream pod logs request failed with retryable error: %r - retrying", exc
+                    "Stream pod logs request failed with retryable error: %r - retrying",
+                    exc,
                 )
 
                 await asyncio.sleep(1)  # don't retry aggressively
@@ -549,7 +550,8 @@ class AsyncClient:
                 # if the http error looks transient - try again
                 if exc.is_retryable():
                     log.warn(
-                        "Stream pod logs request failed with retryable error: %r - retrying", exc
+                        "Stream pod logs request failed with retryable error: %r - retrying",
+                        exc,
                     )
 
                     await asyncio.sleep(1)  # don't retry aggressively
@@ -564,6 +566,8 @@ class AsyncClient:
 
             except Exception as exc:
                 # we don't know what the error is so log a traceback and exit
-                log.exception("Stream pod logs request failed with unexpected error - giving up")
+                log.exception(
+                    "Stream pod logs request failed with unexpected error - giving up"
+                )
                 self.send_error(exc, oev_sender)
                 break

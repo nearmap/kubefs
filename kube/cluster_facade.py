@@ -99,16 +99,19 @@ class SyncClusterFacade:
         self.async_loop.launch_coro(list_watch())
         return oev_chan.receiver
 
-    def stream_logs(self, *, selector: ObjectSelector) -> OEvReceiver:
+    def start_stream_pod_logs(self, *, selector: ObjectSelector) -> OEvReceiver:
         oev_chan = create_oev_chan()
 
-        async def stream_logs():
+        async def start_stream():
             cluster_loop = await self.async_loop.get_cluster_loop(self.context)
-            client = await cluster_loop.get_client()
+            await cluster_loop.start_pod_log_stream(selector, oev_chan.sender)
 
-            loop = self.async_loop.get_loop()
-            coro = client.stream_pod_logs(selector=selector, oev_sender=oev_chan.sender)
-            await loop.create_task(coro)
-
-        self.async_loop.launch_coro(stream_logs())
+        self.async_loop.launch_coro(start_stream())
         return oev_chan.receiver
+
+    def stop_stream_pod_logs(self, *, selector: ObjectSelector) -> None:
+        async def stop_stream():
+            cluster_loop = await self.async_loop.get_cluster_loop(self.context)
+            await cluster_loop.stop_pod_log_stream(selector)
+
+        self.async_loop.run_coro_until_completion(stop_stream())

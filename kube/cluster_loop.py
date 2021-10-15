@@ -26,6 +26,9 @@ class AsyncClusterLoop:
         self.watches_lock = Lock()
         self.watches: Dict[ObjectSelector, Task] = {}
 
+        self.pod_log_steam_lock = Lock()
+        self.pod_log_streams: Dict[ObjectSelector, Task] = {}
+
     async def wait_until_initialized(self):
         await self.initialized_event.wait()
 
@@ -76,6 +79,30 @@ class AsyncClusterLoop:
                 self.logger.warn(
                     "Watch with selector %r completed prematurely", selector
                 )
+
+    async def start_pod_log_stream(
+        self, selector: ObjectSelector, oev_sender: OEvSender
+    ) -> None:
+        assert self.client is not None  # help mypy
+
+        loop = self.async_loop.get_loop()
+        coro = self.client.stream_pod_logs(selector=selector, oev_sender=oev_sender)
+        task = loop.create_task(coro)
+
+        async with self.pod_log_steam_lock:
+            self.pod_log_streams[selector] = task
+
+    async def stop_pod_log_stream(self, selector: ObjectSelector) -> None:
+        async with self.pod_log_steam_lock:
+            task = self.pod_log_streams.pop(selector, None)
+
+        if task is None:
+            raise RuntimeError("No such pod log stream for selector %r" % selector)
+
+        try:
+            task.cancel()
+        except CancelledError:
+            pass
 
     async def mainloop(self):
         async with aiohttp.ClientSession() as session:
