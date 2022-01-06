@@ -152,7 +152,8 @@ class ColorPicker:
         return self.image_hash_ring.get_node(image_hash)
 
     def get_for_severity(self, severity: str) -> Color:
-        return self._severity_colors[severity.lower()]
+        key = severity.lower()
+        return self._severity_colors.get(key, self._dim_color)
 
 
 if __name__ == "__main__":
