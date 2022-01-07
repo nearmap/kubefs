@@ -5,145 +5,15 @@ import sys
 sys.path.append(".")
 
 # isort: split
+
 import argparse
-import fnmatch
-import itertools
-import json
-import time
-from typing import Dict
 
-from kube.async_loop import launch_in_background_thread
-from kube.channels.objects import OEvReceiver
-from kube.cluster_facade import SyncClusterFacade
-from kube.config import get_selector
-from kube.model.api_resource import PodKind
-from kube.model.object_model.kinds import Pod
-from kube.model.selector import ObjectSelector
-from kube.tools.logs import configure_logging
-from podview.model.colors import ColorPicker
+from logview.main import Program
 
 
-class Program:
-    def __init__(self, args: argparse.Namespace) -> None:
-        self.args = args
-
-        ctx_selector = get_selector()
-        context = ctx_selector.fnmatch_context(self.args.cluster_context)[0]
-
-        configure_logging(filename="var/log/logview.log")
-        self.async_loop = launch_in_background_thread()
-        self.facade = SyncClusterFacade(async_loop=self.async_loop, context=context)
-
-        self.color_picker = ColorPicker()
-
-        self.pods: Dict[str, Pod] = {}
-        self.oev_receivers: Dict[ObjectSelector, OEvReceiver] = {}
-
-    def pod_filter_matches(self, podname: str) -> bool:
-        return fnmatch.fnmatch(podname, self.args.pod)
-
-    def discover_pods(self):
-        selector = ObjectSelector(
-            res=PodKind,
-            namespace=self.args.namespace,
-        )
-        dcts = self.facade.list_objects(selector=selector)
-
-        for dct in dcts:
-            name = dct["metadata"]["name"]
-            if not self.pod_filter_matches(name):
-                continue
-
-            pod = Pod(dct)
-            self.pods[name] = pod
-
-        fmt_names = "\n- ".join([name for name in self.pods])
-        print(f"Found {len(self.pods)} matching pods:\n- {fmt_names}")
-
-    def start_streaming(self, podname: str) -> None:
-        selector = ObjectSelector(
-            res=PodKind,
-            namespace=self.args.namespace,
-            podname=podname,
-            contname=self.args.container,
-        )
-
-        oev_receiver = self.facade.start_stream_pod_logs(selector=selector)
-        self.oev_receivers[selector] = oev_receiver
-
-    def stop_streaming(self, podname: str) -> None:
-        for selector in self.oev_receivers:
-            if selector.podname == podname:
-                break
-
-        if not selector:
-            raise RuntimeError("Could not find selector for podname: %s" % podname)
-
-        self.facade.stop_stream_pod_logs(selector=selector)
-        self.oev_receivers.pop(selector)
-
-    def display_loop(self, timeout_s=300):
-        start_s = time.time()
-
-        while time.time() - start_s < timeout_s:
-            had_lines = False
-            for selector, oev_receiver in self.oev_receivers.items():
-                event = oev_receiver.recv_nowait()
-                if event:
-                    had_lines = True
-                    podcolor = self.color_picker.get_for_image_hash(selector.podname)
-
-                    podname = podcolor.stylize(selector.podname)
-                    try:
-                        dct = json.loads(event.object)
-                        sev = dct.get("severity", "").upper()
-                        msg = f"{dct!r}"
-
-                        if sev:
-                            sevcolor = self.color_picker.get_for_severity(sev)
-                            if sevcolor:
-                                sev = sevcolor.stylize(sev)
-                                msg = sevcolor.stylize(msg)
-
-                        block = f"{podname} {sev} {msg}"
-
-                    except ValueError:
-                        block = f"{podname} {event.object}"
-
-                    print(block)
-
-            if not had_lines:  # busy loop prevention
-                time.sleep(0.05)
-
-    def mainloop(self, concurrency_level=2, tick_time_s=10):
-        try:
-            self.discover_pods()
-
-            pods_iterator = itertools.cycle(self.pods.values())
-            while True:
-                # pick the pods to turn on streaming from in this cycle
-                pods = []
-                for _ in range(concurrency_level):
-                    pods.append(next(pods_iterator))
-
-                fmt_names = ", ".join([pod.meta.name for pod in pods])
-                print(f"Switching log streaming to pods: {fmt_names}")
-
-                for pod in pods:
-                    self.start_streaming(pod.meta.name)
-
-                self.display_loop(timeout_s=tick_time_s)
-
-                for pod in pods:
-                    self.stop_streaming(pod.meta.name)
-
-        except KeyboardInterrupt:
-            print("\nCtrl-C received")
-
-            for selector in self.oev_receivers:
-                self.facade.stop_stream_pod_logs(selector=selector)
-
-            self.async_loop.shutdown()
+def main(args: argparse.Namespace) -> None:
+    program = Program(args)
+    program.run()
 
 
 if __name__ == "__main__":
@@ -154,28 +24,32 @@ if __name__ == "__main__":
         dest="cluster_context",
         action="store",
         required=True,
+        default="*",
+        help=(f"Kube cluster contexts to select - matched like a filesystem wildcard"),
     )
     parser.add_argument(
         "-n",
         "--namespace",
         dest="namespace",
         action="store",
-        required=True,
+        default="*",
+        help=(f"Kube namespace to select - matched like a filesystem wildcard"),
     )
     parser.add_argument(
         "-p",
         "--pod",
         dest="pod",
         action="store",
-        required=True,
+        default="*",
+        help=(f"Kube pod name to select - matched like a filesystem wildcard"),
     )
     parser.add_argument(
-        "--container",
+        "--cont",
         dest="container",
         action="store",
-        required=True,
+        # required=True,
+        help=(f"Container name to select - matched like a filesystem wildcard"),
     )
     args = parser.parse_args()
 
-    program = Program(args)
-    program.mainloop()
+    main(args)

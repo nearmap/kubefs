@@ -38,6 +38,7 @@ class PodModel:
         self.name = name
         self.containers: Dict[str, ContainerModel] = {}
 
+        self.namespace: Value[str] = Value()
         self.creation_timestamp: Value[datetime] = Value()
         self.deletion_timestamp: Value[datetime] = Value()
         self.phase: Value[str] = Value()

@@ -64,6 +64,16 @@ Keyboard controls:
 
 
 
+## logview - a real time dashboard for pods
+
+### Use case: All pods in cluster where container name matches
+
+```bash
+$ bin/logview -c cluster1 --cont *istio*
+```
+
+
+
 ## Getting started
 
 Requirements:

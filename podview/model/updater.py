@@ -163,6 +163,7 @@ class ModelUpdater:
         )
 
         pod_model = cluster_model.get_pod(pod.meta.name)
+        pod_model.namespace.set(pod.meta.namespace, ts=ts)
         pod_model.creation_timestamp.set(value=pod.meta.creationTimestamp, ts=ts)
         if pod.meta.deletionTimestamp is not None:
             pod_model.deletion_timestamp.set(value=pod.meta.deletionTimestamp, ts=ts)
