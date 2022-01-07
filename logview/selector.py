@@ -68,7 +68,7 @@ class PodSelector:
         # select randomly, in order to make it more likely that we iterate
         # through all targets
 
-        chosen = []
+        chosen: List[PodTarget] = []
         cands = self.candidates[:]
 
         while cands and len(chosen) < count:

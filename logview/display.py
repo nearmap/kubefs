@@ -2,6 +2,8 @@ import json
 import time
 from typing import List
 
+from kube.channels.generic import ChanReceiver
+from kube.model.selector import ObjectSelector
 from logview.target import PodTarget
 from podview.model.colors import ColorPicker
 
@@ -16,9 +18,14 @@ class LogDisplay:
         while time.time() - start_s < timeout_s:
             had_lines = False
             for target in targets:
+                assert isinstance(target.oev_receiver, ChanReceiver)
+                assert isinstance(target.selector, ObjectSelector)
+
                 event = target.oev_receiver.recv_nowait()
                 if event:
                     had_lines = True
+
+                    assert isinstance(target.selector.podname, str)
                     podcolor = self.color_picker.get_for_image_hash(
                         target.selector.podname
                     )
@@ -38,7 +45,13 @@ class LogDisplay:
                         block = f"{podname} {sev} {msg}"
 
                     except ValueError:
-                        block = f"{podname} {event.object}"
+                        try:
+                            line = event.object.decode()
+                        except ValueError:
+                            line = event.object
+
+                        line = line.strip()
+                        block = f"{podname} {line}"
 
                     print(block)
 

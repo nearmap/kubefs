@@ -113,14 +113,14 @@ class Program:
         count = 2
 
         timeout_short_s = 5
-        timeout_standard_s = 120
+        timeout_standard_s = 60
         timeout_s = timeout_standard_s
 
         try:
             while True:
                 # run the updater for a bit to sync the model with all pods in
                 # the namespaces we are watching
-                self.updater.run(model=self.model, timeout=0.1)
+                self.updater.run(model=self.model, timeout=0.1, drain_queue=True)
 
                 # refresh the pod selector to pick just the pods and containers
                 # that we want to stream logs from
@@ -142,16 +142,13 @@ class Program:
                     timeout_s = timeout_short_s
 
                 if self.targets:
-                    names = "\n- ".join(
-                        [
-                            f"{target.pod.name}/{target.container.name}"
-                            for target in self.targets
-                        ]
-                    )
-                    print(f"Streaming logs for {timeout_s}s from:\n- {names}")
-
                     for target in self.targets:
                         target.start_streaming(self.facade)
+
+                    names = "\n- ".join(
+                        [target.format_name() for target in self.targets]
+                    )
+                    print(f"Streaming logs for {timeout_s}s from:\n- {names}")
 
                     self.display.display_loop(targets=self.targets, timeout_s=timeout_s)
 

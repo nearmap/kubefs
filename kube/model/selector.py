@@ -1,6 +1,7 @@
 from typing import Optional
 
 from kube.model.api_resource import ApiResource
+from kube.model.client_params import ClientOperationParams
 
 
 class ObjectSelector:
@@ -11,6 +12,7 @@ class ObjectSelector:
         namespace: Optional[str] = None,
         podname: Optional[str] = None,
         contname: Optional[str] = None,
+        client_op_params: Optional[ClientOperationParams] = None,
     ) -> None:
         if namespace and not res.namespaced:
             raise ValueError("Cannot search by namespace for %s" % res.kind)
@@ -19,6 +21,8 @@ class ObjectSelector:
         self.namespace = namespace
         self.podname = podname
         self.contname = contname
+
+        self.client_op_params = client_op_params
 
     def __repr__(self) -> str:
         return "<%s res=%r, namespace=%r>" % (

@@ -25,6 +25,7 @@ from kube.config import Context
 from kube.events.objects import Action, ObjectEvent
 from kube.model.api_group import ApiGroup
 from kube.model.api_resource import ApiResource
+from kube.model.client_params import LogStreamingParams
 from kube.model.selector import ObjectSelector
 from kube.tools.logs import CtxLogger
 
@@ -472,10 +473,15 @@ class AsyncClient:
         podname = selector.podname
         contname = selector.contname
 
+        tail_lines = 0
+        if selector.client_op_params:
+            assert isinstance(selector.client_op_params, LogStreamingParams)
+            tail_lines = selector.client_op_params.tail_lines
+
         query_args = {
             "container": contname,
             "follow": 1,
-            "tailLines": 0,
+            "tailLines": tail_lines,
         }
         query = urlencode(query_args)
 

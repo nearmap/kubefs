@@ -2,6 +2,7 @@ import argparse
 import fnmatch
 import logging
 import os
+import re
 import time
 from datetime import timedelta
 from typing import List, Tuple
@@ -20,7 +21,7 @@ from kube.model.object_model.status import (
 )
 from kube.tools.timekeeping import date_now
 from podview.model.colors import ColorPicker
-from podview.model.model import ContainerModel, PodModel, ScreenModel
+from podview.model.model import ClusterModel, ContainerModel, PodModel, ScreenModel
 
 
 class ModelUpdater:
@@ -242,14 +243,28 @@ class ModelUpdater:
 
         return matches_name or matches_app_name
 
-    def run(self, model: ScreenModel, timeout: float):
+    def run(self, model: ScreenModel, timeout: float, drain_queue: bool = False):
         start_time = time.time()
         pause = max(timeout / 10, 0.001)
 
         while True:
-            if time.time() - start_time >= timeout:
+            # draining mode
+            if drain_queue:
+                # if the size of every queues is >0 we stay in draining mode
+                # and do not time out
+                cum_size = 0
+                for receiver in self.receivers:
+                    cum_size += receiver.queue.qsize()
+
+                # ... otherwise we exit draining mode and go into timeout mode
+                if cum_size == 0:
+                    drain_queue = False
+
+            # timeout mode
+            elif time.time() - start_time >= timeout:
                 break
 
+            # process each receiver queue
             for receiver in self.receivers:
                 event = receiver.recv_nowait()
                 if event and self.filter_event(event):
@@ -260,3 +275,6 @@ class ModelUpdater:
         # garbage collect in case anything in the model (either pre-existing or
         # just added in the update) should not be displayed
         self.garbage_collect(model)
+
+        for receiver in self.receivers:
+            self.logger.debug("receiver queue size: %r", receiver.queue.qsize())
