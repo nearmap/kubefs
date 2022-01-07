@@ -1,6 +1,6 @@
 import argparse
-import logging
 import fnmatch
+import logging
 import random
 from typing import Dict, List, Tuple
 
