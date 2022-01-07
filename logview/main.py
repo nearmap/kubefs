@@ -2,7 +2,7 @@ import argparse
 import fnmatch
 import logging
 from threading import current_thread
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from kube.async_loop import AsyncLoop, launch_in_background_thread
 from kube.channels.objects import OEvReceiver
@@ -36,7 +36,7 @@ class Program:
         self.facade: Optional[SyncClusterFacade] = None
 
         self.updater = None
-        self.oev_receivers: Dict[ObjectSelector, OEvReceiver] = {}
+        self.targets: List[PodTarget] = []
 
     def find_matching_namespaces(
         self, namespace_pat: str, context: Context
@@ -109,37 +109,8 @@ class Program:
 
         return True
 
-    def start_streaming(self, target: PodTarget) -> None:
-        selector = ObjectSelector(
-            res=PodKind,
-            namespace=target.pod.namespace.current_value,
-            podname=target.pod.name,
-            contname=target.container.name,
-        )
-
-        oev_receiver = self.facade.start_stream_pod_logs(selector=selector)
-        self.oev_receivers[selector] = oev_receiver
-
-    def stop_streaming(self, target: PodTarget) -> None:
-        for selector in self.oev_receivers:
-            if (
-                selector.podname == target.pod.name
-                and selector.contname == target.container.name
-            ):
-                break
-
-        if not selector:
-            raise RuntimeError(
-                f"Could not find selector for podname: {target.pod.name!r} "
-                f"and contname: {target.container.name!r}"
-            )
-
-        self.facade.stop_stream_pod_logs(selector=selector)
-        self.oev_receivers.pop(selector)
-
     def run_ui_loop(self):
         count = 2
-        targets = []
 
         timeout_short_s = 5
         timeout_standard_s = 120
@@ -149,39 +120,43 @@ class Program:
             while True:
                 # run the updater for a bit to sync the model with all pods in
                 # the namespaces we are watching
-                self.updater.run(model=self.model, timeout=0.5)
-                # self.updater.run(model=self.model, timeout=0.01)
+                self.updater.run(model=self.model, timeout=0.1)
 
                 # refresh the pod selector to pick just the pods and containers
                 # that we want to stream logs from
                 self.pod_selector.refresh_candidates(model=self.model)
                 num_cands = len(self.pod_selector.candidates)
-                print(f"{num_cands} matching pod+container targets")
+                print(f"{num_cands} matching pod/container targets")
 
                 # we have no targets yet: select them
-                if not targets:
-                    targets = self.pod_selector.select_targets(count=count)
+                if not self.targets:
+                    self.targets = self.pod_selector.select_targets(count=count)
 
                 # we have fewer targets than desired, re-select them to maybe get more
-                elif len(targets) < count:
-                    targets = self.pod_selector.select_targets(count=count)
+                elif len(self.targets) < count:
+                    self.targets = self.pod_selector.select_targets(count=count)
 
                 # if we have few targets the model may still be populating so use a short timeout
                 timeout_s = timeout_standard_s
-                if len(targets) < count:
+                if len(self.targets) < count:
                     timeout_s = timeout_short_s
 
-                if targets:
-                    names = "\n- ".join([f"{target.pod.name}/{target.container.name}" for target in targets])
+                if self.targets:
+                    names = "\n- ".join(
+                        [
+                            f"{target.pod.name}/{target.container.name}"
+                            for target in self.targets
+                        ]
+                    )
                     print(f"Streaming logs for {timeout_s}s from:\n- {names}")
 
-                    for target in targets:
-                        self.start_streaming(target)
+                    for target in self.targets:
+                        target.start_streaming(self.facade)
 
-                    self.display.display_loop(self.oev_receivers, timeout_s=timeout_s)
+                    self.display.display_loop(targets=self.targets, timeout_s=timeout_s)
 
-                    for target in targets:
-                        self.stop_streaming(target)
+                    for target in self.targets:
+                        target.start_streaming(self.facade)
 
         except (KeyboardInterrupt,):
             pass
@@ -189,8 +164,8 @@ class Program:
         except Exception:
             self.logger.exception("Uncaught exception in run_ui_loop()")
 
-        for selector in self.oev_receivers:
-            self.facade.stop_stream_pod_logs(selector=selector)
+        for target in self.targets:
+            target.start_streaming(self.facade)
 
         self.async_loop.shutdown()
 

@@ -3,13 +3,8 @@ import fnmatch
 import random
 from typing import Dict, List, Tuple
 
+from logview.target import PodTarget
 from podview.model.model import ContainerModel, PodModel, ScreenModel
-
-
-class PodTarget:
-    def __init__(self, pod: PodModel, container: ContainerModel) -> None:
-        self.pod = pod
-        self.container = container
 
 
 class PodSelector:

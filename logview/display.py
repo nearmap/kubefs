@@ -1,9 +1,8 @@
 import json
 import time
-from typing import Dict
+from typing import List
 
-from kube.channels.objects import OEvReceiver
-from kube.model.selector import ObjectSelector
+from logview.target import PodTarget
 from podview.model.colors import ColorPicker
 
 
@@ -11,18 +10,20 @@ class LogDisplay:
     def __init__(self) -> None:
         self.color_picker = ColorPicker.get_instance()
 
-    def display_loop(self, oev_receivers: Dict[ObjectSelector, OEvReceiver], timeout_s: int):
+    def display_loop(self, targets: List[PodTarget], timeout_s: int):
         start_s = time.time()
 
         while time.time() - start_s < timeout_s:
             had_lines = False
-            for selector, oev_receiver in oev_receivers.items():
-                event = oev_receiver.recv_nowait()
+            for target in targets:
+                event = target.oev_receiver.recv_nowait()
                 if event:
                     had_lines = True
-                    podcolor = self.color_picker.get_for_image_hash(selector.podname)
+                    podcolor = self.color_picker.get_for_image_hash(
+                        target.selector.podname
+                    )
 
-                    podname = podcolor.stylize(selector.podname)
+                    podname = podcolor.stylize(target.selector.podname)
                     try:
                         dct = json.loads(event.object)
                         sev = dct.get("severity", "").upper()
