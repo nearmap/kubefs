@@ -132,8 +132,8 @@ class Program:
                 if not self.targets:
                     self.targets = self.pod_selector.select_targets(count=count)
 
-                # we have fewer targets than desired, re-select them to maybe get more
-                elif len(self.targets) < count:
+                # there are enough candidates to choose randomly from
+                elif num_cands > count:
                     self.targets = self.pod_selector.select_targets(count=count)
 
                 # if we have few targets the model may still be populating so use a short timeout

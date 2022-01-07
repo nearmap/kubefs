@@ -21,7 +21,7 @@ from kube.model.object_model.status import (
 )
 from kube.tools.timekeeping import date_now
 from podview.model.colors import ColorPicker
-from podview.model.model import ClusterModel, ContainerModel, PodModel, ScreenModel
+from podview.model.model import ContainerModel, PodModel, ScreenModel
 
 
 class ModelUpdater:

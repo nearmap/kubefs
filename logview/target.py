@@ -23,6 +23,9 @@ class PodTarget:
         self.selector: Optional[ObjectSelector] = None
         self.oev_receiver: Optional[OEvReceiver] = None
 
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} pod={self.pod.name}, cont={self.container.name}>"
+
     def format_name(self) -> str:
         assert isinstance(self.selector, ObjectSelector)
         assert isinstance(self.selector.client_op_params, LogStreamingParams)

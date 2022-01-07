@@ -1,4 +1,5 @@
 import argparse
+import logging
 import fnmatch
 import random
 from typing import Dict, List, Tuple
@@ -13,6 +14,7 @@ class PodSelector:
         args: argparse.Namespace,
     ) -> None:
         self.args = args
+        self.logger = logging.getLogger(__name__)
 
         # the pod+container pairs that match our log streaming criteria
         self.candidates: List[PodTarget] = []
@@ -75,5 +77,7 @@ class PodSelector:
             choice = random.choice(cands)
             cands.remove(choice)
             chosen.append(choice)
+
+        self.logger.debug("candidates: %r, chosen: %r", self.candidates, chosen)
 
         return chosen
