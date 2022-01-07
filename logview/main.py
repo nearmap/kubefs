@@ -110,7 +110,7 @@ class Program:
         return True
 
     def run_ui_loop(self):
-        count = 2
+        count = 4
 
         timeout_short_s = 5
         timeout_standard_s = 60

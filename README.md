@@ -64,7 +64,7 @@ Keyboard controls:
 
 
 
-## logview - a real time dashboard for pods
+## logview - real time log streaming from pods
 
 ### Use case: All pods in cluster where container name matches
 
