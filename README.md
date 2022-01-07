@@ -69,7 +69,7 @@ Keyboard controls:
 ### Use case: All pods in cluster where container name matches
 
 ```bash
-$ bin/logview -c cluster1 --cont *istio*
+$ ./lv -c cluster1 --cont *istio*
 ```
 
 
