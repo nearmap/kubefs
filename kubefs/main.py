@@ -7,6 +7,7 @@ import fuse
 
 from kube.config import KubeConfigLoader
 from kubefs.fs_kubeconfig import (
+    KubeConfigClusterDir,
     KubeConfigClustersDir,
     KubeConfigContextsDir,
     KubeConfigUsersDir,
@@ -26,19 +27,21 @@ class kubefs(fuse.LoggingMixIn, fuse.Operations):
         loader = KubeConfigLoader()
         config = loader.create_collection()
 
+        # show all the clusters as dirs at the root of the filesystem
+        dirs = []
+        for context in config.contexts.values():
+            payload = Payload(
+                name=context.short_name,
+                ctime=context.file.ctime,
+                mtime=context.file.mtime,
+                atime=context.file.atime,
+            )
+            dir = KubeConfigClusterDir.create(payload=payload, context=context)
+            dirs.append(dir)
+
         self.tree = Directory(
             payload=Payload(name=""),
-            entries=[
-                KubeConfigClustersDir.create(
-                    payload=Payload(name="clusters"),
-                    config=config,
-                ),
-                KubeConfigContextsDir.create(
-                    payload=Payload(name="contexts"),
-                    config=config,
-                ),
-                KubeConfigUsersDir.create(payload=Payload(name="users"), config=config),
-            ],
+            entries=dirs,
         )
 
     def find_matching_entry(self, path):
