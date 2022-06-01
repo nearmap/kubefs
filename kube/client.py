@@ -33,16 +33,18 @@ class ApiError(Exception):
     # too old resource version: 355452234 (358305898)
     rx = re.compile("too old resource version: \d+ \((\d+)\)")
 
-    def __init__(self, code: int, reason: str, message: str) -> None:
+    def __init__(self, context: Context, code: int, reason: str, message: str) -> None:
         super().__init__()
 
+        self.context = context
         self.code = code
         self.reason = reason
         self.message = message
 
     def __repr__(self) -> str:
-        return "%s(code=%r, reason=%r, message=%r)" % (
+        return "%s(cluster=%r, code=%r, reason=%r, message=%r)" % (
             self.__class__.__name__,
+            self.context.cluster.short_name,
             self.code,
             self.reason,
             self.message,
@@ -134,7 +136,7 @@ class AsyncClient:
             message = dct["message"]
             reason = dct["reason"]
             code = dct["code"]
-            raise ApiError(code=code, reason=reason, message=message)
+            raise ApiError(context=self.context, code=code, reason=reason, message=message)
 
     async def construct_url(
         self, selector: ObjectSelector, watch: bool = False, timeout: int = None
